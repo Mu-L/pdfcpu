@@ -18,6 +18,7 @@ package api
 
 import (
 	"fmt"
+	"io"
 	"os"
 
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
@@ -177,4 +178,62 @@ func ValidateSignaturesFile(inFile string, all, full bool, conf *model.Configura
 	}
 
 	return digest(signValidResults, full), nil
+}
+
+// RemoveSignature removes all digital signatures from rs and writes to w.
+func RemoveSignatures(rs io.ReadSeeker, w io.Writer, conf *model.Configuration) error {
+	if rs == nil {
+		return errors.New("pdfcpu: RemoveSignatures: missing rs")
+	}
+	if w == nil {
+		return errors.New("pdfcpu: AddSignatures: missing w")
+	}
+
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.REMOVESIGNATURES
+
+	return Optimize(rs, w, conf)
+}
+
+// RemoveSignaturesFile removes all digital signatures from inFile and writes to outFile if provided else overwrites inFile.
+func RemoveSignaturesFile(inFile, outFile string, conf *model.Configuration) (err error) {
+	var f1, f2 *os.File
+
+	if f1, err = os.Open(inFile); err != nil {
+		return err
+	}
+
+	tmpFile := inFile + ".tmp"
+	if outFile != "" && inFile != outFile {
+		tmpFile = outFile
+		logWritingTo(outFile)
+	} else {
+		logWritingTo(inFile)
+	}
+
+	if f2, err = os.Create(tmpFile); err != nil {
+		return err
+	}
+
+	defer func() {
+		if err != nil {
+			f2.Close()
+			f1.Close()
+			os.Remove(tmpFile)
+			return
+		}
+		if err = f2.Close(); err != nil {
+			return
+		}
+		if err = f1.Close(); err != nil {
+			return
+		}
+		if outFile == "" || inFile == outFile {
+			err = os.Rename(tmpFile, inFile)
+		}
+	}()
+
+	return RemoveSignatures(f1, f2, conf)
 }

@@ -39,10 +39,6 @@ func appendTo(rs io.ReadSeeker, fName string, ctxDest *model.Context, dividerPag
 		return pdfcpu.ErrUnsupportedVersion
 	}
 
-	if err := ctxSource.RemoveSignatures(); err != nil {
-		return err
-	}
-
 	// Merge source context into dest context.
 	return pdfcpu.MergeXRefTables(fName, ctxSource, ctxDest, false, dividerPage)
 }
@@ -115,9 +111,9 @@ func prepDestContext(destFile string, rs io.ReadSeeker, conf *model.Configuratio
 		ctxDest.EnsureVersionForWriting()
 	}
 
-	if err := ctxDest.RemoveSignatures(); err != nil {
-		return nil, err
-	}
+	// if err := ctxDest.RemoveSignatures(); err != nil {
+	// 	return nil, err
+	// }
 
 	return ctxDest, nil
 }

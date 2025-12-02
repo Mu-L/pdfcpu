@@ -27,6 +27,7 @@ import (
 )
 
 // Optimize reads a PDF stream from rs and writes the optimized PDF stream to w.
+// noEncryption ensures w writes without encryption.
 func Optimize(rs io.ReadSeeker, w io.Writer, conf *model.Configuration) error {
 	if rs == nil {
 		return errors.New("pdfcpu: Optimize: missing rs")
@@ -63,6 +64,7 @@ func Optimize(rs io.ReadSeeker, w io.Writer, conf *model.Configuration) error {
 // OptimizeFile reads inFile and writes the optimized PDF to outFile.
 // If outFile is not provided then inFile gets overwritten
 // which leads to the same result as when inFile equals outFile.
+// noEncryption ensures outFile is not encrypted.
 func OptimizeFile(inFile, outFile string, conf *model.Configuration) (err error) {
 	var f1, f2 *os.File
 

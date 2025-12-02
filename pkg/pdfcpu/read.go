@@ -387,6 +387,7 @@ func parseXRefTableSubSection(xRefTable *model.XRefTable, s *bufio.Scanner, fiel
 				if log.ReadEnabled() {
 					log.Read.Printf("parseXRefTableEntry: end - Skip entry %d - already assigned\n", objNr)
 				}
+				// Add incr!
 				continue
 			}
 
@@ -2370,7 +2371,7 @@ func readStreamContent(rd io.Reader, streamLength int) ([]byte, error) {
 		log.Read.Printf("readStreamContent: begin streamLength:%d\n", streamLength)
 	}
 
-	if streamLength == 0 {
+	if streamLength <= 0 { // TODO logcli...
 		// Read until "endstream" then fix "Length".
 		return readStreamContentBlindly(rd)
 	}
@@ -2409,7 +2410,7 @@ func ensureStreamLength(sd *types.StreamDict, fixLength bool) {
 	l := int64(len(sd.Raw))
 	if fixLength || sd.StreamLength == nil || l != *sd.StreamLength {
 		sd.StreamLength = &l
-		sd.Dict["Length"] = types.Integer(l)
+		sd.Dict["Length"] = types.Integer(l) // TODO panic here still a problem because sd.Dict == nil
 	}
 }
 
@@ -3171,16 +3172,17 @@ func checkForEncryption(c context.Context, ctx *model.Context) error {
 	}
 
 	// This file is encrypted.
+
 	if log.ReadEnabled() {
 		log.Read.Printf("Encryption: %v\n", indRef)
 	}
 
-	if ctx.Cmd == model.ENCRYPT {
-		// We want to encrypt this file.
-		return errors.New("pdfcpu: this file is already encrypted")
-	}
-
-	if ctx.Cmd == model.VALIDATESIGNATURES || ctx.Cmd == model.ADDSIGNATURE {
+	if ctx.Cmd == model.BOOKLET ||
+		ctx.Cmd == model.ENCRYPT ||
+		ctx.Cmd == model.MERGEAPPEND ||
+		ctx.Cmd == model.MERGECREATE ||
+		ctx.Cmd == model.MERGECREATEZIP ||
+		ctx.Cmd == model.ADDSIGNATURE {
 		return errors.New("pdfcpu: this file is encrypted")
 	}
 

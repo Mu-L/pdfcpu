@@ -173,6 +173,12 @@ func prepareContextForWriting(ctx *model.Context) error {
 		return err
 	}
 
+	if len(ctx.Signatures) > 0 {
+		if log.CLIEnabled() {
+			log.CLI.Println("*** This operation invalidates all signatures ***")
+		}
+	}
+
 	return handleEncryption(ctx)
 }
 
@@ -267,11 +273,6 @@ func writePages(ctx *model.Context, rootDict types.Dict) error {
 }
 
 func writeRootAttrsBatch1(ctx *model.Context, d types.Dict, dictName string) error {
-
-	if err := writeAcroFormRootEntry(ctx, d, dictName); err != nil {
-		return err
-	}
-
 	for _, e := range []struct {
 		entryName string
 		statsAttr int
@@ -288,7 +289,7 @@ func writeRootAttrsBatch1(ctx *model.Context, d types.Dict, dictName string) err
 		{"OpenAction", model.RootOpenAction},
 		{"AA", model.RootAA},
 		{"URI", model.RootURI},
-		//{"AcroForm", model.RootAcroForm},
+		{"AcroForm", model.RootAcroForm},
 		{"Metadata", model.RootMetadata},
 	} {
 		if err := writeRootEntry(ctx, d, dictName, e.entryName, e.statsAttr); err != nil {
@@ -1019,37 +1020,47 @@ func updateEncryption(ctx *model.Context) error {
 
 func handleEncryption(ctx *model.Context) error {
 
-	if ctx.Cmd == model.ENCRYPT || ctx.Cmd == model.DECRYPT {
+	switch ctx.Cmd {
 
-		if ctx.Cmd == model.DECRYPT {
+	case model.ENCRYPT:
+		if err := setupEncryption(ctx); err != nil {
+			return err
+		}
 
-			// Remove encryption.
-			ctx.EncKey = nil
-
-		} else {
-
-			if err := setupEncryption(ctx); err != nil {
-				return err
-			}
-
+		if log.CLIEnabled() {
 			alg := "RC4"
 			if ctx.EncryptUsingAES {
 				alg = "AES"
 			}
-			if log.CLIEnabled() {
-				log.CLI.Printf("using %s-%d\n", alg, ctx.EncryptKeyLength)
-			}
+			log.CLI.Printf("using %s-%d\n", alg, ctx.EncryptKeyLength)
 		}
 
-	} else if ctx.UserPWNew != nil || ctx.OwnerPWNew != nil || ctx.Cmd == model.SETPERMISSIONS {
+	case model.DECRYPT:
+		ctx.EncKey = nil
 
+	case model.SETPERMISSIONS:
 		if err := updateEncryption(ctx); err != nil {
 			return err
 		}
 
+	default:
+		if ctx.RemoveEncryption && ctx.Cmd.AllowRemoveEncryption() {
+			if log.CLIEnabled() {
+				if ctx.EncKey != nil {
+					log.CLI.Println("removing encryption...")
+				} else {
+					log.CLI.Println("no encryption to remove...")
+				}
+			}
+			ctx.EncKey = nil
+		} else if ctx.UserPWNew != nil || ctx.OwnerPWNew != nil {
+			if err := updateEncryption(ctx); err != nil {
+				return err
+			}
+		}
 	}
 
-	// write xrefstream if using xrefstream only.
+	// Write xref stream only if using xref streams.
 	if ctx.Encrypt != nil && ctx.EncKey != nil && !ctx.Read.UsingXRefStreams {
 		ctx.WriteObjectStream = false
 		ctx.WriteXRefStream = false

@@ -27,6 +27,8 @@ import (
 type Command struct {
 	Mode              model.CommandMode
 	InFile            *string
+	InFileCert        *string
+	InFilePrivateKey  *string
 	InFileJSON        *string
 	InFiles           []string
 	InDir             *string
@@ -40,6 +42,7 @@ type Command struct {
 	IntVal            int
 	BoolVal1          bool
 	BoolVal2          bool
+	BoolVal3          bool
 	IntVals           []int
 	StringVals        []string
 	StringMap         map[string]string
@@ -144,6 +147,8 @@ var cmdMap = map[model.CommandMode]func(cmd *Command) ([]string, error){
 	model.INSPECTCERTIFICATES:     processCertificates,
 	model.IMPORTCERTIFICATES:      processCertificates,
 	model.VALIDATESIGNATURES:      processSignatures,
+	model.REMOVESIGNATURES:        processSignatures,
+	model.ADDSIGNATURE:            processSignatures,
 }
 
 // ValidateCommand creates a new command to validate a file.
@@ -1287,8 +1292,8 @@ func ImportCertificatesCommand(inFiles []string, conf *model.Configuration) *Com
 		Conf:    conf}
 }
 
-// ValidateSignaturesCommand creates a new command to validate encountered digital signatures.
-func ValidateSignaturesCommand(inFile string, all, full bool, conf *model.Configuration) *Command {
+// ValidateSignaturesCommand creates a new command to validate encountered digital signatures in inFile.
+func ValidateSignaturesCommand(inFile string, all, full, trust bool, conf *model.Configuration) *Command {
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
 	}
@@ -1298,5 +1303,20 @@ func ValidateSignaturesCommand(inFile string, all, full bool, conf *model.Config
 		InFile:   &inFile,
 		BoolVal1: all,
 		BoolVal2: full,
+		BoolVal3: trust,
 		Conf:     conf}
+}
+
+// RemoveSignaturesCommand creates a new command to remove all digital signatures from inFile.
+// Writes to outFile if supplied else overwrites inFile.
+func RemoveSignaturesCommand(inFile, outFile string, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.REMOVESIGNATURES
+	return &Command{
+		Mode:    model.REMOVESIGNATURES,
+		InFile:  &inFile,
+		OutFile: &outFile,
+		Conf:    conf}
 }

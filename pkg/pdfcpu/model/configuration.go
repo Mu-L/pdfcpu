@@ -18,7 +18,6 @@ package model
 
 import (
 	"embed"
-	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -155,12 +154,21 @@ const (
 	SETVIEWERPREFERENCES
 	RESETVIEWERPREFERENCES
 	ZOOM
-	ADDSIGNATURE
 	LISTCERTIFICATES
 	INSPECTCERTIFICATES
 	IMPORTCERTIFICATES
 	VALIDATESIGNATURES
+	REMOVESIGNATURES
+	ADDSIGNATURE
 )
+
+func (cmd CommandMode) AllowRemoveEncryption() bool {
+	return cmd == OPTIMIZE || cmd == REMOVESIGNATURES
+}
+
+func (cmd CommandMode) AllowRemoveSignatures() bool {
+	return cmd == MERGEAPPEND || cmd == MERGECREATE || cmd == MERGECREATEZIP || cmd == OPTIMIZE
+}
 
 // Configuration of a Context.
 type Configuration struct {
@@ -171,13 +179,13 @@ type Configuration struct {
 
 	Version string
 
-	// Check filename extensions.
+	// Ensure .pdf input file extension.
 	CheckFileNameExt bool
 
-	// Enables PDF V1.5 compatible processing of object streams, xref streams, hybrid PDF files.
+	// Enable PDF V1.5 compatible processing of object streams, xref streams, hybrid PDF files.
 	Reader15 bool
 
-	// Enables decoding of all streams (fontfiles, images..) for logging purposes.
+	// Enable decoding of all streams (fontfiles, images..) for logging purposes.
 	DecodeAllStreams bool
 
 	// Validate against ISO-32000: strict or relaxed.
@@ -192,20 +200,16 @@ type Configuration struct {
 	// End of line char sequence for writing.
 	Eol string
 
-	// Turns on object stream generation.
+	// Turn on object stream generation.
 	// A signal for compressing any new non-stream-object into an object stream.
 	// true enforces WriteXRefStream to true.
 	// false does not prevent xRefStream generation.
 	WriteObjectStream bool
 
-	// Switches between xRefSection (<=V1.4) and objectStream/xRefStream (>=V1.5) writing.
+	// Switch between xRefSection (<=V1.4) and objectStream/xRefStream (>=V1.5) writing.
 	WriteXRefStream bool
 
-	// Turns on stats collection.
-	// TODO Decision - unused.
-	CollectStats bool
-
-	// A CSV-filename holding the statistics.
+	// CSV filename holding input file statistics.
 	StatsFileName string
 
 	// Supplied user password.
@@ -215,6 +219,9 @@ type Configuration struct {
 	// Supplied owner password.
 	OwnerPW    string
 	OwnerPWNew *string
+
+	// Supplied private key password.
+	PrivateKeyPW string
 
 	// EncryptUsingAES ensures AES encryption.
 	// true: AES encryption
@@ -276,6 +283,12 @@ type Configuration struct {
 	// Limit form field content for display purposes when using pdfcpu form list.
 	// If > 0 affects the columns AltName, Default and Value.
 	FormFieldListMaxColWidth int
+
+	// Do not encrypt output files.
+	RemoveEncryption bool
+
+	// Remove existing signatures.
+	RemoveSignatures bool
 }
 
 // ConfigPath defines the location of pdfcpu's configuration directory.
@@ -350,7 +363,6 @@ func ensureFontDirInitialized() error {
 	if err != nil {
 		return err
 	}
-
 	if onlyHidden(files) {
 		// Ensure Roboto font for form filling.
 		fontname := "Roboto-Regular"
@@ -371,7 +383,7 @@ func initCertificates() error {
 	// Additional certificates may be loaded using the corresponding CLI command: pdfcpu certificates import
 	// Certificates are loaded into memory lazily.
 
-	files, err := os.ReadDir(CertDir)
+	files, err := os.ReadDir(TrustedCertDir)
 	if err != nil {
 		return err
 	}
@@ -384,7 +396,7 @@ func initCertificates() error {
 		return err
 	}
 
-	euDir := filepath.Join(CertDir, "eu")
+	euDir := filepath.Join(TrustedCertDir, "eu")
 	if err := os.MkdirAll(euDir, os.ModePerm); err != nil {
 		return err
 	}
@@ -439,8 +451,8 @@ func EnsureDefaultConfigAt(path string, override bool) error {
 
 	// Initialize pdfcpu config/cert dir, then extract and install certificates.
 	// Certificates are loaded into memory lazily.
-	CertDir = filepath.Join(configDir, "certs")
-	if err := os.MkdirAll(CertDir, os.ModePerm); err != nil {
+	TrustedCertDir = filepath.Join(configDir, "certs")
+	if err := os.MkdirAll(TrustedCertDir, os.ModePerm); err != nil {
 		return err
 	}
 	if err := initCertificates(); err != nil {

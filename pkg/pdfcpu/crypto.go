@@ -33,6 +33,7 @@ import (
 	"io"
 	"math/big"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pdfcpu/pdfcpu/pkg/log"
@@ -1788,7 +1789,7 @@ func fileID(ctx *model.Context) (types.HexLiteral, error) {
 
 	m := h.Sum(nil)
 
-	return types.HexLiteral(hex.EncodeToString(m)), nil
+	return types.HexLiteral(strings.ToUpper(hex.EncodeToString(m))), nil
 }
 
 func calcFileEncKey(ctx *model.Context) error {
