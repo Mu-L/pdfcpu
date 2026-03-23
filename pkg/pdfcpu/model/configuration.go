@@ -26,6 +26,7 @@ import (
 
 	"github.com/pdfcpu/pdfcpu/pkg/font"
 	"github.com/pdfcpu/pdfcpu/pkg/log"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/fault"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
@@ -522,7 +523,7 @@ func NewDefaultConfiguration() *Configuration {
 			c := *loadedDefaultConfig
 			return &c
 		}
-		panic(fmt.Sprintf("pdfcpu: config problem: %v", err))
+		fault.Fail("config problem: %w", err)
 	}
 	// Bypass config.yml
 	return newDefaultConfiguration()

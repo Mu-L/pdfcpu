@@ -41,6 +41,7 @@ import (
 
 	"github.com/pdfcpu/pdfcpu/pkg/log"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/fault"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/validate"
 	"github.com/pkg/errors"
@@ -67,7 +68,8 @@ func logDisclaimerPDF20() {
 }
 
 // ReadContext uses an io.ReadSeeker to build an internal structure holding its cross reference table aka the Context.
-func ReadContext(rs io.ReadSeeker, conf *model.Configuration) (*model.Context, error) {
+func ReadContext(rs io.ReadSeeker, conf *model.Configuration) (ctx *model.Context, err error) {
+	defer fault.Catch(&err)
 	if rs == nil {
 		return nil, errors.New("pdfcpu: ReadContext: missing rs")
 	}
@@ -167,6 +169,8 @@ func WriteContextFile(ctx *model.Context, outFile string) error {
 
 // ReadAndValidate returns a model.Context of rs ready for processing.
 func ReadAndValidate(rs io.ReadSeeker, conf *model.Configuration) (ctx *model.Context, err error) {
+	defer fault.Catch(&err)
+
 	if ctx, err = ReadContext(rs, conf); err != nil {
 		return nil, err
 	}

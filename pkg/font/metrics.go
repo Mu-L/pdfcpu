@@ -28,6 +28,7 @@ import (
 	"sync"
 
 	"github.com/pdfcpu/pdfcpu/internal/corefont/metrics"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/fault"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 
 	"github.com/pkg/errors"
@@ -309,7 +310,7 @@ func CharWidth(fontName string, r rune) int {
 	defer UserFontMetricsLock.RUnlock()
 	ttf, ok := UserFontMetrics[fontName]
 	if !ok {
-		panic(fmt.Sprintf("pdfcpu: user font not loaded: %s", fontName))
+		fault.Fail("user font not loaded: %s", fontName)
 	}
 
 	pos, ok := ttf.Chars[uint32(r)]

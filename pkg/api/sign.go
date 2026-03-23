@@ -22,6 +22,7 @@ import (
 	"os"
 
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/fault"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 	"github.com/pkg/errors"
 )
@@ -136,7 +137,8 @@ func digest(signValidResults []*model.SignatureValidationResult, full bool) []st
 }
 
 // ValidateSignatures validates signatures of inFile and returns the signature validation results.
-func ValidateSignatures(inFile string, all bool, conf *model.Configuration) ([]*model.SignatureValidationResult, error) {
+func ValidateSignatures(inFile string, all bool, conf *model.Configuration) (svr []*model.SignatureValidationResult, err error) {
+	defer fault.Catch(&err)
 
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
@@ -181,7 +183,9 @@ func ValidateSignaturesFile(inFile string, all, full bool, conf *model.Configura
 }
 
 // RemoveSignature removes all digital signatures from rs and writes to w.
-func RemoveSignatures(rs io.ReadSeeker, w io.Writer, conf *model.Configuration) error {
+func RemoveSignatures(rs io.ReadSeeker, w io.Writer, conf *model.Configuration) (err error) {
+	defer fault.Catch(&err)
+
 	if rs == nil {
 		return errors.New("pdfcpu: RemoveSignatures: missing rs")
 	}

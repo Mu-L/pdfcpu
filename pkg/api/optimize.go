@@ -22,13 +22,16 @@ import (
 
 	"github.com/pdfcpu/pdfcpu/pkg/log"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/fault"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 	"github.com/pkg/errors"
 )
 
 // Optimize reads a PDF stream from rs and writes the optimized PDF stream to w.
 // noEncryption ensures w writes without encryption.
-func Optimize(rs io.ReadSeeker, w io.Writer, conf *model.Configuration) error {
+func Optimize(rs io.ReadSeeker, w io.Writer, conf *model.Configuration) (err error) {
+	defer fault.Catch(&err)
+
 	if rs == nil {
 		return errors.New("pdfcpu: Optimize: missing rs")
 	}
