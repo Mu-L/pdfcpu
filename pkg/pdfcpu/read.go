@@ -413,7 +413,7 @@ func compressedObject(c context.Context, s string) (types.Object, error) {
 		log.Read.Println("compressedObject: begin")
 	}
 
-	o, err := model.ParseObjectContext(c, &s)
+	o, err := model.ParseObjectContext(c, &s, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -773,7 +773,7 @@ func parseXRefStream(c context.Context, ctx *model.Context, rd io.Reader, offset
 		log.Read.Printf("parseXRefStream: dereferencing object %d\n", *objNr)
 	}
 
-	o, err := model.ParseObjectContext(c, &l)
+	o, err := model.ParseObjectContext(c, &l, 0)
 	if err != nil {
 		return nil, errors.Wrapf(err, "parseXRefStream: no object")
 	}
@@ -1165,7 +1165,7 @@ func processTrailer(c context.Context, ctx *model.Context, s *bufio.Scanner, lin
 		log.Read.Printf("processTrailer: trailerString: (len:%d) <%s>\n", len(trailerString), trailerString)
 	}
 
-	o, err := model.ParseObjectContext(c, &trailerString)
+	o, err := model.ParseObjectContext(c, &trailerString, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -2162,14 +2162,9 @@ func object(c context.Context, ctx *model.Context, offset int64, objNr, genNr in
 		return nil, endInd, streamInd, streamOffset, err
 	}
 
-	o, err = model.ParseObjectContext(c, &l)
+	o, err = model.ParseObjectContext(c, &l, 0)
 
 	return o, endInd, streamInd, streamOffset, err
-}
-
-// ParseObject parses an object from file at given offset.
-func ParseObject(ctx *model.Context, offset int64, objNr, genNr int) (types.Object, error) {
-	return ParseObjectWithContext(context.Background(), ctx, offset, objNr, genNr)
 }
 
 func resolveObject(c context.Context, ctx *model.Context, obj types.Object, offset int64, objNr, genNr, endInd, streamInd int, streamOffset int64) (types.Object, error) {
@@ -2805,7 +2800,7 @@ func dereferenceAndLoad(c context.Context, ctx *model.Context, objNr int, entry 
 			o, err = ParseObjectWithContext(c, ctx, *entry.Offset+ctx.Read.RepairOffset, objNr, *entry.Generation)
 		}
 		if err != nil {
-			model.ShowSkipped(fmt.Sprintf("missing obj #%d", objNr))
+			model.ShowSkipped(fmt.Sprintf("obj #%d reason: %v", objNr, err))
 		}
 		if err == model.ErrCorruptObjectOffset {
 			return err

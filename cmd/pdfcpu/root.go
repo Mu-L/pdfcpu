@@ -77,6 +77,8 @@ func initConfig() {
 
 	log.SetDefaultCLILogger()
 
+	//log.SetDefaultParseLogger()
+
 	if verbose > 0 {
 		log.SetDefaultDebugLogger()
 		log.SetDefaultInfoLogger()
