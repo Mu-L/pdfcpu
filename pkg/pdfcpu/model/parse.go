@@ -29,7 +29,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
-const MAX_RECURSE_LEVEL = 10
+const MAX_RECURSE_LEVEL = 50
 
 var (
 	errArrayCorrupt            = errors.New("pdfcpu: parse: corrupt array")
@@ -326,6 +326,9 @@ func ParseObjectAttributes(line *string) (*int, *int, error) {
 }
 
 func parseArray(c context.Context, line *string, level int) (*types.Array, error) {
+	if level == MAX_RECURSE_LEVEL {
+		return nil, errMaxRecurseOverflow
+	}
 	if log.ParseEnabled() {
 		log.Parse.Println("ParseObject: value = Array")
 	}
@@ -441,9 +444,6 @@ func parseStringLiteral(line *string) (types.Object, error) {
 	// remove enclosing '(', ')'
 	balParStr := l[1:i]
 
-	// Parse string literal, see 7.3.4.2
-	//str := stringLiteral(balParStr)
-
 	// position behind ')'
 	*line = forwardParseBuf(l[i:], 1)
 
@@ -483,7 +483,6 @@ func parseHexLiteral(line *string) (types.Object, error) {
 		// Skip junk
 		*line = forwardParseBuf(l[eov:], 1)
 		return nil, nil
-		//return nil, errHexLiteralCorrupt
 	}
 
 	// position behind '>'
@@ -611,9 +610,6 @@ func processDictKeys(c context.Context, line *string, level int, relaxed bool) (
 			// #252: For dicts with kv pairs terminated by eol we accept a missing value as an empty string.
 			val = types.StringLiteral("")
 		} else {
-			// if val, err = ParseObject(&l); err != nil {
-			// 	return nil, err
-			// }
 			if val, err = ParseObjectContext(c, &l, level+1); err != nil {
 				return nil, err
 			}
@@ -882,6 +878,9 @@ func parseHexLiteralOrDict(c context.Context, l *string, level int) (val types.O
 			return nil, errMaxRecurseOverflow
 		}
 		if d, err = parseDict(c, l, level, false); err != nil {
+			if err == errMaxRecurseOverflow {
+				return nil, err
+			}
 			if d, err = parseDict(c, l, level, true); err != nil {
 				return nil, err
 			}
@@ -972,9 +971,6 @@ func ParseObjectContext(c context.Context, line *string, level int) (types.Objec
 	switch l[0] {
 
 	case '[': // array
-		if level == MAX_RECURSE_LEVEL {
-			return nil, errMaxRecurseOverflow
-		}
 		a, err := parseArray(c, &l, level)
 		if err != nil {
 			return nil, err

@@ -114,10 +114,6 @@ func prepDestContext(destFile string, rs io.ReadSeeker, conf *model.Configuratio
 		ctxDest.EnsureVersionForWriting()
 	}
 
-	// if err := ctxDest.RemoveSignatures(); err != nil {
-	// 	return nil, err
-	// }
-
 	return ctxDest, nil
 }
 

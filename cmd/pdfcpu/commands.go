@@ -84,9 +84,8 @@ type infoOptions struct {
 }
 
 type signaturesValidateOptions struct {
-	all   bool
-	full  bool
-	trust bool
+	all  bool
+	full bool
 }
 
 type viewerpreferencesListOptions struct {
@@ -1251,7 +1250,7 @@ func signaturesRemoveCmd() *cobra.Command {
 }
 
 func signaturesValidateCmd() *cobra.Command {
-	opts := &signaturesValidateOptions{all: false, full: false, trust: false}
+	opts := &signaturesValidateOptions{all: false, full: false}
 	cmd := &cobra.Command{
 		Use:   "validate inFile",
 		Short: "Validate signatures",
@@ -1266,7 +1265,6 @@ func signaturesValidateCmd() *cobra.Command {
 	}
 	cmd.Flags().BoolVarP(&opts.all, "all", "a", opts.all, "validate all signatures")
 	cmd.Flags().BoolVarP(&opts.full, "full", "f", opts.full, "comprehensive output")
-	cmd.Flags().BoolVarP(&opts.trust, "trust", "t", opts.trust, "trust all certificates")
 	return cmd
 }
 

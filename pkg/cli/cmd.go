@@ -1293,7 +1293,7 @@ func ImportCertificatesCommand(inFiles []string, conf *model.Configuration) *Com
 }
 
 // ValidateSignaturesCommand creates a new command to validate encountered digital signatures in inFile.
-func ValidateSignaturesCommand(inFile string, all, full, trust bool, conf *model.Configuration) *Command {
+func ValidateSignaturesCommand(inFile string, all, full bool, conf *model.Configuration) *Command {
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
 	}
@@ -1303,7 +1303,6 @@ func ValidateSignaturesCommand(inFile string, all, full, trust bool, conf *model
 		InFile:   &inFile,
 		BoolVal1: all,
 		BoolVal2: full,
-		BoolVal3: trust,
 		Conf:     conf}
 }
 

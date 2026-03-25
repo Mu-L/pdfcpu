@@ -2552,7 +2552,7 @@ func processValidateSignaturesCommand(conf *model.Configuration, args []string, 
 		ensurePDFExtension(inFile)
 	}
 
-	process(cli.ValidateSignaturesCommand(inFile, opts.all, opts.full, opts.trust, conf))
+	process(cli.ValidateSignaturesCommand(inFile, opts.all, opts.full, conf))
 }
 
 func processRemoveSignaturesCommand(conf *model.Configuration, args []string) {

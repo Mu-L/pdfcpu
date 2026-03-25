@@ -3130,7 +3130,7 @@ func setupEncryptionKey(ctx *model.Context, d types.Dict) (err error) {
 	// If the owner password does not match we generally move on if the user password is correct
 	// unless we need to insist on a correct owner password due to the specific command in progress.
 	if !ok && needsOwnerAndUserPassword(ctx.Cmd) {
-		return errors.New("pdfcpu: please provide the owner password with -opw")
+		return errors.New("pdfcpu: please provide the owner password with --opw")
 	}
 
 	// Generally the owner password, which is also regarded as the master password or set permissions password

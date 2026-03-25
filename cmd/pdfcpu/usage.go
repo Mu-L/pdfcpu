@@ -179,12 +179,13 @@ content ... extract raw page content
     inFile ... input PDF file
     
    perm modes:
-      
            none: 000000000000 (x000)
           print: 100000000100 (x804)
             all: 111100111100 (xF3C)
-        max4Hex: x + max. 3 hex digits
-      max12Bits: max. 12 binary digits
+
+   or perm explicitly:
+         'x' + max. 3 hex digits (max3Hex, eg. xF30)
+         max. 12 binary digits (max12Bits, eg. 111100110000) 
 
    using the permission bits:
 
@@ -234,60 +235,62 @@ PDF 2.0 files have to be encrypted using aes/256.`
 
    1) text based:
       --mode text string			
-         eg. pdfcpu stamp add --mode text -- "Hello gopher!" "" in.pdf out.pdf
+         eg. pdfcpu stamp add "Hello gopher!" "" in.pdf out.pdf --mode text
          Use the following format strings:
                %p{off} ... current page number, page number offset off defaults to 0
                %P      ... total pages
-         eg. pdfcpu stamp add --mode text -- "Page %p of %P" "scale:1.0 abs, pos:bc, rot:0" in.pdf out.pdf
+         eg. pdfcpu stamp add --mode text -- 'Page %p of %P' 'scale:1.0 abs, pos:bc, rot:0' in.pdf out.pdf
+                                             'Page %p3 of %P' will base page number on offset=3
    
    2) image based
       --mode image imageFileName
          supported extensions: .jpg, .jpeg, .png, .tif, .tiff, .webp
-         eg. pdfcpu stamp add --mode image -- "logo.png" "" in.pdf out.pdf
+         eg. pdfcpu stamp add 'logo.png' '' in.pdf out.pdf --mode image
          
    3) PDF based
       --mode pdf PDFFileName:page#
          Stamp selected pages of infile with one specific page of a stamp PDF file.
-         Eg: pdfcpu stamp add --mode pdf -- "stamp.pdf:3" "" in.pdf out.pdf ... stamp each page of in.pdf with page 3 of stamp.pdf
+         Eg: pdfcpu stamp add 'stamp.pdf:3' '' in.pdf out.pdf --mode pdf ... stamp each page of in.pdf with page 3 of stamp.pdf
            
       --mode pdf PDFFileName
          Multistamp your file, meaning apply all pages of a stamp PDF file one by one to ascending pages of inFile.
-         Eg: pdfcpu stamp add --mode pdf -- "stamp.pdf" "" in.pdf out.pdf ... multistamp all pages of in.pdf with ascending pages of stamp.pdf
+         Eg: pdfcpu stamp add 'stamp.pdf' '' in.pdf out.pdf --mode pdf ... multistamp all pages of in.pdf with ascending pages of stamp.pdf
    
       --mode pdf PDFFileName:startPage#Src:startPage#Dest
          Customize your multistamp by starting with startPage#Src of a stamp PDF file.
          Apply repeatedly pages of the stamp file to inFile starting at startPage#Dest.
-         Eg: pdfcpu stamp add --mode pdf -- "stamp.pdf:2:3" "" in.pdf out.pdf ... multistamp starting with page 2 of stamp.pdf onto page 3 of in.pdf
+         Eg: pdfcpu stamp add 'stamp.pdf:2:3' '' in.pdf out.pdf --mode pdf ... multistamp starting with page 2 of stamp.pdf onto page 3 of in.pdf
    `
 
 	usageWatermarkMode = `There are 3 different kinds of watermarks:
 
    1) text based:
       --mode text string			
-         eg. pdfcpu watermark add -mode text -- "Hello gopher!" "" in.pdf out.pdf
+         eg. pdfcpu watermark add 'Hello gopher!' '' in.pdf out.pdf --mode text
          Use the following format strings:
                %p{off} ... current page number, page number offset off defaults to 0
                %P      ... total pages
-         eg. pdfcpu watermark add -mode text -- "Page %p of %P" "scale:1.0 abs, pos:bc, rot:0" in.pdf out.pdf
+         eg. pdfcpu watermark add -mode text -- 'Page %p of %P' 'scale:1.0 abs, pos:bc, rot:0' in.pdf out.pdf
+                                                'Page %p3 of %P' will base page number on offset=3
    
    2) image based
       --mode image imageFileName
          supported extensions: .jpg, .jpeg, .png, .tif, .tiff, .webp 
-         eg. pdfcpu watermark add --mode image -- "logo.png" "" in.pdf out.pdf
+         eg. pdfcpu watermark add 'logo.png' '' in.pdf out.pdf --mode image
          
    3) PDF based
       --mode pdf PDFFileName:page#
          Watermark selected pages of infile with one specific page of a watermark PDF file.
-         Eg: pdfcpu watermark add --mode pdf -- "watermark.pdf:3" "" in.pdf out.pdf ... watermark each page of in.pdf with page 3 of watermark.pdf
+         Eg: pdfcpu watermark add 'watermark.pdf:3' '' in.pdf out.pdf --mode pdf  ... watermark each page of in.pdf with page 3 of watermark.pdf
         
       --mode pdf PDFFileName
          Multiwatermark your file, meaning apply all pages of a watermark PDF file one by one to ascending pages of inFile.
-         Eg: pdfcpu watermark add --mode pdf -- "watermark.pdf" "" in.pdf out.pdf ... multiwatermark all pages of in.pdf with ascending pages of watermark.pdf
+         Eg: pdfcpu watermark add 'watermark.pdf' '' in.pdf out.pdf --mode pdf  ... multiwatermark all pages of in.pdf with ascending pages of watermark.pdf
 
       --mode pdf PDFFileName:startPage#Src:startPage#Dest
          Customize your multiwatermark by starting with startPage#Src of a watermark PDF file.
          Apply repeatedly pages of the watermark file to inFile starting at startPage#Dest.
-         Eg: pdfcpu watermark add --mode pdf -- "watermark.pdf:2:3" "" in.pdf out.pdf ... multiwatermark starting with page 2 of watermark.pdf onto page 3 of in.pdf
+         Eg: pdfcpu watermark add 'watermark.pdf:2:3' '' in.pdf out.pdf --mode pdf ... multiwatermark starting with page 2 of watermark.pdf onto page 3 of in.pdf
 
    A watermark is the first content that gets rendered for a page.
    The visibility of the watermark depends on the transparency of all layers rendered on top.
@@ -480,14 +483,14 @@ description ... dimensions, formsize
    Examples:      pdfcpu pages insert in.pdf
                   Insert one blank page before each page using the form size imposed internally by the current media box.
                   
-                  pdfcpu pages insert --pages 3 "f:A5L" in.pdf
+                  pdfcpu pages insert 'f:A5L' in.pdf --pages 3
                   Insert one blank A5 page in landscape mode before page 3.
 
-                  pdfcpu pages insert "dim: 10 5" -u cm in.pdf
+                  pdfcpu pages insert in.pdf 'dim: 10 5' --unit cm
                   Insert one blank 10 x 5 cm separator page for all pages.
 
-                  pdfcpu pages remove -p odd in.pdf out.pdf
-                  pdfcpu pages remove --pages=odd in.pdf out.pdf
+                  pdfcpu pages remove in.pdf out.pdf -p odd
+                  pdfcpu pages remove in.pdf out.pdf --pages odd
                   Remove all odd pages.
 `
 
@@ -556,7 +559,7 @@ Examples: pdfcpu nup out.pdf 4 in.pdf
            Rearrange pages of in.pdf into 2x2 grids and write result to out.pdf using the default orientation
            and default paper size A4. in.pdf's page size will be preserved.
                                  
-          pdfcpu nup --pages=3- -- out.pdf 6 in.pdf
+          pdfcpu nup out.pdf 6 in.pdf --pages=3-
            Rearrange selected pages of in.pdf (all pages starting with page 3) into 3x2 grids and
            write result to out.pdf using the default orientation and default paper size A4.
            in.pdf's page size will be preserved.
@@ -564,7 +567,7 @@ Examples: pdfcpu nup out.pdf 4 in.pdf
           pdfcpu nup out.pdf 9 logo.jpg
            Arrange instances of logo.jpg into a 3x3 grid and write result to out.pdf using the A4 default form size.
           
-          pdfcpu nup -- "form:Tabloid" out.pdf 4 *.jpg 
+          pdfcpu nup 'form:Tabloid' out.pdf 4 *.jpg 
            Rearrange all jpg files into 2x2 grids and write result to out.pdf using the Tabloid form size
            and the default orientation.
 
@@ -656,29 +659,29 @@ All configuration string parameters support completion.
 
 Examples:
 
-   pdfcpu booklet -- "formsize:Letter" out.pdf 2 in.pdf
+   pdfcpu booklet 'formsize:Letter' out.pdf 2 in.pdf
       Arrange pages of in.pdf 2 per sheet side (4 per sheet, back and front) onto out.pdf
 
-   pdfcpu booklet -- "formsize:Ledger" out.pdf 4 in.pdf
+   pdfcpu booklet 'formsize:Ledger' out.pdf 4 in.pdf
       Arrange pages of in.pdf 4 per sheet side (8 per sheet, back and front) onto out.pdf
            
-   pdfcpu booklet -- "formsize:Ledger" out.pdf 6 in.pdf
+   pdfcpu booklet 'formsize:Ledger' out.pdf 6 in.pdf
       Arrange pages of in.pdf 6 per sheet side (12 per sheet, back and front) onto out.pdf
   
-   pdfcpu booklet -- "formsize:A3" out.pdf 8 in.pdf
+   pdfcpu booklet 'formsize:A3' out.pdf 8 in.pdf
       Arrange pages of in.pdf 8 per sheet side (16 per sheet, back and front) onto out.pdf
 
-   pdfcpu booklet -- "formsize:A3, binding:short" out.pdf 4 in.pdf
+   pdfcpu booklet 'formsize:A3, binding:short' out.pdf 4 in.pdf
       Arrange pages of in.pdf 4 per sheet side, with short-edge binding onto out.pdf
 
-   pdfcpu booklet -- "formsize:A4, multifolio:on" hardbackbook.pdf 2 in.pdf
+   pdfcpu booklet 'formsize:A4, multifolio:on' hardbackbook.pdf 2 in.pdf
       Arrange pages of in.pdf 2 per sheetside as sequence of folios covering 4*foliosize pages each.
       See also: https://www.instructables.com/How-to-bind-your-own-Hardback-Book/
 
-   pdfcpu booklet -- "formsize:A4, btype:perfectbound" out.pdf 2 in.pdf
+   pdfcpu booklet 'formsize:A4, btype:perfectbound' out.pdf 2 in.pdf
       Arrange pages of in.pdf 2 per sheet side, arranged for perfect binding, onto out.pdf
   
-   pdfcpu booklet -- "formsize:A3, btype:bookletadvanced" out.pdf 4 in.pdf
+   pdfcpu booklet 'formsize:A3, btype:bookletadvanced' out.pdf 4 in.pdf
       Arrange pages of in.pdf 4 per sheet side, arranged for advanced binding, onto out.pdf
 `
 
@@ -728,15 +731,15 @@ Examples: pdfcpu grid out.pdf 1 10 in.pdf
            Rearrange pages of in.pdf into 1x10 grids and write result to out.pdf using the default orientation.
            The output page size is the result of a 1(vert)x10(hor) page grid using in.pdf's page size.
 
-          pdfcpu grid -- "p:LegalL" out.pdf 2 2 in.pdf 
+          pdfcpu grid 'p:LegalL' out.pdf 2 2 in.pdf 
            Rearrange pages of in.pdf into 2x2 grids and write result to out.pdf using the default orientation.
            The output page size is the result of a 2(vert)x2(hor) page grid using page size Legal in landscape mode.
 
-          pdfcpu grid -- "o:rd" out.pdf 3 2 in.pdf 
+          pdfcpu grid 'o:rd' out.pdf 3 2 in.pdf 
            Rearrange pages of in.pdf into 3x2 grids and write result to out.pdf using orientation 'right down'.
            The output page size is the result of a 3(vert)x2(hor) page grid using in.pdf's page size.
 
-          pdfcpu grid -- "d:400 400" out.pdf 8 6 *.jpg
+          pdfcpu grid 'd:400 400' out.pdf 8 6 *.jpg
            Arrange imagefiles onto a 8x6 page grid and write result to out.pdf using a grid cell size of 400x400.
 
 `
@@ -901,8 +904,8 @@ box:
       outFile ... output PDF file
 
 Examples:
-   pdfcpu crop -- "[0 0 500 500]" in.pdf ... crop a 500x500 points region located in lower left corner
-   pdfcpu crop -u mm -- "20" in.pdf      ... crop relative to media box using a 20mm margin
+   pdfcpu crop '[0 0 500 500]' in.pdf ... crop a 500x500 points region located in lower left corner
+   pdfcpu crop '20' in.pdf -u mm      ... crop relative to media box using a 20mm margin
 
 ` + usageBoxDescription
 
@@ -923,10 +926,10 @@ Examples:
     t(rim): {box} | m(edia) | c(rop) | a(rt) | b(leed)
 
 Examples: 
-   pdfcpu box list in.pdf
-   pdfcpu box l -- "bleed,trim" in.pdf
-   pdfcpu box add -- "crop:[10 10 200 200], trim:5, bleed:trim" in.pdf
-   pdfcpu box rem -- "t,b" in.pdf
+   pdfcpu boxes list in.pdf
+   pdfcpu boxes list 'bleed,trim' in.pdf
+   pdfcpu boxes add 'crop:[10 10 200 200], trim:5, bleed:trim' in.pdf
+   pdfcpu boxes remove 't,b' in.pdf
      
 ` + usageBoxDescription
 
@@ -945,13 +948,13 @@ Examples:
          pdfcpu annot list in.pdf
 
       List annotation of first two pages:
-         pdfcpu annot list -pages 1-2 in.pdf
+         pdfcpu annot list in.pdf --pages 1-2
 
       Remove all page annotations and write to out.pdf:
          pdfcpu annot remove in.pdf out.pdf
       
       Remove annotations for first 10 pages:
-         pdfcpu annot remove -pages 1-10 in.pdf
+         pdfcpu annot remove in.pdf --pages 1-10
 
       Remove annotations with obj# 37, 38 (see output of pdfcpu annot list)
          pdfcpu annot remove in.pdf 37 38
@@ -960,7 +963,7 @@ Examples:
          pdfcpu annot remove in.pdf out.pdf Widget
 
       Remove all Ink and Widget annotations on page 3:
-         pdfcpu annot remove -pages 3 in.pdf Ink Widget
+         pdfcpu annot remove in.pdf Ink Widget --pages 3
 
       Remove annotations by type, id and obj# and write to out.pdf:
          pdfcpu annot remove in.pdf out.pdf Link 30 Text someId
@@ -1147,25 +1150,25 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
       
    Examples: 
 
-         pdfcpu resize "scale:2" in.pdf out.pdf
+         pdfcpu resize 'scale:2' in.pdf out.pdf
             Enlarge pages by doubling the page dimensions, keep orientation.
 
-         pdfcpu resize --pages 1-3 -- "sc:.5" in.pdf out.pdf
+         pdfcpu resize 'sc:.5' in.pdf out.pdf --pages 1-3
             Shrink first 3 pages by cutting in half the page dimensions, keep orientation.
 
-         pdfcpu resize -u cm -- "dim:40 0" in.pdf out.pdf
+         pdfcpu resize 'dim:40 0' in.pdf out.pdf -u cm
             Resize pages to width of 40 cm, keep orientation.
 
-         pdfcpu resize "form:A4" in.pdf out.pdf
+         pdfcpu resize 'form:A4' in.pdf out.pdf
             Resize pages to A4, keep orientation.
 
-         pdfcpu resize "f:A4P, bgcol:#d0d0d0" in.pdf out.pdf
+         pdfcpu resize 'f:A4P, bgcol:#d0d0d0' in.pdf out.pdf
             Resize pages to A4 and enforce orientation(here: portrait mode), apply background color.
 
-         pdfcpu resize "dim:400 200" in.pdf out.pdf
+         pdfcpu resize 'dim:400 200' in.pdf out.pdf
             Resize pages to 400 x 200 points, keep orientation.
 
-         pdfcpu resize "dim:400 200, enforce:true" in.pdf out.pdf
+         pdfcpu resize 'dim:400 200, enforce:true' in.pdf out.pdf
             Resize pages to 400 x 200 points, enforce orientation.
 `
 	usageLongPoster = `Create a poster using paper size.
@@ -1200,15 +1203,15 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
    
    Examples:
 
-         pdfcpu poster "f:A4" in.pdf outDir
+         pdfcpu poster 'f:A4' in.pdf outDir
             Page form size is A2, the printer supports A4.
             Generate a poster(A2) via a corresponding 2x2 grid of A4 pages.
          
-         pdfcpu poster "f:A4, scale:2.0" in.pdf outDir
+         pdfcpu poster 'f:A4, scale:2.0' in.pdf outDir
             Page form size is A2, the printer supports A4.
             Generate a poster(A0) via a corresponding 4x4 grid of A4 pages.
 
-         pdfcpu poster -u cm -- "dim:15 10, margin:1, bgcol:DarkGray, border:on" in.pdf outDir
+         pdfcpu poster 'dim:15 10, margin:1, bgcol:DarkGray, border:on' in.pdf outDir -u cm
             Generate a poster via a corresponding grid with cell size 15x10 cm and provide a glue area of 1 cm.
             
    See also the related commands: ndown, cut`
@@ -1251,7 +1254,7 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
             Page form size is A2, the printer supports A4.
             Quick cut page into 4 equally (A4) sized pages.
 
-         pdfcpu ndown -u cm -- "margin:1, bgcol:DarkGray, border:on" 4 in.pdf outDir
+         pdfcpu ndown 'margin:1, bgcol:DarkGray, border:on' 4 in.pdf outDir -u cm
             Page format size is A2, the printer supports A4.
             Quick cut page into 4 equally (A4) sized pages and provide a glue area of 1 cm.
             
@@ -1285,18 +1288,18 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
    
    Examples:
 
-         pdfcpu cut -- "hor:.25" inFile outDir
+         pdfcpu cut 'hor:.25' inFile outDir
             Apply a horizontal page cut at 0.25*height
             Results in 2 PDF pages.
 
-         pdfcpu cut -- "hor:.25, vert:.75" inFile outDir
+         pdfcpu cut 'hor:.25, vert:.75' inFile outDir
             Apply a horizontal page cut at 0.25*height
             Apply a vertical page cut at 0.75*width
 
-         pdfcpu cut -- "hor:.33 .66" inFile outDir
+         pdfcpu cut 'hor:.33 .66' inFile outDir
             Has the same effect as: pdfcpu ndown 3 in.pdf outDir
 
-         pdfcpu cut -- "hor:.5, ver:.5" inFile outDir
+         pdfcpu cut 'hor:.5, ver:.5' inFile outDir
             Has the same effect as: pdfcpu ndown 4 in.pdf outDir
             
    See also the related commands: poster, ndown`
@@ -1401,9 +1404,9 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
 
     Eg. list viewer preferences:
          pdfcpu viewerpref list test.pdf
-         pdfcpu viewerpref list -all test.pdf
-         pdfcpu viewerpref list -json test.pdf
-         pdfcpu viewerpref list -all -json test.pdf
+         pdfcpu viewerpref list test.pdf --all
+         pdfcpu viewerpref list test.pdf --json
+         pdfcpu viewerpref list test.pdf -aj
 
    reset viewer preferences:
          pdfcpu viewerpref reset test.pdf
@@ -1450,20 +1453,20 @@ description ... factor, hmargin, vmargin, border, bgcolor
     outFile ... output PDF file
 
 Examples:
-   pdfcpu zoom -- "factor: 2"  in.pdf out.pdf           ... zoom in to magnification of 200%
-   pdfcpu zoom -- "factor: .5" in.pdf out.pdf           ... zoom out to magnification of 50%
+   pdfcpu zoom 'factor: '   in.pdf out.pdf            ... zoom in to magnification of 200%
+   pdfcpu zoom 'factor: .5' in.pdf out.pdf            ... zoom out to magnification of 50%
    
-   pdfcpu zoom -- "hmargin: -10" in.pdf out.pdf         ... zoom in to horizontal margin of -10 points
-   pdfcpu zoom -- "hmargin:  10" in.pdf out.pdf         ... zoom out to horizontal margin of 10 points
+   pdfcpu zoom 'hmargin: -10' in.pdf out.pdf          ... zoom in to horizontal margin of -10 points
+   pdfcpu zoom 'hmargin:  10' in.pdf out.pdf          ... zoom out to horizontal margin of 10 points
 
-   pdfcpu zoom --unit cm -- "hmargin: -1" in.pdf out.pdf ... zoom in to horizontal margin of -1 cm
-   pdfcpu zoom --unit cm -- "hmargin:  1" in.pdf out.pdf ... zoom out to horizontal margin of 1 cm
+   pdfcpu zoom 'hmargin: -1' in.pdf out.pdf --unit cm ... zoom in to horizontal margin of -1 cm
+   pdfcpu zoom 'hmargin:  1' in.pdf out.pdf --unit cm ... zoom out to horizontal margin of 1 cm
    
-   pdfcpu zoom -- "vmargin: -10" in.pdf out.pdf         ... zoom in to vertical margin of -10 points
-   pdfcpu zoom -- "vmargin:  10" in.pdf out.pdf         ... zoom out to vertical margin of 10 points
+   pdfcpu zoom 'vmargin: -10' in.pdf out.pdf          ... zoom in to vertical margin of -10 points
+   pdfcpu zoom 'vmargin:  10' in.pdf out.pdf          ... zoom out to vertical margin of 10 points
 
-   pdfcpu zoom --unit cm -- "vmargin: -1" in.pdf out.pdf ... zoom in to vertical margin of -1 cm
-   pdfcpu zoom --unit cm -- "vmargin: 1, border:true, bgcolor:lightgray" in.pdf out.pdf ... zoom out to vertical margin of 1 cm
+   pdfcpu zoom 'vmargin: -1' in.pdf out.pdf --unit cm ... zoom in to vertical margin of -1 cm
+   pdfcpu zoom 'vmargin: 1, border:true, bgcolor:lightgray' in.pdf out.pdf --unit cm ... zoom out to vertical margin of 1 cm
 `
 
 	usageLongConfig = `Manage your pdfcpu configuration.`
