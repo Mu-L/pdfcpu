@@ -217,13 +217,6 @@ This project is released with a Contributor [Code of Conduct](CODE_OF_CONDUCT.md
 By participating, you agree to abide by its terms.
 
 ---
-
-## Analytics
-
-This project uses privacy-respecting analytics (via Scarf) to measure documentation usage and downloads. No personal data is collected.
-
----
-
 ## Disclaimer
 
 Use of pdfcpu assumes compliance with all applicable copyrights for any processed PDF content, including embedded resources such as fonts and images.
@@ -238,4 +231,4 @@ Apache License 2.0
 
 ---
 
-<img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=592f747a-ac99-42e3-802a-80dbf2b94519&page=README.md" />
+<img referrerpolicy="no-referrer-when-downgrade" src="https://static.scarf.sh/a.png?x-pxid=592f747a-ac99-42e3-802a-80dbf2b94519" width="1" height="1" />
