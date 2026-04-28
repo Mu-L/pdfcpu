@@ -22,13 +22,13 @@ It is compatible with all PDF versions. Support for PDF 2.0 (ISO-32000-2) is evo
 
 ### CLI
 
-👉  [CLI Installation instructions](https://pdfcpu.io/getting_started/install_cli)
+👉  [CLI Installation instructions](https://pdfcpu.io/getting_started/install_cli/?src=github-readme)
 
 
 ### Go API
 
 
-👉 [API Installation instructions](https://pdfcpu.io/getting_started/install_api)
+👉 [API Installation instructions](https://pdfcpu.io/getting_started/install_api/?src=github-readme)
 
 
 ---
