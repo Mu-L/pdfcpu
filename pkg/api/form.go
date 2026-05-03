@@ -760,10 +760,17 @@ func multiFillFormJSON(inFilePDF string, rd io.Reader, outDir, fileName string, 
 			}
 		}
 
-		outFile := filepath.Join(outDir, fmt.Sprintf("%s_%02d.pdf", fileName, i+1))
-		if log.CLIEnabled() {
-			log.CLI.Printf("writing %s\n", outFile)
+		outFile := f.FileName
+		if outFile == "" {
+			outFile = filepath.Join(outDir, fmt.Sprintf("%s_%02d.pdf", fileName, i+1))
+		} else {
+			if !strings.HasSuffix(strings.ToLower(outFile), ".pdf") {
+				outFile += ".pdf"
+			}
+			outFile = filepath.Join(outDir, fmt.Sprintf("%s", outFile))
 		}
+
+		logWritingTo(outFile)
 
 		if err := WriteContextFile(ctx, outFile); err != nil {
 			return err
@@ -832,7 +839,7 @@ func multiFillFormCSV(inFilePDF string, rd io.Reader, outDir, fileName string, m
 			return err
 		}
 
-		fieldMap, imgPageMap, err := form.FieldMap(fieldNames, formRecord)
+		fieldMap, imgPageMap, outFile, err := form.FieldMap(fieldNames, formRecord)
 		if err != nil {
 			return err
 		}
@@ -855,8 +862,14 @@ func multiFillFormCSV(inFilePDF string, rd io.Reader, outDir, fileName string, m
 			}
 		}
 
-		outFile := filepath.Join(outDir, fmt.Sprintf("%s_%02d.pdf", fileName, i+1))
+		if outFile == "" {
+			outFile = filepath.Join(outDir, fmt.Sprintf("%s_%02d.pdf", fileName, i+1))
+		} else {
+			outFile = filepath.Join(outDir, fmt.Sprintf("%s", outFile))
+		}
+
 		logWritingTo(outFile)
+
 		if err := WriteContextFile(ctx, outFile); err != nil {
 			return err
 		}
@@ -889,6 +902,8 @@ func MultiFillForm(inFilePDF string, rd io.Reader, outDir, fileName string, form
 }
 
 // MultiFillFormFile populates multiples instances of inFilePDFs form with data from inFileData and writes the result to outDir.
+// The output file will be written to outFilePDF with incrementing numerical suffix unless
+// the input json uses "filename" or the input csv contains a @filename field.
 func MultiFillFormFile(inFilePDF, inFileData, outDir, outFilePDF string, merge bool, conf *model.Configuration) (err error) {
 	format := form.JSON
 	if strings.HasSuffix(strings.ToLower(inFileData), ".csv") {
