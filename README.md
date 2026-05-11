@@ -74,11 +74,11 @@ Common operations and examples:
   <kbd><a href="https://pdfcpu.io/fonts/fonts"><img src="resources/cjkv.png" height="150"></a></kbd>&nbsp;
   <kbd><a href="https://pdfcpu.io/core/stamp"><img src="resources/4exp.png" height="150"></a></kbd>&nbsp;
   <kbd><a href="https://pdfcpu.io/form/form"><img src="resources/form.png" height="150"></a></kbd><br><br>
-  <kbd><a href="https://pdfcpu.io/generate/create"><img src="resources/table.png" height="100"></a></kbd>&nbsp;
+  <kbd><a href="https://pdfcpu.io/create/create"><img src="resources/table.png" height="100"></a></kbd>&nbsp;
   <kbd><a href="https://pdfcpu.io/core/stamp"><img src="resources/sti.png" height="150"></a></kbd>&nbsp;
   <kbd><img src="resources/hold3.png" height="150"></kbd>&nbsp;
   <kbd><a href="https://pdfcpu.io/core/watermark"><img src="resources/wmi4.png" height="150"></a></kbd>&nbsp;
-  <kbd><a href="https://pdfcpu.io/generate/create"><img src="resources/imagebox.png" height="100"></a></kbd>&nbsp;<br><br>
+  <kbd><a href="https://pdfcpu.io/create/create"><img src="resources/imagebox.png" height="100"></a></kbd>&nbsp;<br><br>
   <kbd><a href="https://pdfcpu.io/generate/booklet"><img src="resources/book2A4p1.png" height="150"></a></kbd>
   <kbd><a href="https://pdfcpu.io/core/stamp"><img src="resources/stp.png" height="150"></a></kbd>&nbsp;
   <kbd><a href="https://pdfcpu.io/generate/grid"><img src="resources/gridimg.png" height="150"></a></kbd>
@@ -98,7 +98,7 @@ Complete list of supported commands:
 | [bookmarks](https://pdfcpu.io/bookmarks/bookmarks) | [boxes](https://pdfcpu.io/boxes/boxes) | [certificates](https://pdfcpu.io/core/certs) |
 | [change owner password](https://pdfcpu.io/encrypt/change_opw) | [change user password](https://pdfcpu.io/encrypt/change_upw) | [collect](https://pdfcpu.io/core/collect) |
 | [config](https://pdfcpu.io/config/config) | [create](https://pdfcpu.io/create/create) | [crop](https://pdfcpu.io/core/crop) |
-| [cut](https://pdfcpu.io/generate/cut) | [decrypt](https://pdfcpu.io/encrypt/decryptPDF) | [encrypt](https://pdfcpu.io/encrypt/encryptPDF) |
+| [cut](https://pdfcpu.io/generate/cut) | [decrypt](https://pdfcpu.io/encrypt/decryptpdf) | [encrypt](https://pdfcpu.io/encrypt/encryptpdf) |
 | [extract](https://pdfcpu.io/extract/extract) | [fonts](https://pdfcpu.io/fonts/fonts) | [form](https://pdfcpu.io/form/form) |
 | [grid](https://pdfcpu.io/generate/grid) | [images](https://pdfcpu.io/images/images) | [import](https://pdfcpu.io/generate/import) |
 | [info](https://pdfcpu.io/info) | [keywords](https://pdfcpu.io/keywords/keywords) | [merge](https://pdfcpu.io/core/merge) |
