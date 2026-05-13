@@ -126,6 +126,9 @@ func AddAnnotationsAsIncrement(rws io.ReadWriteSeeker, selectedPages []string, a
 
 // AddAnnotationsFile adds annotations for selected pages to a PDF context read from inFile and writes the result to outFile.
 func AddAnnotationsFile(inFile, outFile string, selectedPages []string, ar model.AnnotationRenderer, conf *model.Configuration, incr bool) (err error) {
+	var f1, f2 *os.File
+	ok := false
+
 	tmpFile := inFile + ".tmp"
 	if outFile != "" && inFile != outFile {
 		tmpFile = outFile
@@ -142,22 +145,20 @@ func AddAnnotationsFile(inFile, outFile string, selectedPages []string, ar model
 		}
 	}
 
-	var f1, f2 *os.File
-
 	if f1, err = os.Open(inFile); err != nil {
 		return err
 	}
 
 	if f2, err = os.Create(tmpFile); err != nil {
-		f1.Close()
+		_ = f1.Close()
 		return err
 	}
 
 	defer func() {
-		if err != nil {
-			f2.Close()
-			f1.Close()
-			os.Remove(tmpFile)
+		if !ok {
+			_ = f2.Close()
+			_ = f1.Close()
+			_ = os.Remove(tmpFile)
 			return
 		}
 		if err = f2.Close(); err != nil {
@@ -171,7 +172,13 @@ func AddAnnotationsFile(inFile, outFile string, selectedPages []string, ar model
 		}
 	}()
 
-	return AddAnnotations(f1, f2, selectedPages, ar, conf)
+	if err = AddAnnotations(f1, f2, selectedPages, ar, conf); err != nil {
+		return err
+	}
+
+	ok = true
+
+	return nil
 }
 
 // AddAnnotationsMap adds annotations in m to corresponding pages of rs and writes the result to w.
@@ -238,6 +245,9 @@ func AddAnnotationsMapAsIncrement(rws io.ReadWriteSeeker, m map[int][]model.Anno
 
 // AddAnnotationsMapFile adds annotations in m to corresponding pages of inFile and writes the result to outFile.
 func AddAnnotationsMapFile(inFile, outFile string, m map[int][]model.AnnotationRenderer, conf *model.Configuration, incr bool) (err error) {
+	var f1, f2 *os.File
+	ok := false
+
 	tmpFile := inFile + ".tmp"
 
 	if outFile != "" && inFile != outFile {
@@ -255,22 +265,20 @@ func AddAnnotationsMapFile(inFile, outFile string, m map[int][]model.AnnotationR
 		}
 	}
 
-	var f1, f2 *os.File
-
 	if f1, err = os.Open(inFile); err != nil {
 		return err
 	}
 
 	if f2, err = os.Create(tmpFile); err != nil {
-		f1.Close()
+		_ = f1.Close()
 		return err
 	}
 
 	defer func() {
-		if err != nil {
-			f2.Close()
-			f1.Close()
-			os.Remove(tmpFile)
+		if !ok {
+			_ = f2.Close()
+			_ = f1.Close()
+			_ = os.Remove(tmpFile)
 			return
 		}
 		if err = f2.Close(); err != nil {
@@ -284,7 +292,13 @@ func AddAnnotationsMapFile(inFile, outFile string, m map[int][]model.AnnotationR
 		}
 	}()
 
-	return AddAnnotationsMap(f1, f2, m, conf)
+	if err = AddAnnotationsMap(f1, f2, m, conf); err != nil {
+		return err
+	}
+
+	ok = true
+
+	return nil
 }
 
 // RemoveAnnotations removes annotations for selected pages by id and object number
@@ -365,6 +379,7 @@ func RemoveAnnotationsAsIncrement(rws io.ReadWriteSeeker, selectedPages, idsAndT
 // from a PDF context read from inFile and writes the result to outFile.
 func RemoveAnnotationsFile(inFile, outFile string, selectedPages, idsAndTypes []string, objNrs []int, conf *model.Configuration, incr bool) (err error) {
 	var f1, f2 *os.File
+	ok := false
 
 	tmpFile := inFile + ".tmp"
 	if outFile != "" && inFile != outFile {
@@ -391,15 +406,15 @@ func RemoveAnnotationsFile(inFile, outFile string, selectedPages, idsAndTypes []
 	}
 
 	if f2, err = os.Create(tmpFile); err != nil {
-		f1.Close()
+		_ = f1.Close()
 		return err
 	}
 
 	defer func() {
-		if err != nil {
-			f2.Close()
-			f1.Close()
-			os.Remove(tmpFile)
+		if !ok {
+			_ = f2.Close()
+			_ = f1.Close()
+			_ = os.Remove(tmpFile)
 			return
 		}
 		if err = f2.Close(); err != nil {
@@ -413,5 +428,11 @@ func RemoveAnnotationsFile(inFile, outFile string, selectedPages, idsAndTypes []
 		}
 	}()
 
-	return RemoveAnnotations(f1, f2, selectedPages, idsAndTypes, objNrs, conf)
+	if err = RemoveAnnotations(f1, f2, selectedPages, idsAndTypes, objNrs, conf); err != nil {
+		return err
+	}
+
+	ok = true
+
+	return nil
 }

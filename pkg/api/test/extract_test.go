@@ -238,15 +238,20 @@ func TestExtractPagesLowLevel(t *testing.T) {
 	// Extract page 1.
 	i := 1
 
-	r, err := api.ExtractPage(ctx, i)
+	rd, err := api.ExtractPage(ctx, i)
 	if err != nil {
 		t.Fatalf("%s extractPage(%d): %v\n", msg, i, err)
 	}
-
-	if err := api.WritePage(r, outDir, outFile, i); err != nil {
+	if rd == nil {
 		t.Fatalf("%s writePage(%d): %v\n", msg, i, err)
 	}
 
+	fnBase := strings.TrimSuffix(filepath.Base(outFile), ".pdf")
+	f := api.WritePageToDisk(outDir, fnBase)
+
+	if err := f(rd, i); err != nil {
+		t.Fatalf("%s writePage(%d): %v\n", msg, i, err)
+	}
 }
 
 func TestExtractContent(t *testing.T) {
