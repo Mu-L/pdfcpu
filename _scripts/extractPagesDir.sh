@@ -37,12 +37,11 @@ do
 	f1=${f%.*}
 	#echo f1 = $f1
 	
-    mkdir $out/$f1
-    cp $pdf $out/$f1
+    mkdir -p $out/$f1
 
     # extract first 5 pages
-    pdfcpu extract -verbose -mode=page -pages=-5 $out/$f1/$f $out/$f1 &> $out/$f1/$f1.log
-    if [ $? -eq 1 ]; then
+    pdfcpu extract -v --mode page --pages=-5 $pdf $out/$f1 > $out/$f1.log 2>&1
+if [ $? -ne 0 ]; then
         echo "extraction error: $pdf -> $out/$f1"
         echo
 		continue
@@ -50,10 +49,10 @@ do
         echo "extraction success: $pdf -> $out/$f1"
         for subpdf in $out/$f1/*_?.pdf
         do
-            pdfcpu validate -verbose -mode=relaxed $subpdf >> $out/$f1/$f1.log 2>&1
-            if [ $? -eq 1 ]; then
+            pdfcpu validate -v --mode relaxed $subpdf >> $out/$f1.log 2>&1
+if [ $? -ne 0 ]; then
                 echo "validation error: $subpdf"
-                exit $?
+                exit 1
             #else
                 #echo "validation success: $subpdf"
             fi

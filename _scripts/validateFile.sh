@@ -29,11 +29,10 @@ out=$2
 
 cp $1 $out/$f
 
-pdfcpu validate -verbose -mode=relaxed $out/$f &> $out/$f1.log
-
-if [ $? -eq 1 ]; then
+pdfcpu validate -v --mode relaxed $out/$f > $out/$f1.log 2>&1
+if [ $? -ne 0 ]; then
     echo "validation error: $out/$f"
-    exit $?
+    exit 1
 else
     echo "validation success: $out/$f"
 fi

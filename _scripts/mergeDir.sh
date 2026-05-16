@@ -33,8 +33,8 @@ do
 	cp $pdf $out/$f
 done
 
-pdfcpu merge -verbose $out/merged.pdf $out/*.pdf &> $out/merged.log
-if [ $? -eq 1 ]; then
+pdfcpu merge -v $out/merged.pdf $out/*.pdf > $out/merged.log 2>&1
+if [ $? -ne 0 ]; then
 	echo "merge error: $1/*.pdf -> $out/merged.pdf"
     echo
 	continue

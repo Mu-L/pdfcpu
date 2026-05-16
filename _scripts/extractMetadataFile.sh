@@ -26,13 +26,12 @@ f=${1##*/}
 f1=${f%.*}
 out=$2
 
-mkdir $out/$f1
-cp $1 $out/$f1
+mkdir -p $out/$f1
 
-pdfcpu extract -verbose -mode=meta $out/$f1/$f $out/$f1 &> $out/$f1/$f1.log
-if [ $? -eq 1 ]; then
+pdfcpu extract -v --mode meta $1 $out/$f1 > $out/$f1.log 2>&1
+if [ $? -ne 0 ]; then
     echo "metadata extraction error: $1 -> $out/$f1"
-    exit $?
+    exit 1
 else
     echo "metadata extraction success: $1 -> $out/$f1"
 fi

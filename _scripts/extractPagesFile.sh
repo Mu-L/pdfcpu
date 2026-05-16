@@ -30,22 +30,21 @@ out=$2
 
 #set -e
 
-mkdir $out/$f1
-cp $1 $out/$f1 
+mkdir -p $out/$f1
 
 # extract first 5 pages
-pdfcpu extract -verbose -mode=page -pages=-5 $out/$f1/$f $out/$f1 &> $out/$f1/$f1.log
-if [ $? -eq 1 ]; then
+pdfcpu extract -v --mode page --pages=-5 $1 $out/$f1 > $out/$f1.log 2>&1
+if [ $? -ne 0 ]; then
     echo "extraction error: $1 -> $out"
-    exit $?
+    exit 1
 else
     echo "extraction success: $1 -> $out"
     for pdf in $out/$f1/*_?.pdf
     do
-        pdfcpu validate -verbose -mode=relaxed $pdf >> $out/$f1/$f1.log 2>&1
-        if [ $? -eq 1 ]; then
+        pdfcpu validate -v --mode relaxed $pdf >> $out/$f1.log 2>&1
+if [ $? -ne 0 ]; then
             echo "validation error: $pdf"
-            exit $?
+            exit 1
         #else
             #echo "validation success: $pdf"
         fi

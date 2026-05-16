@@ -206,7 +206,7 @@ func attachmentsCmd() *cobra.Command {
 			Run:   wrapHandler(processListAttachmentsCommand),
 		},
 		&cobra.Command{
-			Use:   "add inFile file...",
+			Use:   "add inFile file [ , desc ]...",
 			Short: "Add attachments",
 			Args:  cobra.MinimumNArgs(2),
 			Run:   wrapHandler(processAddAttachmentsCommand),

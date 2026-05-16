@@ -29,13 +29,12 @@ out=$2
 
 #set -e
 
-mkdir $out/$f1
-cp $1 $out/$f1 
+mkdir -p $out/$f1
 
-pdfcpu extract -verbose -mode=font $out/$f1/$f $out/$f1 &> $out/$f1/$f1.log
-if [ $? -eq 1 ]; then
+pdfcpu extract -v --mode font $1 $out/$f1 > $out/$f1.log 2>&1
+if [ $? -ne 0 ]; then
     echo "font extraction error: $1 -> $out/$f1"
-    exit $?
+    exit 1
 else
     echo "font extraction success: $1 -> $out/$f1"
 fi

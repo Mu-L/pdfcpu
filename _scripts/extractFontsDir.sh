@@ -36,11 +36,10 @@ do
 	f1=${f%.*}
 	#echo f1 = $f1
 	
-    mkdir $out/$f1
-    cp $pdf $out/$f1
+    mkdir -p $out/$f1
 
-    pdfcpu extract -verbose -mode=font $out/$f1/$f $out/$f1 &> $out/$f1/$f1.log
-    if [ $? -eq 1 ]; then
+    pdfcpu extract -v --mode font $pdf $out/$f1 > $out/$f1.log 2>&1
+if [ $? -ne 0 ]; then
         echo "font extraction error: $pdf -> $out/$f1"
         echo
 		continue

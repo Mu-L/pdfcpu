@@ -43,11 +43,10 @@ do
 	
 	out1=$out/$f1$new.pdf
 	
-    pdfcpu validate -verbose -mode=relaxed $out/$f &> $out/$f1.log
-
-    if [ $? -eq 1 ]; then
+    pdfcpu validate -v --mode relaxed $out/$f > $out/$f1.log 2>&1
+if [ $? -ne 0 ]; then
         echo "validation error: $pdf"
-        #exit $?
+        #exit 1
     else
         echo "validation success: $pdf"
     fi

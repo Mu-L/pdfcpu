@@ -180,10 +180,14 @@ Pipeline example:
 
     inFile ... input PDF file, use - to read from stdin
       file ... attachment
+      desc ... description (optional)
     outDir ... output directory
 
     Adding attachments:
            pdfcpu attachment add test.pdf test.mp3 test.mkv
+
+    Adding attachments with description:
+           pdfcpu attachment add "test.mp3, audio" "test.mkv, video"
 
     Extract all attachments:
            pdfcpu attachments extract .

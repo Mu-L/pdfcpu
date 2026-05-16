@@ -34,19 +34,19 @@ out=$2
 cp $1 $out/$f
 
 out1=$out/$f1$new.pdf
-pdfcpu optimize -verbose $out/$f $out1 &> $out/$f1.log
-if [ $? -eq 1 ]; then
+pdfcpu optimize -v $out/$f $out1 > $out/$f1.log 2>&1
+if [ $? -ne 0 ]; then
     echo "optimization error: $1 -> $out1"
-    exit $?
+    exit 1
 else
     echo "optimization success: $1 -> $out1"
 fi
 	
 out2=$out/$f1$new$new.pdf
-pdfcpu optimize -verbose $out1 $out2 &> $out/$f1$new.log
-if [ $? -eq 1 ]; then
+pdfcpu optimize -v $out1 $out2 > $out/$f1$new.log 2>&1
+if [ $? -ne 0 ]; then
     echo "optimization error: $out1 -> $out2"
-    exit $?
+    exit 1
 else
     echo "optimization success: $out1 -> $out2"
 fi
