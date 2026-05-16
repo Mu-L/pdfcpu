@@ -264,15 +264,8 @@ func ListImagesFile(inFiles []string, selectedPages []string, conf *model.Config
 	return ss, nil
 }
 
-// ListInfoFile returns formatted information about inFile.
-func ListInfoFile(inFile string, selectedPages []string, fonts bool, conf *model.Configuration) ([]string, error) {
-	f, err := os.Open(inFile)
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	info, err := api.PDFInfo(f, inFile, selectedPages, fonts, conf)
+func listInfo(rs io.ReadSeeker, inFile string, selectedPages []string, fonts bool, conf *model.Configuration) ([]string, error) {
+	info, err := api.PDFInfo(rs, inFile, selectedPages, fonts, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -288,6 +281,17 @@ func ListInfoFile(inFile string, selectedPages []string, fonts bool, conf *model
 	}
 
 	return append([]string{inFile + ":"}, ss...), err
+}
+
+// ListInfoFile returns formatted information about inFile.
+func ListInfoFile(inFile string, selectedPages []string, fonts bool, conf *model.Configuration) ([]string, error) {
+	f, err := os.Open(inFile)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	return listInfo(f, inFile, selectedPages, fonts, conf)
 }
 
 func jsonInfo(info *pdfcpu.PDFInfo, pages types.IntSet) (map[string]model.PageBoundaries, []types.Dim) {
@@ -357,6 +361,22 @@ func jsonInfo(info *pdfcpu.PDFInfo, pages types.IntSet) (map[string]model.PageBo
 	return nil, dims
 }
 
+func listInfoJSON(rs io.ReadSeeker, inFile string, selectedPages []string, fonts bool, conf *model.Configuration) (*pdfcpu.PDFInfo, error) {
+	info, err := api.PDFInfo(rs, inFile, selectedPages, fonts, conf)
+	if err != nil {
+		return nil, err
+	}
+
+	pages, err := api.PagesForPageSelection(info.PageCount, selectedPages, false, false)
+	if err != nil {
+		return nil, err
+	}
+
+	info.Boundaries, info.Dimensions = jsonInfo(info, pages)
+
+	return info, nil
+}
+
 func listInfoFilesJSON(inFiles []string, selectedPages []string, fonts bool, conf *model.Configuration) ([]string, error) {
 	var infos []*pdfcpu.PDFInfo
 
@@ -368,21 +388,17 @@ func listInfoFilesJSON(inFiles []string, selectedPages []string, fonts bool, con
 		}
 		defer f.Close()
 
-		info, err := api.PDFInfo(f, fn, selectedPages, fonts, conf)
+		info, err := listInfoJSON(f, fn, selectedPages, fonts, conf)
 		if err != nil {
 			return nil, err
 		}
-
-		pages, err := api.PagesForPageSelection(info.PageCount, selectedPages, false, false)
-		if err != nil {
-			return nil, err
-		}
-
-		info.Boundaries, info.Dimensions = jsonInfo(info, pages)
-
 		infos = append(infos, info)
 	}
 
+	return jsonInfoOutput(infos)
+}
+
+func jsonInfoOutput(infos []*pdfcpu.PDFInfo) ([]string, error) {
 	s := struct {
 		Header pdfcpu.Header     `json:"header"`
 		Infos  []*pdfcpu.PDFInfo `json:"infos"`

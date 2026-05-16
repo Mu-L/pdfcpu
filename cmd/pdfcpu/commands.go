@@ -379,10 +379,10 @@ func certificatesCmd() *cobra.Command {
 
 func changeopwCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "changeopw inFile opwOld opwNew",
+		Use:   "changeopw inFile opwOld opwNew [ outFile ]",
 		Short: "Change owner password",
 		Long:  usageLongChangeOwnerPW,
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.RangeArgs(3, 4),
 		Run:   wrapHandler(processChangeOwnerPasswordCommand),
 	}
 
@@ -393,10 +393,10 @@ func changeopwCmd() *cobra.Command {
 
 func changeupwCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "changeupw inFile upwOld upwNew",
+		Use:   "changeupw inFile upwOld upwNew [ outFile ]",
 		Short: "Change user password",
 		Long:  usageLongChangeUserPW,
-		Args:  cobra.ExactArgs(3),
+		Args:  cobra.RangeArgs(3, 4),
 		Run:   wrapHandler(processChangeUserPasswordCommand),
 	}
 
@@ -706,7 +706,7 @@ func formCmd() *cobra.Command {
 			Run:   wrapHandler(processListFormFieldsCommand),
 		},
 		&cobra.Command{
-			Use:   "remove inFile [ outFilen] < fieldID | fieldName >...",
+			Use:   "remove inFile [ outFile ] < fieldID | fieldName >...",
 			Short: "Remove form fields",
 			Args:  cobra.MinimumNArgs(2),
 			Run:   wrapHandler(processRemoveFormFieldsCommand),
@@ -851,13 +851,13 @@ func keywordsCmd() *cobra.Command {
 			Run:   wrapHandler(processListKeywordsCommand),
 		},
 		&cobra.Command{
-			Use:   "add inFile keyword...",
+			Use:   "add inFile [ outFile ] keyword...",
 			Short: "Add keywords",
 			Args:  cobra.MinimumNArgs(2),
 			Run:   wrapHandler(processAddKeywordsCommand),
 		},
 		&cobra.Command{
-			Use:   "remove inFile [ keyword... ]",
+			Use:   "remove inFile [ outFile ] [ keyword... ]",
 			Short: "Remove keywords",
 			Args:  cobra.MinimumNArgs(1),
 			Run:   wrapHandler(processRemoveKeywordsCommand),
@@ -980,15 +980,15 @@ func pagelayoutCmd() *cobra.Command {
 			Run:   wrapHandler(processListPageLayoutCommand),
 		},
 		&cobra.Command{
-			Use:   "set inFile value",
+			Use:   "set inFile value [ outFile ]",
 			Short: "Set page layout",
-			Args:  cobra.ExactArgs(2),
+			Args:  cobra.RangeArgs(2, 3),
 			Run:   wrapHandler(processSetPageLayoutCommand),
 		},
 		&cobra.Command{
-			Use:   "reset inFile",
+			Use:   "reset inFile [ outFile ]",
 			Short: "Reset page layout",
-			Args:  cobra.ExactArgs(1),
+			Args:  cobra.RangeArgs(1, 2),
 			Run:   wrapHandler(processResetPageLayoutCommand),
 		},
 	)
@@ -1013,15 +1013,15 @@ func pagemodeCmd() *cobra.Command {
 			Run:   wrapHandler(processListPageModeCommand),
 		},
 		&cobra.Command{
-			Use:   "set inFile value",
+			Use:   "set inFile value [ outFile ]",
 			Short: "Set page mode",
-			Args:  cobra.ExactArgs(2),
+			Args:  cobra.RangeArgs(2, 3),
 			Run:   wrapHandler(processSetPageModeCommand),
 		},
 		&cobra.Command{
-			Use:   "reset inFile",
+			Use:   "reset inFile [ outFile ]",
 			Short: "Reset page mode",
-			Args:  cobra.ExactArgs(1),
+			Args:  cobra.RangeArgs(1, 2),
 			Run:   wrapHandler(processResetPageModeCommand),
 		},
 	)
@@ -1089,9 +1089,9 @@ func permissionsCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&opw, "opw", "", "owner password")
 
 	setCmd := &cobra.Command{
-		Use:   "set inFile",
+		Use:   "set inFile [ outFile ]",
 		Short: "Set permissions",
-		Args:  cobra.ExactArgs(1),
+		Args:  cobra.RangeArgs(1, 2),
 		Run:   wrapHandler(processSetPermissionsCommand),
 	}
 	setCmd.Flags().StringVar(&perm, "perm", "none", "user access permissions")
@@ -1182,13 +1182,13 @@ func propertiesCmd() *cobra.Command {
 			Run:   wrapHandler(processListPropertiesCommand),
 		},
 		&cobra.Command{
-			Use:   "add inFile nameValuePair...",
+			Use:   "add inFile [ outFile ] nameValuePair...",
 			Short: "Add properties",
 			Args:  cobra.MinimumNArgs(2),
 			Run:   wrapHandler(processAddPropertiesCommand),
 		},
 		&cobra.Command{
-			Use:   "remove inFile [ name... ]",
+			Use:   "remove inFile [ outFile ] [ name... ]",
 			Short: "Remove properties",
 			Args:  cobra.MinimumNArgs(1),
 			Run:   wrapHandler(processRemovePropertiesCommand),
@@ -1435,15 +1435,15 @@ func viewerprefCmd() *cobra.Command {
 	cmd.AddCommand(
 		list,
 		&cobra.Command{
-			Use:   "set inFile ( inFileJSON | JSONstring )",
+			Use:   "set inFile ( inFileJSON | JSONstring ) [ outFile ]",
 			Short: "Set viewer preferences",
-			Args:  cobra.ExactArgs(2),
+			Args:  cobra.RangeArgs(2, 3),
 			Run:   wrapHandler(processSetViewerPreferencesCommand),
 		},
 		&cobra.Command{
-			Use:   "reset inFile",
+			Use:   "reset inFile [ outFile ]",
 			Short: "Reset viewer preferences",
-			Args:  cobra.ExactArgs(1),
+			Args:  cobra.RangeArgs(1, 2),
 			Run:   wrapHandler(processResetViewerPreferencesCommand),
 		},
 	)

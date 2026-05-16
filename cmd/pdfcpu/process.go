@@ -78,6 +78,62 @@ func ensureJSONExtension(filename string) {
 	}
 }
 
+func ensureOutputFileAvailable(outFile string) error {
+	if outFile == "" || outFile == "-" || force {
+		return nil
+	}
+
+	if _, err := os.Stat(outFile); err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+
+	return fmt.Errorf("pdfcpu: refusing to overwrite existing file: %s\nUse --force to overwrite.", outFile)
+}
+
+func ensureOutputFileAvailableOrExit(outFile string) {
+	if err := ensureOutputFileAvailable(outFile); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func ensureOutputDirEmpty(outDir string) error {
+	if outDir == "" || outDir == "-" || force {
+		return nil
+	}
+
+	entries, err := os.ReadDir(outDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	if len(entries) == 0 {
+		return nil
+	}
+
+	return fmt.Errorf("pdfcpu: refusing to write to non-empty directory: %s\nUse --force to write anyway.", outDir)
+}
+
+func ensureOutputDirEmptyOrExit(outDir string) {
+	if err := ensureOutputDirEmpty(outDir); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+}
+
+func ensureOutputDirOrFileAvailableOrExit(outDir, outFile string) {
+	if outFile == "" {
+		ensureOutputDirEmptyOrExit(outDir)
+		return
+	}
+	ensureOutputFileAvailableOrExit(filepath.Join(outDir, outFile))
+}
+
 func hasCSVExtension(filename string) bool {
 	return strings.HasSuffix(strings.ToLower(filename), ".csv")
 }
@@ -293,6 +349,10 @@ func collectInFiles(conf *model.Configuration, args []string) []string {
 	inFiles := []string{}
 
 	for _, arg := range args {
+		if arg == "-" {
+			inFiles = append(inFiles, arg)
+			continue
+		}
 
 		if strings.Contains(arg, "**") {
 			// **/			skips files w/o extension "pdf"
@@ -359,14 +419,20 @@ func processValidateCommand(conf *model.Configuration, args []string, opts *vali
 
 func processOptimizeCommand(conf *model.Configuration, args []string, opts *optimizeCommandOptions) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := inFile
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 2 {
 		outFile = args[1]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	conf.StatsFileName = opts.fileStats
@@ -413,11 +479,12 @@ func processSplitCommand(conf *model.Configuration, args []string, opts *splitOp
 	}
 
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outDir := args[1]
+	ensureOutputDirEmptyOrExit(outDir)
 
 	if opts.mode == "page" {
 		processSplitByPageNumberCommand(inFile, outDir, args, conf)
@@ -466,11 +533,13 @@ func processArgsForMerge(conf *model.Configuration, args []string, mergeMode str
 	outFile := ""
 	for i, arg := range args {
 		if i == 0 {
-			ensurePDFExtension(arg)
+			if arg != "-" {
+				ensurePDFExtension(arg)
+			}
 			outFile = arg
 			continue
 		}
-		if arg == outFile {
+		if arg == outFile && arg != "-" {
 			fmt.Fprintf(os.Stderr, "%s may appear as inFile or outFile only\n", outFile)
 			os.Exit(1)
 		}
@@ -484,7 +553,7 @@ func processArgsForMerge(conf *model.Configuration, args []string, mergeMode str
 			inFiles = append(inFiles, matches...)
 			continue
 		}
-		if conf.CheckFileNameExt {
+		if conf.CheckFileNameExt && arg != "-" {
 			ensurePDFExtension(arg)
 		}
 		inFiles = append(inFiles, arg)
@@ -524,6 +593,21 @@ func processMergeCommand(conf *model.Configuration, args []string, opts *mergeOp
 	}
 
 	inFiles, outFile := processArgsForMerge(conf, args, opts.mode)
+	if opts.mode != "create" {
+		for _, fn := range inFiles {
+			if fn == "-" {
+				fmt.Fprintf(os.Stderr, "merge %s: stdin input not supported\n", opts.mode)
+				os.Exit(1)
+			}
+		}
+	}
+	if opts.mode == "append" && outFile == "-" {
+		fmt.Fprintf(os.Stderr, "merge append: stdout not supported\n")
+		os.Exit(1)
+	}
+	if opts.mode != "append" {
+		ensureOutputFileAvailableOrExit(outFile)
+	}
 
 	if opts.sorted {
 		sortFiles(inFiles)
@@ -572,10 +656,11 @@ func processExtractCommand(conf *model.Configuration, args []string, opts *extra
 	}
 
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 	outDir := args[1]
+	ensureOutputDirEmptyOrExit(outDir)
 
 	pages, err := api.ParsePageSelection(selectedPages)
 	if err != nil {
@@ -617,14 +702,20 @@ func processTrimCommand(conf *model.Configuration, args []string) {
 	}
 
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 2 {
 		outFile = args[1]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	process(cli.TrimCommand(inFile, outFile, pages, conf))
@@ -632,7 +723,7 @@ func processTrimCommand(conf *model.Configuration, args []string) {
 
 func processListAttachmentsCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -646,7 +737,7 @@ func processAddAttachmentsCommand(conf *model.Configuration, args []string) {
 	for i, arg := range args {
 		if i == 0 {
 			inFile = arg
-			if conf.CheckFileNameExt {
+			if conf.CheckFileNameExt && inFile != "-" {
 				ensurePDFExtension(inFile)
 			}
 			continue
@@ -663,7 +754,12 @@ func processAddAttachmentsCommand(conf *model.Configuration, args []string) {
 		fileNames = append(fileNames, arg)
 	}
 
-	process(cli.AddAttachmentsCommand(inFile, "", fileNames, conf))
+	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
+
+	process(cli.AddAttachmentsCommand(inFile, outFile, fileNames, conf))
 }
 
 func processAddAttachmentsPortfolioCommand(conf *model.Configuration, args []string) {
@@ -673,7 +769,7 @@ func processAddAttachmentsPortfolioCommand(conf *model.Configuration, args []str
 	for i, arg := range args {
 		if i == 0 {
 			inFile = arg
-			if conf.CheckFileNameExt {
+			if conf.CheckFileNameExt && inFile != "-" {
 				ensurePDFExtension(inFile)
 			}
 			continue
@@ -690,7 +786,12 @@ func processAddAttachmentsPortfolioCommand(conf *model.Configuration, args []str
 		fileNames = append(fileNames, arg)
 	}
 
-	process(cli.AddAttachmentsPortfolioCommand(inFile, "", fileNames, conf))
+	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
+
+	process(cli.AddAttachmentsPortfolioCommand(inFile, outFile, fileNames, conf))
 }
 
 func processRemoveAttachmentsCommand(conf *model.Configuration, args []string) {
@@ -700,7 +801,7 @@ func processRemoveAttachmentsCommand(conf *model.Configuration, args []string) {
 	for i, arg := range args {
 		if i == 0 {
 			inFile = arg
-			if conf.CheckFileNameExt {
+			if conf.CheckFileNameExt && inFile != "-" {
 				ensurePDFExtension(inFile)
 			}
 			continue
@@ -708,7 +809,12 @@ func processRemoveAttachmentsCommand(conf *model.Configuration, args []string) {
 		fileNames = append(fileNames, arg)
 	}
 
-	process(cli.RemoveAttachmentsCommand(inFile, "", fileNames, conf))
+	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
+
+	process(cli.RemoveAttachmentsCommand(inFile, outFile, fileNames, conf))
 }
 
 func processExtractAttachmentsCommand(conf *model.Configuration, args []string) {
@@ -719,13 +825,14 @@ func processExtractAttachmentsCommand(conf *model.Configuration, args []string) 
 	for i, arg := range args {
 		if i == 0 {
 			inFile = arg
-			if conf.CheckFileNameExt {
+			if conf.CheckFileNameExt && inFile != "-" {
 				ensurePDFExtension(inFile)
 			}
 			continue
 		}
 		if i == 1 {
 			outDir = arg
+			ensureOutputDirEmptyOrExit(outDir)
 			continue
 		}
 		fileNames = append(fileNames, arg)
@@ -747,7 +854,7 @@ func processListPermissionsCommand(conf *model.Configuration, args []string) {
 			inFiles = append(inFiles, matches...)
 			continue
 		}
-		if conf.CheckFileNameExt {
+		if conf.CheckFileNameExt && arg != "-" {
 			ensurePDFExtension(arg)
 		}
 		inFiles = append(inFiles, arg)
@@ -813,25 +920,43 @@ func processSetPermissionsCommand(conf *model.Configuration, args []string) {
 	}
 
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
+	}
+
+	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
+	if len(args) == 2 {
+		outFile = args[1]
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	configPerm(perm, conf)
 
-	process(cli.SetPermissionsCommand(inFile, "", conf))
+	process(cli.SetPermissionsCommand(inFile, outFile, conf))
 }
 
 func processDecryptCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := inFile
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 2 {
 		outFile = args[1]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	process(cli.DecryptCommand(inFile, outFile, conf))
@@ -904,14 +1029,20 @@ func processEncryptCommand(conf *model.Configuration, args []string, opts *encry
 	}
 
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := inFile
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 2 {
 		outFile = args[1]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	process(cli.EncryptCommand(inFile, outFile, conf))
@@ -919,14 +1050,20 @@ func processEncryptCommand(conf *model.Configuration, args []string, opts *encry
 
 func processChangeUserPasswordCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := inFile
-	if len(args) == 2 {
-		outFile = args[1]
-		ensurePDFExtension(outFile)
+	if inFile == "-" {
+		outFile = "-"
+	}
+	if len(args) == 4 {
+		outFile = args[3]
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	pwOld := args[1]
@@ -937,14 +1074,20 @@ func processChangeUserPasswordCommand(conf *model.Configuration, args []string) 
 
 func processChangeOwnerPasswordCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := inFile
-	if len(args) == 2 {
-		outFile = args[1]
-		ensurePDFExtension(outFile)
+	if inFile == "-" {
+		outFile = "-"
+	}
+	if len(args) == 4 {
+		outFile = args[3]
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	pwOld := args[1]
@@ -992,14 +1135,20 @@ func addWatermarks(conf *model.Configuration, args []string, onTop bool, wmMode 
 	}
 
 	inFile := args[2]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 4 {
 		outFile = args[3]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	process(cli.AddWatermarksCommand(inFile, outFile, selectedPages, wm, conf))
@@ -1050,14 +1199,20 @@ func updateWatermarks(conf *model.Configuration, args []string, onTop bool, wmMo
 	wm.Update = true
 
 	inFile := args[2]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 4 {
 		outFile = args[3]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	process(cli.AddWatermarksCommand(inFile, outFile, selectedPages, wm, conf))
@@ -1078,14 +1233,20 @@ func removeWatermarks(conf *model.Configuration, args []string, onTop bool) {
 	}
 
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 2 {
 		outFile = args[1]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	process(cli.RemoveWatermarksCommand(inFile, outFile, selectedPages, conf))
@@ -1122,7 +1283,9 @@ func parseArgsForImageFileNames(args []string, startInd int) []string {
 			}
 			continue
 		}
-		ensureImageExtension(arg)
+		if arg != "-" {
+			ensureImageExtension(arg)
+		}
 		imageFileNames = append(imageFileNames, arg)
 	}
 	return imageFileNames
@@ -1133,7 +1296,7 @@ func processImportImagesCommand(conf *model.Configuration, args []string) {
 
 	var outFile string
 	outFile = args[0]
-	if hasPDFExtension(outFile) {
+	if hasPDFExtension(outFile) || outFile == "-" {
 		// pdfcpu import outFile imageFile...
 		imp := pdfcpu.DefaultImportConfig()
 		imageFileNames := parseArgsForImageFileNames(args, 1)
@@ -1153,7 +1316,9 @@ func processImportImagesCommand(conf *model.Configuration, args []string) {
 	}
 
 	outFile = args[1]
-	ensurePDFExtension(outFile)
+	if outFile != "-" {
+		ensurePDFExtension(outFile)
+	}
 	imageFileNames := parseArgsForImageFileNames(args, 2)
 
 	process(cli.ImportImagesCommand(imageFileNames, outFile, imp, conf))
@@ -1172,13 +1337,19 @@ func processInsertPagesCommand(conf *model.Configuration, args []string, opts *p
 	}
 
 	inFile := args[0]
-	if hasPDFExtension(inFile) {
+	if hasPDFExtension(inFile) || inFile == "-" {
 		// pdfcpu pages insert inFile [outFile]
 
 		outFile := ""
+		if inFile == "-" {
+			outFile = "-"
+		}
 		if len(args) == 2 {
 			outFile = args[1]
-			ensurePDFExtension(outFile)
+			if outFile != "-" {
+				ensurePDFExtension(outFile)
+			}
+			ensureOutputFileAvailableOrExit(outFile)
 		}
 
 		process(cli.InsertPagesCommand(inFile, outFile, pages, conf, opts.mode, nil))
@@ -1199,12 +1370,20 @@ func processInsertPagesCommand(conf *model.Configuration, args []string, opts *p
 	}
 
 	inFile = args[1]
-	ensurePDFExtension(inFile)
+	if inFile != "-" {
+		ensurePDFExtension(inFile)
+	}
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 3 {
 		outFile = args[2]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	process(cli.InsertPagesCommand(inFile, outFile, pages, conf, opts.mode, pageConf))
@@ -1212,14 +1391,20 @@ func processInsertPagesCommand(conf *model.Configuration, args []string, opts *p
 
 func processRemovePagesCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 2 {
 		outFile = args[1]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	pages, err := api.ParsePageSelection(selectedPages)
@@ -1236,7 +1421,7 @@ func processRemovePagesCommand(conf *model.Configuration, args []string) {
 
 func processRotateCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -1247,9 +1432,15 @@ func processRotateCommand(conf *model.Configuration, args []string) {
 	}
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 3 {
 		outFile = args[2]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	selectedPages, err := api.ParsePageSelection(selectedPages)
@@ -1300,7 +1491,7 @@ func parseForNUp(args []string, nup *model.NUp, argInd *int, nUpValues []int) {
 	*argInd++
 }
 
-func parseAfterNUpDetails(args []string, nup *model.NUp, argInd int, nUpValues []int, filenameOut string) []string {
+func parseAfterNUpDetails(args []string, nup *model.NUp, argInd int, nUpValues []int, filenameOut string, allowStdin bool) []string {
 	if nup.PageGrid {
 		parseForGrid(args, nup, &argInd)
 	} else {
@@ -1308,19 +1499,23 @@ func parseAfterNUpDetails(args []string, nup *model.NUp, argInd int, nUpValues [
 	}
 
 	filenameIn := args[argInd]
-	if !hasPDFExtension(filenameIn) && !model.ImageFileName(filenameIn) {
+	if filenameIn == "-" && !allowStdin {
+		fmt.Fprintf(os.Stderr, "inFile has to be a PDF or one or a sequence of image files: %s\n", filenameIn)
+		os.Exit(1)
+	}
+	if filenameIn != "-" && !hasPDFExtension(filenameIn) && !model.ImageFileName(filenameIn) {
 		fmt.Fprintf(os.Stderr, "inFile has to be a PDF or one or a sequence of image files: %s\n", filenameIn)
 		os.Exit(1)
 	}
 
 	filenamesIn := []string{filenameIn}
 
-	if hasPDFExtension(filenameIn) {
+	if filenameIn == "-" || hasPDFExtension(filenameIn) {
 		if len(args) > argInd+1 {
 			fmt.Fprintf(os.Stderr, "too many args")
 			os.Exit(1)
 		}
-		if filenameIn == filenameOut {
+		if filenameIn != "-" && filenameIn == filenameOut {
 			fmt.Fprintln(os.Stderr, "inFile and outFile can't be the same.")
 			os.Exit(1)
 		}
@@ -1349,21 +1544,24 @@ func processNUpCommand(conf *model.Configuration, args []string) {
 	argInd := 1
 
 	outFile := args[0]
-	if !hasPDFExtension(outFile) {
+	if outFile != "-" && !hasPDFExtension(outFile) {
 		// pdfcpu nup description outFile n inFile|imageFiles...
 		if err = pdfcpu.ParseNUpDetails(args[0], nup); err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(1)
 		}
 		outFile = args[1]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
 		argInd = 2
 	} // else first argument is outFile.
+	ensureOutputFileAvailableOrExit(outFile)
 
 	// pdfcpu nup outFile n inFile|imageFiles...
 	// If no optional 'description' argument provided use default nup configuration.
 
-	inFiles := parseAfterNUpDetails(args, nup, argInd, pdfcpu.NUpValues, outFile)
+	inFiles := parseAfterNUpDetails(args, nup, argInd, pdfcpu.NUpValues, outFile, true)
 
 	process(cli.NUpCommand(inFiles, outFile, pages, nup, conf))
 }
@@ -1382,21 +1580,24 @@ func processGridCommand(conf *model.Configuration, args []string) {
 	argInd := 1
 
 	outFile := args[0]
-	if !hasPDFExtension(outFile) {
+	if outFile != "-" && !hasPDFExtension(outFile) {
 		// pdfcpu grid description outFile m n inFile|imageFiles...
 		if err = pdfcpu.ParseNUpDetails(args[0], nup); err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(1)
 		}
 		outFile = args[1]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
 		argInd = 2
 	} // else first argument is outFile.
+	ensureOutputFileAvailableOrExit(outFile)
 
 	// pdfcpu grid outFile m n inFile|imageFiles...
 	// If no optional 'description' argument provided use default nup configuration.
 
-	inFiles := parseAfterNUpDetails(args, nup, argInd, nil, outFile)
+	inFiles := parseAfterNUpDetails(args, nup, argInd, nil, outFile, true)
 
 	process(cli.NUpCommand(inFiles, outFile, pages, nup, conf))
 }
@@ -1415,21 +1616,24 @@ func processBookletCommand(conf *model.Configuration, args []string) {
 
 	// First argument may be outFile or description.
 	outFile := args[0]
-	if !hasPDFExtension(outFile) {
+	if outFile != "-" && !hasPDFExtension(outFile) {
 		// pdfcpu booklet description outFile n inFile|imageFiles...
 		if err = pdfcpu.ParseNUpDetails(args[0], nup); err != nil {
 			fmt.Fprintf(os.Stderr, "%s\n", err)
 			os.Exit(1)
 		}
 		outFile = args[1]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
 		argInd = 2
 	} // else first argument is outFile.
+	ensureOutputFileAvailableOrExit(outFile)
 
 	// pdfcpu booklet outFile n inFile|imageFiles...
 	// If no optional 'description' argument provided use default nup configuration.
 
-	inFiles := parseAfterNUpDetails(args, nup, argInd, pdfcpu.NUpValuesForBooklets, outFile)
+	inFiles := parseAfterNUpDetails(args, nup, argInd, pdfcpu.NUpValuesForBooklets, outFile, true)
 
 	process(cli.BookletCommand(inFiles, outFile, pages, nup, conf))
 }
@@ -1439,6 +1643,10 @@ func processInfoCommand(conf *model.Configuration, args []string, opts *infoOpti
 
 	inFiles := []string{}
 	for _, arg := range args {
+		if arg == "-" {
+			inFiles = append(inFiles, arg)
+			continue
+		}
 		if strings.Contains(arg, "*") {
 			matches, err := filepath.Glob(arg)
 			if err != nil {
@@ -1449,7 +1657,7 @@ func processInfoCommand(conf *model.Configuration, args []string, opts *infoOpti
 			inFiles = append(inFiles, matches...)
 			continue
 		}
-		if conf.CheckFileNameExt {
+		if conf.CheckFileNameExt && arg != "-" {
 			ensurePDFExtension(arg)
 		}
 		inFiles = append(inFiles, arg)
@@ -1498,7 +1706,7 @@ func processCreateCheatSheetFontsCommand(conf *model.Configuration, args []strin
 
 func processListKeywordsCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -1506,44 +1714,54 @@ func processListKeywordsCommand(conf *model.Configuration, args []string) {
 }
 
 func processAddKeywordsCommand(conf *model.Configuration, args []string) {
-	var inFile string
+	var inFile, outFile string
 	keywords := []string{}
 
 	for i, arg := range args {
 		if i == 0 {
 			inFile = arg
-			if conf.CheckFileNameExt {
+			if conf.CheckFileNameExt && inFile != "-" {
 				ensurePDFExtension(inFile)
 			}
+			continue
+		}
+		if i == 1 && (hasPDFExtension(arg) || arg == "-") {
+			outFile = arg
+			ensureOutputFileAvailableOrExit(outFile)
 			continue
 		}
 		keywords = append(keywords, arg)
 	}
 
-	process(cli.AddKeywordsCommand(inFile, "", keywords, conf))
+	process(cli.AddKeywordsCommand(inFile, outFile, keywords, conf))
 }
 
 func processRemoveKeywordsCommand(conf *model.Configuration, args []string) {
-	var inFile string
+	var inFile, outFile string
 	keywords := []string{}
 
 	for i, arg := range args {
 		if i == 0 {
 			inFile = arg
-			if conf.CheckFileNameExt {
+			if conf.CheckFileNameExt && inFile != "-" {
 				ensurePDFExtension(inFile)
 			}
+			continue
+		}
+		if i == 1 && (hasPDFExtension(arg) || arg == "-") {
+			outFile = arg
+			ensureOutputFileAvailableOrExit(outFile)
 			continue
 		}
 		keywords = append(keywords, arg)
 	}
 
-	process(cli.RemoveKeywordsCommand(inFile, "", keywords, conf))
+	process(cli.RemoveKeywordsCommand(inFile, outFile, keywords, conf))
 }
 
 func processListPropertiesCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -1551,15 +1769,20 @@ func processListPropertiesCommand(conf *model.Configuration, args []string) {
 }
 
 func processAddPropertiesCommand(conf *model.Configuration, args []string) {
-	var inFile string
+	var inFile, outFile string
 	properties := map[string]string{}
 
 	for i, arg := range args {
 		if i == 0 {
 			inFile = arg
-			if conf.CheckFileNameExt {
+			if conf.CheckFileNameExt && inFile != "-" {
 				ensurePDFExtension(inFile)
 			}
+			continue
+		}
+		if i == 1 && (hasPDFExtension(arg) || arg == "-") {
+			outFile = arg
+			ensureOutputFileAvailableOrExit(outFile)
 			continue
 		}
 		// Ensure key value pair.
@@ -1577,19 +1800,24 @@ func processAddPropertiesCommand(conf *model.Configuration, args []string) {
 		properties[k] = v
 	}
 
-	process(cli.AddPropertiesCommand(inFile, "", properties, conf))
+	process(cli.AddPropertiesCommand(inFile, outFile, properties, conf))
 }
 
 func processRemovePropertiesCommand(conf *model.Configuration, args []string) {
-	var inFile string
+	var inFile, outFile string
 	keys := []string{}
 
 	for i, arg := range args {
 		if i == 0 {
 			inFile = arg
-			if conf.CheckFileNameExt {
+			if conf.CheckFileNameExt && inFile != "-" {
 				ensurePDFExtension(inFile)
 			}
+			continue
+		}
+		if i == 1 && (hasPDFExtension(arg) || arg == "-") {
+			outFile = arg
+			ensureOutputFileAvailableOrExit(outFile)
 			continue
 		}
 
@@ -1601,19 +1829,25 @@ func processRemovePropertiesCommand(conf *model.Configuration, args []string) {
 		keys = append(keys, arg)
 	}
 
-	process(cli.RemovePropertiesCommand(inFile, "", keys, conf))
+	process(cli.RemovePropertiesCommand(inFile, outFile, keys, conf))
 }
 
 func processCollectCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 2 {
 		outFile = args[1]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	selectedPages, err := api.ParsePageSelection(selectedPages)
@@ -1634,7 +1868,7 @@ func processListBoxesCommand(conf *model.Configuration, args []string) {
 
 	if len(args) == 1 {
 		inFile := args[0]
-		if conf.CheckFileNameExt {
+		if conf.CheckFileNameExt && inFile != "-" {
 			ensurePDFExtension(inFile)
 		}
 		process(cli.ListBoxesCommand(inFile, selectedPages, nil, conf))
@@ -1648,7 +1882,7 @@ func processListBoxesCommand(conf *model.Configuration, args []string) {
 	}
 
 	inFile := args[1]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -1665,14 +1899,20 @@ func processAddBoxesCommand(conf *model.Configuration, args []string) {
 	}
 
 	inFile := args[1]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 3 {
 		outFile = args[2]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	selectedPages, err := api.ParsePageSelection(selectedPages)
@@ -1700,14 +1940,20 @@ func processRemoveBoxesCommand(conf *model.Configuration, args []string) {
 	}
 
 	inFile := args[1]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 3 {
 		outFile = args[2]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	selectedPages, err := api.ParsePageSelection(selectedPages)
@@ -1728,14 +1974,20 @@ func processCropCommand(conf *model.Configuration, args []string) {
 	}
 
 	inFile := args[1]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 3 {
 		outFile = args[2]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	selectedPages, err := api.ParsePageSelection(selectedPages)
@@ -1748,7 +2000,7 @@ func processCropCommand(conf *model.Configuration, args []string) {
 
 func processListAnnotationsCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -1776,14 +2028,15 @@ func processRemoveAnnotationsCommand(conf *model.Configuration, args []string) {
 	for i, arg := range args {
 		if i == 0 {
 			inFile = arg
-			if conf.CheckFileNameExt {
+			if conf.CheckFileNameExt && inFile != "-" {
 				ensurePDFExtension(inFile)
 			}
 			continue
 		}
 		if i == 1 {
-			if hasPDFExtension(arg) {
+			if hasPDFExtension(arg) || arg == "-" {
 				outFile = arg
+				ensureOutputFileAvailableOrExit(outFile)
 				continue
 			}
 		}
@@ -1813,7 +2066,7 @@ func processListImagesCommand(conf *model.Configuration, args []string) {
 			inFiles = append(inFiles, matches...)
 			continue
 		}
-		if conf.CheckFileNameExt {
+		if conf.CheckFileNameExt && arg != "-" {
 			ensurePDFExtension(arg)
 		}
 		inFiles = append(inFiles, arg)
@@ -1830,10 +2083,11 @@ func processListImagesCommand(conf *model.Configuration, args []string) {
 func processExtractImagesCommand(conf *model.Configuration, args []string) {
 	// See also processExtractCommand
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 	outDir := args[1]
+	ensureOutputDirEmptyOrExit(outDir)
 
 	pages, err := api.ParsePageSelection(selectedPages)
 	if err != nil {
@@ -1845,7 +2099,7 @@ func processExtractImagesCommand(conf *model.Configuration, args []string) {
 
 func processUpdateImagesCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -1859,8 +2113,11 @@ func processUpdateImagesCommand(conf *model.Configuration, args []string) {
 	argCount := len(args)
 	if argCount > 2 {
 		c := 2
-		if hasPDFExtension(args[2]) {
+		if hasPDFExtension(args[2]) || args[2] == "-" {
 			outFile = args[2]
+			if outFile != "-" {
+				ensureOutputFileAvailableOrExit(outFile)
+			}
 			c++
 		}
 		if argCount > c {
@@ -1917,13 +2174,20 @@ func processCreateCommand(conf *model.Configuration, args []string) {
 	inFile, outFile := "", ""
 	if len(args) == 2 {
 		outFile = args[1]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
 	} else {
 		inFile = args[1]
-		ensurePDFExtension(inFile)
+		if inFile != "-" {
+			ensurePDFExtension(inFile)
+		}
 		outFile = args[2]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
 	}
+	ensureOutputFileAvailableOrExit(outFile)
 
 	process(cli.CreateCommand(inFile, inFileJSON, outFile, conf))
 }
@@ -1941,7 +2205,7 @@ func processListFormFieldsCommand(conf *model.Configuration, args []string) {
 			inFiles = append(inFiles, matches...)
 			continue
 		}
-		if conf.CheckFileNameExt {
+		if conf.CheckFileNameExt && arg != "-" {
 			ensurePDFExtension(arg)
 		}
 		inFiles = append(inFiles, arg)
@@ -1952,12 +2216,15 @@ func processListFormFieldsCommand(conf *model.Configuration, args []string) {
 
 func processRemoveFormFieldsCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	var fieldIDs []string
 	outFile := inFile
+	if inFile == "-" {
+		outFile = "-"
+	}
 
 	if len(args) == 2 {
 		s := args[1]
@@ -1968,8 +2235,11 @@ func processRemoveFormFieldsCommand(conf *model.Configuration, args []string) {
 		fieldIDs = append(fieldIDs, s)
 	} else {
 		s := args[1]
-		if hasPDFExtension(s) {
+		if hasPDFExtension(s) || s == "-" {
 			outFile = s
+			if outFile != "-" {
+				ensureOutputFileAvailableOrExit(outFile)
+			}
 		} else {
 			fieldIDs = append(fieldIDs, s)
 		}
@@ -1983,17 +2253,23 @@ func processRemoveFormFieldsCommand(conf *model.Configuration, args []string) {
 
 func processLockFormCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	var fieldIDs []string
 	outFile := inFile
+	if inFile == "-" {
+		outFile = "-"
+	}
 
 	if len(args) > 1 {
 		s := args[1]
-		if hasPDFExtension(s) {
+		if hasPDFExtension(s) || s == "-" {
 			outFile = s
+			if outFile != "-" {
+				ensureOutputFileAvailableOrExit(outFile)
+			}
 		} else {
 			fieldIDs = append(fieldIDs, s)
 		}
@@ -2010,17 +2286,23 @@ func processLockFormCommand(conf *model.Configuration, args []string) {
 
 func processUnlockFormCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	var fieldIDs []string
 	outFile := inFile
+	if inFile == "-" {
+		outFile = "-"
+	}
 
 	if len(args) > 1 {
 		s := args[1]
-		if hasPDFExtension(s) {
+		if hasPDFExtension(s) || s == "-" {
 			outFile = s
+			if outFile != "-" {
+				ensureOutputFileAvailableOrExit(outFile)
+			}
 		} else {
 			fieldIDs = append(fieldIDs, s)
 		}
@@ -2037,17 +2319,23 @@ func processUnlockFormCommand(conf *model.Configuration, args []string) {
 
 func processResetFormCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	var fieldIDs []string
 	outFile := inFile
+	if inFile == "-" {
+		outFile = "-"
+	}
 
 	if len(args) > 1 {
 		s := args[1]
-		if hasPDFExtension(s) {
+		if hasPDFExtension(s) || s == "-" {
 			outFile = s
+			if outFile != "-" {
+				ensureOutputFileAvailableOrExit(outFile)
+			}
 		} else {
 			fieldIDs = append(fieldIDs, s)
 		}
@@ -2064,7 +2352,7 @@ func processResetFormCommand(conf *model.Configuration, args []string) {
 
 func processExportFormCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2074,13 +2362,14 @@ func processExportFormCommand(conf *model.Configuration, args []string) {
 		ensureJSONExtension(outFileJSON)
 	}
 	ensureJSONExtension(outFileJSON)
+	ensureOutputFileAvailableOrExit(outFileJSON)
 
 	process(cli.ExportFormCommand(inFile, outFileJSON, conf))
 }
 
 func processFillFormCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2088,9 +2377,15 @@ func processFillFormCommand(conf *model.Configuration, args []string) {
 	ensureJSONExtension(inFileJSON)
 
 	outFile := inFile
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 3 {
 		outFile = args[2]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+			ensureOutputFileAvailableOrExit(outFile)
+		}
 	}
 
 	process(cli.FillFormCommand(inFile, inFileJSON, outFile, conf))
@@ -2107,7 +2402,7 @@ func processMultiFillFormCommand(conf *model.Configuration, args []string, opts 
 	}
 
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2120,9 +2415,24 @@ func processMultiFillFormCommand(conf *model.Configuration, args []string, opts 
 	outDir := args[2]
 
 	outFile := inFile
+	if inFile == "-" {
+		outFile = "stdin.pdf"
+	}
 	if len(args) == 4 {
 		outFile = args[3]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+	}
+	if outFile == "-" {
+		if opts.mode != "merge" {
+			fmt.Fprintf(os.Stderr, "form multifill stdout requires -m merge")
+			os.Exit(1)
+		}
+	} else if len(args) == 4 {
+		ensureOutputDirOrFileAvailableOrExit(outDir, outFile)
+	} else {
+		ensureOutputDirOrFileAvailableOrExit(outDir, "")
 	}
 
 	process(cli.MultiFillFormCommand(inFile, inFileData, outDir, outFile, opts.mode == "merge", conf))
@@ -2138,14 +2448,20 @@ func processResizeCommand(conf *model.Configuration, args []string) {
 	}
 
 	inFile := args[1]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 3 {
 		outFile = args[2]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	selectedPages, err := api.ParsePageSelection(selectedPages)
@@ -2167,7 +2483,7 @@ func processPosterCommand(conf *model.Configuration, args []string) {
 	}
 
 	inFile := args[1]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2182,6 +2498,7 @@ func processPosterCommand(conf *model.Configuration, args []string) {
 	if len(args) == 4 {
 		outFile = args[3]
 	}
+	ensureOutputDirOrFileAvailableOrExit(outDir, outFile)
 
 	process(cli.PosterCommand(inFile, outDir, outFile, selectedPages, cut, conf))
 }
@@ -2207,7 +2524,7 @@ func processNDownCommand(conf *model.Configuration, args []string) {
 			os.Exit(1)
 		}
 		inFile = args[1]
-		if conf.CheckFileNameExt {
+		if conf.CheckFileNameExt && inFile != "-" {
 			ensurePDFExtension(inFile)
 		}
 		outDir = args[2]
@@ -2216,6 +2533,7 @@ func processNDownCommand(conf *model.Configuration, args []string) {
 		if len(args) == 4 {
 			outFile = args[3]
 		}
+		ensureOutputDirOrFileAvailableOrExit(outDir, outFile)
 
 		process(cli.NDownCommand(inFile, outDir, outFile, selectedPages, n, cut, conf))
 		return
@@ -2237,7 +2555,7 @@ func processNDownCommand(conf *model.Configuration, args []string) {
 	}
 
 	inFile = args[2]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 	outDir = args[3]
@@ -2246,6 +2564,7 @@ func processNDownCommand(conf *model.Configuration, args []string) {
 	if len(args) == 5 {
 		outFile = args[4]
 	}
+	ensureOutputDirOrFileAvailableOrExit(outDir, outFile)
 
 	process(cli.NDownCommand(inFile, outDir, outFile, selectedPages, n, cut, conf))
 }
@@ -2262,7 +2581,7 @@ func processCutCommand(conf *model.Configuration, args []string) {
 	}
 
 	inFile := args[1]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2277,13 +2596,14 @@ func processCutCommand(conf *model.Configuration, args []string) {
 	if len(args) >= 4 {
 		outFile = args[3]
 	}
+	ensureOutputDirOrFileAvailableOrExit(outDir, outFile)
 
 	process(cli.CutCommand(inFile, outDir, outFile, selectedPages, cut, conf))
 }
 
 func processListBookmarksCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2292,7 +2612,7 @@ func processListBookmarksCommand(conf *model.Configuration, args []string) {
 
 func processExportBookmarksCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2301,13 +2621,14 @@ func processExportBookmarksCommand(conf *model.Configuration, args []string) {
 		outFileJSON = args[1]
 		ensureJSONExtension(outFileJSON)
 	}
+	ensureOutputFileAvailableOrExit(outFileJSON)
 
 	process(cli.ExportBookmarksCommand(inFile, outFileJSON, conf))
 }
 
 func processImportBookmarksCommand(conf *model.Configuration, args []string, opts *bookmarksImportOptions) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2315,9 +2636,15 @@ func processImportBookmarksCommand(conf *model.Configuration, args []string, opt
 	ensureJSONExtension(inFileJSON)
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 3 {
 		outFile = args[2]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	process(cli.ImportBookmarksCommand(inFile, inFileJSON, outFile, opts.replaceBookmarks, conf))
@@ -2325,14 +2652,20 @@ func processImportBookmarksCommand(conf *model.Configuration, args []string, opt
 
 func processRemoveBookmarksCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 2 {
 		outFile = args[1]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	process(cli.RemoveBookmarksCommand(inFile, outFile, conf))
@@ -2340,7 +2673,7 @@ func processRemoveBookmarksCommand(conf *model.Configuration, args []string) {
 
 func processListPageLayoutCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2349,7 +2682,7 @@ func processListPageLayoutCommand(conf *model.Configuration, args []string) {
 
 func processSetPageLayoutCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2359,21 +2692,45 @@ func processSetPageLayoutCommand(conf *model.Configuration, args []string) {
 		os.Exit(1)
 	}
 
-	process(cli.SetPageLayoutCommand(inFile, "", v, conf))
+	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
+	if len(args) == 3 {
+		outFile = args[2]
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
+	}
+
+	process(cli.SetPageLayoutCommand(inFile, outFile, v, conf))
 }
 
 func processResetPageLayoutCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
-	process(cli.ResetPageLayoutCommand(inFile, "", conf))
+	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
+	if len(args) == 2 {
+		outFile = args[1]
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
+	}
+
+	process(cli.ResetPageLayoutCommand(inFile, outFile, conf))
 }
 
 func processListPageModeCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2382,7 +2739,7 @@ func processListPageModeCommand(conf *model.Configuration, args []string) {
 
 func processSetPageModeCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2392,21 +2749,45 @@ func processSetPageModeCommand(conf *model.Configuration, args []string) {
 		os.Exit(1)
 	}
 
-	process(cli.SetPageModeCommand(inFile, "", v, conf))
+	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
+	if len(args) == 3 {
+		outFile = args[2]
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
+	}
+
+	process(cli.SetPageModeCommand(inFile, outFile, v, conf))
 }
 
 func processResetPageModeCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
-	process(cli.ResetPageModeCommand(inFile, "", conf))
+	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
+	if len(args) == 2 {
+		outFile = args[1]
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
+	}
+
+	process(cli.ResetPageModeCommand(inFile, outFile, conf))
 }
 
 func processListViewerPreferencesCommand(conf *model.Configuration, args []string, opts *viewerpreferencesListOptions) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2419,7 +2800,7 @@ func processListViewerPreferencesCommand(conf *model.Configuration, args []strin
 
 func processSetViewerPreferencesCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2431,16 +2812,40 @@ func processSetViewerPreferencesCommand(conf *model.Configuration, args []string
 		stringJSON = s
 	}
 
-	process(cli.SetViewerPreferencesCommand(inFile, inFileJSON, "", stringJSON, conf))
+	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
+	if len(args) == 3 {
+		outFile = args[2]
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
+	}
+
+	process(cli.SetViewerPreferencesCommand(inFile, inFileJSON, outFile, stringJSON, conf))
 }
 
 func processResetViewerPreferencesCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
-	process(cli.ResetViewerPreferencesCommand(inFile, "", conf))
+	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
+	if len(args) == 2 {
+		outFile = args[1]
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
+	}
+
+	process(cli.ResetViewerPreferencesCommand(inFile, outFile, conf))
 }
 
 func processZoomCommand(conf *model.Configuration, args []string) {
@@ -2453,14 +2858,20 @@ func processZoomCommand(conf *model.Configuration, args []string) {
 	}
 
 	inFile := args[1]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 3 {
 		outFile = args[2]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	selectedPages, err := api.ParsePageSelection(selectedPages)
@@ -2547,7 +2958,7 @@ func processImportCertificatesCommand(conf *model.Configuration, args []string) 
 
 func processValidateSignaturesCommand(conf *model.Configuration, args []string, opts *signaturesValidateOptions) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
@@ -2556,14 +2967,20 @@ func processValidateSignaturesCommand(conf *model.Configuration, args []string, 
 
 func processRemoveSignaturesCommand(conf *model.Configuration, args []string) {
 	inFile := args[0]
-	if conf.CheckFileNameExt {
+	if conf.CheckFileNameExt && inFile != "-" {
 		ensurePDFExtension(inFile)
 	}
 
 	outFile := inFile
+	if inFile == "-" {
+		outFile = "-"
+	}
 	if len(args) == 2 {
 		outFile = args[1]
-		ensurePDFExtension(outFile)
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
 	}
 
 	process(cli.RemoveSignaturesCommand(inFile, outFile, conf))

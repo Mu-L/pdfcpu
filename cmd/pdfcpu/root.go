@@ -28,6 +28,7 @@ import (
 
 var (
 	conf             string
+	force            bool
 	kpw              string
 	needStackTrace   bool //= true
 	offline          bool
@@ -58,6 +59,7 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVarP(&conf, "conf", "c", "", "set or disable config dir: $path | disable")
+	rootCmd.PersistentFlags().BoolVar(&force, "force", false, "overwrite existing output files")
 	rootCmd.PersistentFlags().BoolVarP(&offline, "offline", "o", false, "disable http traffic")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "disable output")
 	rootCmd.PersistentFlags().CountVarP(&verbose, "verbose", "v", "Increase verbosity. Use -v or -vv.")

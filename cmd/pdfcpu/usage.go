@@ -22,40 +22,49 @@ const (
       mode ... validation mode
      links ... check for broken links
   optimize ... optimize resources (fonts, forms, images)
-    inFile ... input PDF file
-		
+    inFile ... input PDF file, use - to read from stdin
+
 The validation modes are:
     strict ... validate against PDF 32000-1:2008 (PDF 1.7) and rudimentary against PDF 32000:2 (PDF 2.0)
    relaxed ... (default) like strict but doesn't complain about common spec violations.
 
 Validation turns off optimization unless in verbose mode.
-You can enforce optimization using --opt=true (or just --opt).`
+You can enforce optimization using --opt=true (or just --opt).
+
+Pipeline example:
+   aws s3 cp s3://acme-invoices/invoice.pdf - \
+      | pdfcpu validate -`
 
 	usageLongOptimize = `Read inFile, remove redundant page resources like embedded fonts and images and write the result to outFile.
 
      stats ... append a stats line to a csv file with information about the usage of root and page entries.
                useful for batch optimization and debugging PDFs.
-    inFile ... input PDF file
-   outFile ... output PDF file`
+    inFile ... input PDF file, use - to read from stdin
+   outFile ... output PDF file, use - to write to stdout
+
+Pipeline example:
+   aws s3 cp s3://acme-contracts/master.pdf - \
+      | pdfcpu optimize - - \
+      | aws s3 cp - s3://acme-contracts/optimized/master.pdf`
 
 	usageLongSplit = `Generate a set of PDFs for the input file in outDir according to given span value or along bookmarks or page numbers.
 
       mode ... split mode (defaults to span)
-    inFile ... input PDF file
+    inFile ... input PDF file, use - to read from stdin
     outDir ... output directory
       span ... split span in pages (default: 1) for mode "span"
     pageNr ... split before a specific page number for mode "page"
-      
+
 The split modes are:
 
       span     ... Split into PDF files with span pages each (default).
                    span itself defaults to 1 resulting in single page PDF files.
-  
+
       bookmark ... Split into PDF files representing sections defined by existing bookmarks.
                    Assumption: inFile contains an outline dictionary.
-                   
+
       page     ... Split before specific page numbers.
-      
+
 Eg. pdfcpu split test.pdf .      (= pdfcpu split -m span test.pdf . 1)
       generates:
          test_1.pdf
@@ -79,7 +88,11 @@ Eg. pdfcpu split test.pdf .      (= pdfcpu split -m span test.pdf . 1)
          test_1.pdf
          test_2-3.pdf
          test_4-9.pdf
-         test_10-20.pdf`
+         test_10-20.pdf
+
+Pipeline example:
+   aws s3 cp s3://acme-reports/board-pack.pdf - \
+      | pdfcpu split -m page - ./board-pack 10 25`
 
 	usageLongMerge = `Concatenate a sequence of PDFs/inFiles into outFile.
 
@@ -88,22 +101,27 @@ Eg. pdfcpu split test.pdf .      (= pdfcpu split -m span test.pdf . 1)
  bookmarks ... create bookmarks
    divider ... insert blank page between merged documents
   optimize ... optimize before writing (default: true)
-
-   outFile ... output PDF file
+   outFile ... output PDF file, use - to write to stdout
     inFile ... a list of PDF files subject to concatenation.
-    
+               use - to read from stdin for the first inFile in create mode only
+
 The merge modes are:
-
     create ... outFile will be created and possibly overwritten (default).
-
     append ... if outFile does not exist, it will be created (like in default mode).
                if outFile already exists, inFiles will be appended to outFile.
-
        zip ... zip inFile1 and inFile2 into outFile (which will be created and possibly overwritten).
-               
+
 Skip bookmark creation: -b=false or --bookmarks=false
 
-Skip optimization before writing: --opt=false`
+Skip optimization before writing: --opt=false
+
+Pipeline examples:
+   pdfcpu merge - quarterly/*.pdf \
+      | aws s3 cp - s3://acme-reports/quarterly/merged.pdf
+
+   aws s3 cp s3://acme-reports/cover.pdf - \
+      | pdfcpu merge - - chapter1.pdf chapter2.pdf \
+      | aws s3 cp - s3://acme-reports/book.pdf`
 
 	usagePageSelection = `'-p' or '--pages' selects pages for processing and is a comma separated list of expressions:
 
@@ -117,7 +135,7 @@ Skip optimization before writing: --opt=false`
      #- ... include page # - last page    -# ... include first page - page #
     !#- ... exclude page # - last page   !-# ... exclude first page - page #
     n#- ... exclude page # - last page   n-# ... exclude first page - page #
-    
+
    l-3- ... include last 3 pages         l-3 ... include page # last-3
   -l-3  ... include all, but last 3    2-l-1 ... pages 2 up to "last-1"
 
@@ -129,8 +147,8 @@ Skip optimization before writing: --opt=false`
 
       mode ... extraction mode
      pages ... Please refer to "pdfcpu selectedpages"
-    inFile ... input PDF file
-    outDir ... output directory
+    inFile ... input PDF file, use - to read from stdin
+    outDir ... output directory, use - with mode page and one selected page to write to stdout
 
  The extraction modes are:
 
@@ -139,45 +157,87 @@ Skip optimization before writing: --opt=false`
 content ... extract raw page content
    page ... extract single page PDFs
    meta ... extract all metadata (page selection does not apply)
-   
+
+Pipeline example:
+   aws s3 cp s3://acme-archive/contract.pdf - \
+      | pdfcpu extract -m page -p 3 - - \
+      | aws s3 cp - s3://acme-archive/pages/contract-page-3.pdf
 `
 
 	usageLongTrim = `Generate a trimmed version of inFile for selected pages.
 
      pages ... Please refer to "pdfcpu selectedpages"
-    inFile ... input PDF file
-   outFile ... output PDF file
-   
+    inFile ... input PDF file, use - to read from stdin
+   outFile ... output PDF file, use - to write to stdout
+
+Pipeline example:
+   aws s3 cp s3://acme-cases/filing.pdf - \
+      | pdfcpu trim -p 1-12 - - \
+      | aws s3 cp - s3://acme-cases/filing-trimmed.pdf
 `
 
 	usageLongAttach = `Manage embedded file attachments.
 
-    inFile ... input PDF file
+    inFile ... input PDF file, use - to read from stdin
       file ... attachment
     outDir ... output directory
-    
-    Remove all attachments: pdfcpu attach remove test.pdf
-    `
+
+    Adding attachments:
+           pdfcpu attachment add test.pdf test.mp3 test.mkv
+
+    Extract all attachments:
+           pdfcpu attachments extract .
+
+    Remove all attachments:
+           pdfcpu attach remove test.pdf
+
+Pipeline examples:
+   aws s3 cp s3://acme-archive/report.pdf - \
+      | pdfcpu attachments list -
+
+   aws s3 cp s3://acme-archive/report.pdf - \
+      | pdfcpu attachments add - source.xlsx > report-with-source.pdf
+
+   cat report-with-source.pdf \
+      | pdfcpu attachments remove - source.xlsx > report-without-source.pdf
+
+   aws s3 cp s3://acme-archive/report.pdf - \
+      | pdfcpu attachments extract - ./attachments
+	`
 
 	usageLongPortfolio = `Manage portfolio entries.
 
-    inFile ... input PDF file
+    inFile ... input PDF file, use - to read from stdin
       file ... attachment
       desc ... description (optional)
     outDir ... output directory
-    
-    Adding attachments to portfolio: 
+
+    Adding attachments to portfolio:
            pdfcpu portfolio add test.pdf test.mp3 test.mkv
 
-    Adding attachments to portfolio with description: 
+    Adding attachments to portfolio with description:
            pdfcpu portfolio add test.pdf "test.mp3, Test sound file" "test.mkv, Test video file"
+
+Pipeline examples:
+   aws s3 cp s3://acme-dataroom/package.pdf - \
+      | pdfcpu portfolio list -
+
+   aws s3 cp s3://acme-dataroom/package.pdf - \
+      | pdfcpu portfolio add - contract.pdf > package-with-contract.pdf
+
+   cat package-with-contract.pdf \
+      | pdfcpu portfolio remove - contract.pdf > package-without-contract.pdf
+
+   aws s3 cp s3://acme-dataroom/package.pdf - \
+      | pdfcpu portfolio extract - ./portfolio
     `
 
 	usageLongPerm = `Manage user access permissions.
 
       perm ... user access permissions
-    inFile ... input PDF file
-    
+    inFile ... input PDF file, use - to read from stdin
+   outFile ... output PDF file, use - to write to stdout
+
    perm modes:
            none: 000000000000 (x000)
           print: 100000000100 (x804)
@@ -185,7 +245,7 @@ content ... extract raw page content
 
    or perm explicitly:
          'x' + max. 3 hex digits (max3Hex, eg. xF30)
-         max. 12 binary digits (max12Bits, eg. 111100110000) 
+         max. 12 binary digits (max12Bits, eg. 111100110000)
 
    using the permission bits:
 
@@ -200,62 +260,87 @@ content ... extract raw page content
       9: Fill form fields (security handlers >= rev.3)
      10: Copy, extract text & graphics (security handlers >= rev.3) (unused since PDF 2.0)
      11: Assemble document (security handlers >= rev.3)
-     12: Print (security handlers >= rev.3)`
+     12: Print (security handlers >= rev.3)
+
+Pipeline examples:
+   aws s3 cp s3://acme-legal/protected.pdf - \
+      | pdfcpu permissions list -
+
+   aws s3 cp s3://acme-legal/protected.pdf - \
+      | pdfcpu permissions set --opw "$OPW" --perm print - - \
+      | aws s3 cp - s3://acme-legal/printable.pdf`
 
 	usageLongEncrypt = `Setup password protection based on user and owner password.
 
       mode ... algorithm (default=aes)
        key ... key length in bits (default=256)
       perm ... user access permissions
-    inFile ... input PDF file
-   outFile ... output PDF file
+    inFile ... input PDF file, use - to read from stdin
+   outFile ... output PDF file, use - to write to stdout
 
-PDF 2.0 files have to be encrypted using aes/256.`
+PDF 2.0 files have to be encrypted using aes/256.
+
+Pipeline example:
+   aws s3 cp s3://acme-hr/onboarding.pdf - \
+      | pdfcpu encrypt --opw "$OPW" --upw "$UPW" - - \
+      | aws s3 cp - s3://acme-hr/secure/onboarding.pdf`
 
 	usageLongDecrypt = `Remove password protection and reset permissions.
 
-    inFile ... input PDF file
-   outFile ... output PDF file`
+    inFile ... input PDF file, use - to read from stdin
+   outFile ... output PDF file, use - to write to stdout
+
+Pipeline example:
+   aws s3 cp s3://acme-hr/secure/onboarding.pdf - \
+      | pdfcpu decrypt --upw "$UPW" - - \
+      | aws s3 cp - s3://acme-hr/plain/onboarding.pdf`
 
 	usageLongChangeUserPW = `Change the user password also known as the open doc password.
 
        opw ... owner password, required unless = ""
-    inFile ... input PDF file
+    inFile ... input PDF file, use - to read from stdin
     upwOld ... old user password
-    upwNew ... new user password`
+    upwNew ... new user password
+   outFile ... output PDF file, use - to write to stdout
+
+Pipeline example:
+   aws s3 cp s3://acme-legal/client.pdf - \
+      | pdfcpu changeupw --opw "$OPW" - "$OLD_UPW" "$NEW_UPW" - \
+      | aws s3 cp - s3://acme-legal/client-rotated-upw.pdf`
 
 	usageLongChangeOwnerPW = `Change the owner password also known as the set permissions password.
 
        upw ... user password, required unless = ""
-    inFile ... input PDF file
+    inFile ... input PDF file, use - to read from stdin
     opwOld ... old owner password (provide user password on initial changeopw)
-    opwNew ... new owner password`
+    opwNew ... new owner password
+   outFile ... output PDF file, use - to write to stdout
+
+Pipeline example:
+   aws s3 cp s3://acme-legal/client.pdf - \
+      | pdfcpu changeopw --upw "$UPW" - "$OLD_OPW" "$NEW_OPW" - \
+      | aws s3 cp - s3://acme-legal/client-rotated-opw.pdf`
 
 	usageStampMode = `There are 3 different kinds of stamps:
-
    1) text based:
-      --mode text string			
+      --mode text string
          eg. pdfcpu stamp add "Hello gopher!" "" in.pdf out.pdf --mode text
          Use the following format strings:
                %p{off} ... current page number, page number offset off defaults to 0
                %P      ... total pages
          eg. pdfcpu stamp add --mode text -- 'Page %p of %P' 'scale:1.0 abs, pos:bc, rot:0' in.pdf out.pdf
                                              'Page %p3 of %P' will base page number on offset=3
-   
    2) image based
       --mode image imageFileName
          supported extensions: .jpg, .jpeg, .png, .tif, .tiff, .webp
          eg. pdfcpu stamp add 'logo.png' '' in.pdf out.pdf --mode image
-         
    3) PDF based
       --mode pdf PDFFileName:page#
          Stamp selected pages of infile with one specific page of a stamp PDF file.
          Eg: pdfcpu stamp add 'stamp.pdf:3' '' in.pdf out.pdf --mode pdf ... stamp each page of in.pdf with page 3 of stamp.pdf
-           
       --mode pdf PDFFileName
          Multistamp your file, meaning apply all pages of a stamp PDF file one by one to ascending pages of inFile.
          Eg: pdfcpu stamp add 'stamp.pdf' '' in.pdf out.pdf --mode pdf ... multistamp all pages of in.pdf with ascending pages of stamp.pdf
-   
       --mode pdf PDFFileName:startPage#Src:startPage#Dest
          Customize your multistamp by starting with startPage#Src of a stamp PDF file.
          Apply repeatedly pages of the stamp file to inFile starting at startPage#Dest.
@@ -265,24 +350,24 @@ PDF 2.0 files have to be encrypted using aes/256.`
 	usageWatermarkMode = `There are 3 different kinds of watermarks:
 
    1) text based:
-      --mode text string			
+      --mode text string
          eg. pdfcpu watermark add 'Hello gopher!' '' in.pdf out.pdf --mode text
          Use the following format strings:
                %p{off} ... current page number, page number offset off defaults to 0
                %P      ... total pages
          eg. pdfcpu watermark add -mode text -- 'Page %p of %P' 'scale:1.0 abs, pos:bc, rot:0' in.pdf out.pdf
                                                 'Page %p3 of %P' will base page number on offset=3
-   
+
    2) image based
       --mode image imageFileName
-         supported extensions: .jpg, .jpeg, .png, .tif, .tiff, .webp 
+         supported extensions: .jpg, .jpeg, .png, .tif, .tiff, .webp
          eg. pdfcpu watermark add 'logo.png' '' in.pdf out.pdf --mode image
-         
+
    3) PDF based
       --mode pdf PDFFileName:page#
          Watermark selected pages of infile with one specific page of a watermark PDF file.
          Eg: pdfcpu watermark add 'watermark.pdf:3' '' in.pdf out.pdf --mode pdf  ... watermark each page of in.pdf with page 3 of watermark.pdf
-        
+
       --mode pdf PDFFileName
          Multiwatermark your file, meaning apply all pages of a watermark PDF file one by one to ascending pages of inFile.
          Eg: pdfcpu watermark add 'watermark.pdf' '' in.pdf out.pdf --mode pdf  ... multiwatermark all pages of in.pdf with ascending pages of watermark.pdf
@@ -298,8 +383,8 @@ PDF 2.0 files have to be encrypted using aes/256.`
 	usageWMDescription = `
 
 <description> is a comma separated configuration string containing these optional entries:
-   
-   (defaults: "font:Helvetica, points:24, rtl:off, pos:c, off:0,0 scale:0.5 rel, rot:0, d:1, op:1, m:0 and for all colors: 0.5 0.5 0.5")
+
+      (defaults: "font:Helvetica, points:24, rtl:off, pos:c, off:0,0 scale:0.5 rel, rot:0, d:1, op:1, m:0 and for all colors: 0.5 0.5 0.5")
 
    fontname:         Please refer to "pdfcpu fonts list"
 
@@ -322,26 +407,26 @@ PDF 2.0 files have to be encrypted using aes/256.`
                            bl|bottom-left  bc|bottom-center   br|bottom-right
 
    offset:           (dx dy) in given display unit eg. '15 20'
-   
+
    scalefactor:      0.0 < i <= 1.0 {r|rel} | 0.0 < i {a|abs}
-                    
+
    aligntext:        l|left, c|center, r|right, j|justified (for text watermarks only)
 
    fillcolor:        color value to be used when rendering text, see also rendermode
                      for backwards compatibility "color" is also accepted.
-   
+
    strokecolor:      color value to be used when rendering text, see also rendermode
-   
+
    backgroundcolor:  color value for visualization of the bounding box background for text.
-                     "bgcolor" is also accepted. 
-   
+                     "bgcolor" is also accepted.
+
    rotation:         -180.0 <= x <= 180.0
-   
+
    diagonal:         render along diagonal
                      1..lower left to upper right
                      2..upper left to lower right (if present overrules r!)
                      Only one of rotation and diagonal is allowed!
-   
+
    opacity:          where 0.0 <= x <= 1.0
 
    mode, rendermode: 0 ... fill (applies fill color)
@@ -365,7 +450,7 @@ PDF 2.0 files have to be encrypted using aes/256.`
 
    url:              Add link annotation for stamps only (omit https://)
 
-A color value: 3 color intensities, where 0.0 < i < 1.0, eg 1.0, 
+A color value: 3 color intensities, where 0.0 < i < 1.0, eg 1.0,
                or the hex RGB value: #RRGGBB, eg #FF0000 = red
 
 All configuration string parameters support completion.
@@ -377,7 +462,7 @@ e.g. "pos:bl, off: 20 5"   "rot:45"                 "op:0.5, scale:0.5 abs, rot:
 
 `
 
-	usageLongStamp = `Process stamping for selected pages. 
+	usageLongStamp = `Process stamping for selected pages.
 
       pages ... Please refer to "pdfcpu selectedpages"
         upw ... user password
@@ -385,14 +470,26 @@ e.g. "pos:bl, off: 20 5"   "rot:45"                 "op:0.5, scale:0.5 abs, rot:
        mode ... text, image, PDF
      string ... display string for text based watermarks
        file ... image or PDF file
-description ... fontname, points, position, offset, scalefactor, aligntext, rotation, 
+description ... fontname, points, position, offset, scalefactor, aligntext, rotation,
                 diagonal, opacity, rendermode, strokecolor, fillcolor, bgcolor, margins, border
-     inFile ... input PDF file
-    outFile ... output PDF file
+     inFile ... input PDF file, use - to read from stdin
+    outFile ... output PDF file, use - to write to stdout
+
+Pipeline examples:
+   aws s3 cp s3://acme-branding/proposal.pdf - \
+      | pdfcpu stamp add "CONFIDENTIAL" "pos:tr, scale:.35 abs, op:.6" - - \
+      | aws s3 cp - s3://acme-branding/proposal-stamped.pdf
+
+   aws s3 cp s3://acme-branding/proposal-stamped.pdf - \
+      | pdfcpu stamp update "APPROVED" "pos:tr, scale:.35 abs, op:.6" - - \
+      | aws s3 cp - s3://acme-branding/proposal-approved.pdf
+
+   aws s3 cp s3://acme-branding/proposal-approved.pdf - \
+      | pdfcpu stamp remove - - \
+      | aws s3 cp - s3://acme-branding/proposal-clean.pdf
 
 ` + usageStampMode + usageWMDescription
-
-	usageLongWatermark = `Process watermarking for selected pages. 
+	usageLongWatermark = `Process watermarking for selected pages.
 
       pages ... Please refer to "pdfcpu selectedpages"
        mode ... text, image, PDF
@@ -400,107 +497,140 @@ description ... fontname, points, position, offset, scalefactor, aligntext, rota
        file ... image or PDF file
 description ... fontname, points, position, offset, scalefactor, aligntext, rotation,
                 diagonal, opacity, rendermode, strokecolor, fillcolor, bgcolor, margins, border
-     inFile ... input PDF file
-    outFile ... output PDF file
+     inFile ... input PDF file, use - to read from stdin
+    outFile ... output PDF file, use - to write to stdout
+
+Pipeline examples:
+   aws s3 cp s3://acme-dataroom/draft.pdf - \
+      | pdfcpu watermark add "DRAFT" "diag:1, scale:.8 rel, op:.25" - - \
+      | aws s3 cp - s3://acme-dataroom/draft-watermarked.pdf
+
+   aws s3 cp s3://acme-dataroom/draft-watermarked.pdf - \
+      | pdfcpu watermark update "REVIEW" "diag:1, scale:.8 rel, op:.25" - - \
+      | aws s3 cp - s3://acme-dataroom/draft-review.pdf
+
+   aws s3 cp s3://acme-dataroom/draft-review.pdf - \
+      | pdfcpu watermark remove - - \
+      | aws s3 cp - s3://acme-dataroom/draft-clean.pdf
 
 ` + usageWatermarkMode + usageWMDescription
 
 	usageLongImportImages = `Turn image files into a PDF page sequence and write the result to outFile.
 If outFile already exists the page sequence will be appended.
+
 Each imageFile will be rendered to a separate page.
 In its simplest form this converts an image into a PDF: "pdfcpu import img.pdf img.jpg"
 
 description ... dimensions, formsize, position, offset, scale factor, boxes
-    outFile ... output PDF file
-  imageFile ... a list of image files
-  
-  <description> is a comma separated configuration string containing:
+    outFile ... output PDF file, use - to write to stdout
+  imageFile ... a list of image files, use - to read one image from stdin
 
+  <description> is a comma separated configuration string containing:
+  
   optional entries:
 
       (defaults: "dim:595 842, f:A4, pos:full, off:0 0, sc:0.5 rel, dpi:72, gray:off, sepia:off")
-
-  dimensions:      (width height) in given display unit eg. '400 200' setting the media box
-
-  formsize:        eg. A4, Letter, Legal...
-                   Append 'L' to enforce landscape mode. (eg. A3L)
-                   Append 'P' to enforce portrait mode. (eg. TabloidP)
-                   Please refer to "pdfcpu paper" for a comprehensive list of defined paper sizes.
-                   "papersize" is also accepted.
-
-  position:        one of 'full' or the anchors:
-
+  
+   dimensions:      (width height) in given display unit eg. '400 200' setting the media box
+  
+   formsize:        eg. A4, Letter, Legal...
+                    Append 'L' to enforce landscape mode. (eg. A3L)
+                    Append 'P' to enforce portrait mode. (eg. TabloidP)
+                    Please refer to "pdfcpu paper" for a comprehensive list of defined paper sizes.
+                    "papersize" is also accepted.
+  
+   position:        one of 'full' or the anchors:
                         tl|top-left     tc|top-center      tr|top-right
                          l|left          c|center           r|right
                         bl|bottom-left  bc|bottom-center   br|bottom-right
-
-  offset:          (dx dy) in given display unit eg. '15 20'
-
-  scalefactor:     0.0 <= x <= 1.0 followed by optional 'abs|rel' or 'a|r'
-
-  dpi:             apply desired dpi
-
-  gray:            Convert to grayscale (on/off, true/false, t/f)
-
-  sepia:           Apply sepia effect (on/off, true/false, t/f)
-
-  backgroundcolor: "bgcolor" is also accepted.
   
+   offset:          (dx dy) in given display unit eg. '15 20'
+  
+   scalefactor:     0.0 <= x <= 1.0 followed by optional 'abs|rel' or 'a|r'
+  
+   dpi:             apply desired dpi
+  
+   gray:            Convert to grayscale (on/off, true/false, t/f)
+  
+   sepia:           Apply sepia effect (on/off, true/false, t/f)
+  
+   backgroundcolor: "bgcolor" is also accepted.
+
   Only one of dimensions or formsize is allowed.
   position: full => image dimensions equal page dimensions.
-  
   All configuration string parameters support completion.
-
+  
   e.g. "f:A5, pos:c"                                ... render the image centered on A5 with relative scaling 0.5.'
        "dim:300 600, pos:bl, off:20 20, sc:1.0 abs" ... render the image anchored to bottom left corner with offset 20,20 and abs. scaling 1.0.
        "pos:full"                                   ... render the image to a page with corresponding dimensions.
-       "f:A4, pos:c, dpi:300"                       ... render the image centered on A4 respecting a destination resolution of 300 dpi.`
+       "f:A4, pos:c, dpi:300"                       ... render the image centered on A4 respecting a destination resolution of 300 dpi.
+
+Pipeline examples:
+  aws s3 cp s3://acme-assets/logo.png - \
+     | pdfcpu import - - \
+     | aws s3 cp - s3://acme-assets/logo.pdf
+
+  cat photo.jpg \
+     | pdfcpu import 'form:A4, pos:c' - - > photo.pdf`
 
 	usageLongPages = `Manage pages.
 
       pages ... Please refer to "pdfcpu selectedpages"
        mode ... before, after (default: before)
 description ... dimensions, formsize
-     inFile ... input PDF file
-    outFile ... output PDF file
+     inFile ... input PDF file, use - to read from stdin
+    outFile ... output PDF file, use - to write to stdout
+  
+<description> is a comma separated configuration string containing:
 
-  <description> is a comma separated configuration string containing:
-
-  optional entries:
-
+  optional entries: 
+  
       (defaults: "dim:595 842, f:A4")
 
   dimensions:      (width height) in given display unit eg. '400 200' setting the media box
-
+  
   formsize:        eg. A4, Letter, Legal...
                    Append 'L' to enforce landscape mode. (eg. A3L)
                    Append 'P' to enforce portrait mode. (eg. TabloidP)
                    Please refer to "pdfcpu paper" for a comprehensive list of defined paper sizes.
                    "papersize" is also accepted.
-
+   
    All configuration string parameters support completion.
-    
+   
    Examples:      pdfcpu pages insert in.pdf
-                  Insert one blank page before each page using the form size imposed internally by the current media box.
+                   Insert one blank page before each page using the form size imposed internally by the current media box.
                   
                   pdfcpu pages insert 'f:A5L' in.pdf --pages 3
-                  Insert one blank A5 page in landscape mode before page 3.
+                   Insert one blank A5 page in landscape mode before page 3.
 
                   pdfcpu pages insert in.pdf 'dim: 10 5' --unit cm
-                  Insert one blank 10 x 5 cm separator page for all pages.
-
+                   Insert one blank 10 x 5 cm separator page for all pages.
+                  
                   pdfcpu pages remove in.pdf out.pdf -p odd
                   pdfcpu pages remove in.pdf out.pdf --pages odd
-                  Remove all odd pages.
+                   Remove all odd pages.
+
+Pipeline examples:
+   aws s3 cp s3://acme-forms/packet.pdf - \
+      | pdfcpu pages insert -p 1 - - \
+      | aws s3 cp - s3://acme-forms/packet-with-cover.pdf
+
+   aws s3 cp s3://acme-forms/packet.pdf - \
+      | pdfcpu pages remove -p 2 - - \
+      | aws s3 cp - s3://acme-forms/packet-without-page-2.pdf
 `
 
-	usageLongRotate = `Rotate selected pages by a multiple of 90 degrees. 
+	usageLongRotate = `Rotate selected pages by a multiple of 90 degrees.
 
       pages ... Please refer to "pdfcpu selectedpages"
-     inFile ... input PDF file
+     inFile ... input PDF file, use - to read from stdin
    rotation ... a multiple of 90 degrees for clockwise rotation
-    outFile ... output PDF file
+    outFile ... output PDF file, use - to write to stdout
 
+Pipeline example:
+   aws s3 cp s3://acme-scans/batch.pdf - \
+      | pdfcpu rotate -p odd - 90 - \
+      | aws s3 cp - s3://acme-scans/batch-rotated.pdf
 `
 
 	usageLongNUp = `Rearrange existing PDF pages or images into a sequence of page grids.
@@ -509,9 +639,9 @@ If the input is one imageFile a single page n-up PDF gets generated.
 
       pages ... inFile only, please refer to "pdfcpu selectedpages"
 description ... dimensions, formsize, orientation
-    outFile ... output PDF file
+    outFile ... output PDF file, use - to write to stdout
           n ... the n-Up value (see below for details)
-     inFile ... input PDF file
+     inFile ... input PDF file, use - to read from stdin
  imageFiles ... input image file(s)
 
                               portrait landscape
@@ -526,9 +656,9 @@ description ... dimensions, formsize, orientation
     <description> is a comma separated configuration string containing:
 
     optional entries:
-  
+
         (defaults: "di:595 842, form:A4, or:rd, bo:on, ma:3, enforce:on")
-  
+
     dimensions:      (width,height) in given display unit eg. '400 200'
 
     formsize:        The output sheet size, eg. A4, Letter, Legal...
@@ -549,16 +679,16 @@ description ... dimensions, formsize, orientation
     border:          Print border (on/off, true/false, t/f)
 
     margin:          for n-up content: float >= 0 in given display unit
-    
+
     backgroundcolor: background color for margin > 0.
                      "bgcolor" is also accepted.
 
 All configuration string parameters support completion.
-    
+
 Examples: pdfcpu nup out.pdf 4 in.pdf
            Rearrange pages of in.pdf into 2x2 grids and write result to out.pdf using the default orientation
            and default paper size A4. in.pdf's page size will be preserved.
-                                 
+
           pdfcpu nup out.pdf 6 in.pdf --pages=3-
            Rearrange selected pages of in.pdf (all pages starting with page 3) into 3x2 grids and
            write result to out.pdf using the default orientation and default paper size A4.
@@ -566,27 +696,36 @@ Examples: pdfcpu nup out.pdf 4 in.pdf
 
           pdfcpu nup out.pdf 9 logo.jpg
            Arrange instances of logo.jpg into a 3x3 grid and write result to out.pdf using the A4 default form size.
-          
-          pdfcpu nup 'form:Tabloid' out.pdf 4 *.jpg 
+
+          pdfcpu nup 'form:Tabloid' out.pdf 4 *.jpg
            Rearrange all jpg files into 2x2 grids and write result to out.pdf using the Tabloid form size
            and the default orientation.
 
+Pipeline example:
+          aws s3 cp s3://acme-print/handout.pdf - \
+             | pdfcpu nup - 4 - \
+             | aws s3 cp - s3://acme-print/handout-4up.pdf
 `
 
 	usageLongBooklet = `Arrange a sequence of pages onto larger sheets of paper for a small book or zine.
 
-              pages       ... for inFile only, please refer to "pdfcpu selectedpages"
-              description ... dimensions, formsize, border, margin
-              outFile     ... output PDF file
-              n           ... booklet style (2, 4, 6, 8)
-              inFile      ... input PDF file
-              imageFiles  ... input image file(s)
+      pages       ... for inFile only, please refer to "pdfcpu selectedpages"
+      description ... dimensions, formsize, border, margin
+      outFile     ... output PDF file, use - to write to stdout
+      n           ... booklet style (2, 4, 6, 8)
+      inFile      ... input PDF file, use - to read from stdin
+      imageFiles  ... input image file(s)
 
-There are several styles of booklet, depending on your page/input and sheet/output size, 
+There are several styles of booklet, depending on your page/input and sheet/output size,
 the edge along which your booklet will be bound,
 and your preferred method for creating the booklet.
 
 For assembly instructions for each type, see: https://pdfcpu.io/generate/booklet
+
+Pipeline example:
+   aws s3 cp s3://acme-print/zine.pdf - \
+      | pdfcpu booklet - 4 - \
+      | aws s3 cp - s3://acme-print/zine-booklet.pdf
 
 n=2: This is the simplest case and the most common for those printing at home.
 Two of your pages fit on one side of a sheet (eg statement on letter, A5 on A4)
@@ -595,25 +734,25 @@ Assemble by printing on both sides (odd pages on the front and even pages on the
 n=4: Four of your pages fit on one side of a sheet (eg statement on ledger, A5 on A3, A6 on A4).
 
 When printing 4-up, your booklet can be bound either along the long-edge (for portrait this is the left side of the paper, for landscape the top)
-or the short-edge (for portrait this is the top of the paper, for landscape the left side). 
-Using a different binding will change the ordering of the pages on the sheet. 
+or the short-edge (for portrait this is the top of the paper, for landscape the left side).
+Using a different binding will change the ordering of the pages on the sheet.
 You can set long or short-edge with the 'binding' option.
 
 In 4-up printing, the sets of pages on the bottom of the sheet are rotated so that the cut side of the
 paper is on the bottom of the booklet for every page (for the default portrait, long-edge binding case.
-Similar rotation logic applies for the other three orientations). 
+Similar rotation logic applies for the other three orientations).
 Having the cut edge always on bottom makes for more uniform pages within the book and less work in trimming.
 
 The btype=advanced is a special method for assembling, only for 4-up booklets.
 Printers that are used to collating first and then cutting may prefer this method.
 
-n=6: Six of your pages fit on one side of a sheet. This produces an unusual sized booklet. 
+n=6: Six of your pages fit on one side of a sheet. This produces an unusual sized booklet.
 
-Only available for portrait, long-edge orientation.
+   Only available for portrait, long-edge orientation.
 
 n=8: Eight of your pages fit on one side of a sheet (eg A6 on A3).
 
-Only available for portrait, long-edge orientation.
+   Only available for portrait, long-edge orientation.
 
 Perfect binding is a special type of booklet. The main difference is that the binding is glued into a spine,
 meaning that the pages are cut along the binding and not folded as in the other forms of booklet.
@@ -649,7 +788,7 @@ The last signature may be shorter, e.g. for a booklet of 120 pages with signatur
    binding:          The edge of the paper which has the binding. (long, short)
    multifolio:       Generate multi folio booklet (on/off, true/false, t/f) for n=2 and PDF input only.
    foliosize:        folio size for multi folio booklets only (default:8)
-   border:           Print border (on/off, true/false, t/f) 
+   border:           Print border (on/off, true/false, t/f)
    guides:           Print folding and cutting lines (on/off, true/false, t/f)
    margin:           Apply content margin (float >= 0 in given display unit)
    backgroundcolor:  sheet background color for margin > 0.
@@ -661,49 +800,49 @@ Examples:
 
    pdfcpu booklet 'formsize:Letter' out.pdf 2 in.pdf
       Arrange pages of in.pdf 2 per sheet side (4 per sheet, back and front) onto out.pdf
-
+   
    pdfcpu booklet 'formsize:Ledger' out.pdf 4 in.pdf
       Arrange pages of in.pdf 4 per sheet side (8 per sheet, back and front) onto out.pdf
-           
+   
    pdfcpu booklet 'formsize:Ledger' out.pdf 6 in.pdf
       Arrange pages of in.pdf 6 per sheet side (12 per sheet, back and front) onto out.pdf
-  
+   
    pdfcpu booklet 'formsize:A3' out.pdf 8 in.pdf
       Arrange pages of in.pdf 8 per sheet side (16 per sheet, back and front) onto out.pdf
-
+   
    pdfcpu booklet 'formsize:A3, binding:short' out.pdf 4 in.pdf
       Arrange pages of in.pdf 4 per sheet side, with short-edge binding onto out.pdf
-
+   
    pdfcpu booklet 'formsize:A4, multifolio:on' hardbackbook.pdf 2 in.pdf
       Arrange pages of in.pdf 2 per sheetside as sequence of folios covering 4*foliosize pages each.
       See also: https://www.instructables.com/How-to-bind-your-own-Hardback-Book/
-
+   
    pdfcpu booklet 'formsize:A4, btype:perfectbound' out.pdf 2 in.pdf
       Arrange pages of in.pdf 2 per sheet side, arranged for perfect binding, onto out.pdf
-  
+   
    pdfcpu booklet 'formsize:A3, btype:bookletadvanced' out.pdf 4 in.pdf
       Arrange pages of in.pdf 4 per sheet side, arranged for advanced binding, onto out.pdf
 `
 
 	usageLongGrid = `Rearrange PDF pages or images for enhanced browsing experience.
 For a PDF inputfile each output page represents a grid of input pages.
-For image inputfiles each output page shows all images laid out onto grids of given paper size. 
-This command produces poster like PDF pages convenient for page and image browsing. 
+For image inputfiles each output page shows all images laid out onto grids of given paper size.
+This command produces poster like PDF pages convenient for page and image browsing.
 
       pages ... Please refer to "pdfcpu selectedpages"
 description ... dimensions, formsize, orientation, enforce
-    outFile ... output PDF file
+    outFile ... output PDF file, use - to write to stdout
           m ... grid lines
           n ... grid columns
-     inFile ... input PDF file
+     inFile ... input PDF file, use - to read from stdin
  imageFiles ... input image file(s)
 
     <description> is a comma separated configuration string containing:
 
     optional entries:
-  
+
         (defaults: "d:595 842, form:A4, o:rd, bo:on, ma:3, enforce:on")
-  
+
     dimensions:   (width height) in given display unit eg. '400 200'
 
     formsize:     The output sheet size, eg. A4, Letter, Legal...
@@ -722,7 +861,7 @@ description ... dimensions, formsize, orientation, enforce
     enforce:      enforce best-fit orientation of individual content (on/off, true/false, t/f).
 
     border:       Print border (on/off, true/false, t/f)
-    
+
     margin:       Apply content margin (float >= 0 in given display unit)
 
 All configuration string parameters support completion.
@@ -731,33 +870,37 @@ Examples: pdfcpu grid out.pdf 1 10 in.pdf
            Rearrange pages of in.pdf into 1x10 grids and write result to out.pdf using the default orientation.
            The output page size is the result of a 1(vert)x10(hor) page grid using in.pdf's page size.
 
-          pdfcpu grid 'p:LegalL' out.pdf 2 2 in.pdf 
+          pdfcpu grid 'p:LegalL' out.pdf 2 2 in.pdf
            Rearrange pages of in.pdf into 2x2 grids and write result to out.pdf using the default orientation.
            The output page size is the result of a 2(vert)x2(hor) page grid using page size Legal in landscape mode.
 
-          pdfcpu grid 'o:rd' out.pdf 3 2 in.pdf 
+          pdfcpu grid 'o:rd' out.pdf 3 2 in.pdf
            Rearrange pages of in.pdf into 3x2 grids and write result to out.pdf using orientation 'right down'.
            The output page size is the result of a 3(vert)x2(hor) page grid using in.pdf's page size.
 
           pdfcpu grid 'd:400 400' out.pdf 8 6 *.jpg
            Arrange imagefiles onto a 8x6 page grid and write result to out.pdf using a grid cell size of 400x400.
 
+Pipeline example:
+          aws s3 cp s3://acme-docs/manual.pdf - \
+             | pdfcpu grid - 2 2 - \
+             | aws s3 cp - s3://acme-docs/manual-grid.pdf
 `
 
 	paperSizes = `This is a list of predefined paper sizes:
-   
+
    ISO 216:1975 A:
       4A0, 2A0, A0, A1, A2, A3, A4, A5, A6, A7, A8, A9, A10
-   
+
    ISO 216:1975 B:
       B0+, B0, B1+, B1, B2+, B2, B3, B4, B5, B6, B7, B8, B9, B10
-   
+
    ISO 269:1985 C:
-      C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10 
-   
+      C0, C1, C2, C3, C4, C5, C6, C7, C8, C9, C10
+
    ISO 217:2013 untrimmed:
       RA0, RA1, RA2, RA3, RA4, SRA0, SRA1, SRA2, SRA3, SRA4, SRA1+, SRA2+, SRA3+, SRA3++
-   
+
    American:
       SuperB(=B+),
       Tabloid (=ANSIB, DobleCarta), Ledger(=ANSIB, DobleCarta),
@@ -766,12 +909,12 @@ Examples: pdfcpu grid out.pdf 1 10 in.pdf
       HalfLetter (=Memo, Statement, Stationary),
       JuniorLegal (=IndexCard),
       Photo
-   
+
    ANSI/ASME Y14.1:
       ANSIA (=Letter, Carta, AmericanQuarto),
       ANSIB (=Ledger, Tabloid, DobleCarta),
       ANSIC, ANSID, ANSIE, ANSIF
-   
+
    ANSI/ASME Y14.1 Architectural series:
       ARCHA (=ARCH1),
       ARCHB (=ARCH2, ExtraTabloide),
@@ -781,14 +924,14 @@ Examples: pdfcpu grid out.pdf 1 10 in.pdf
       ARCHE1 (=ARCH5),
       ARCHE2,
       ARCHE3
-   
+
    American uncut:
       Bond, Book, Cover, Index, NewsPrint (=Tissue), Offset (=Text)
-   
+
    English uncut:
       Crown, DoubleCrown, Quad, Demy, DoubleDemy, Medium, Royal, SuperRoyal,
-      DoublePott, DoublePost, Foolscap, DoubleFoolscap   
-   
+      DoublePott, DoublePost, Foolscap, DoubleFoolscap
+
    F4
 
    China GB/T 148-1997 D Series:
@@ -796,11 +939,11 @@ Examples: pdfcpu grid out.pdf 1 10 in.pdf
       RD0, RD1, RD2, RD3, RD4, RD5, RD6
 
    Japan:
-   
+
    B-series variant:
       JIS-B0, JIS-B1, JIS-B2, JIS-B3, JIS-B4, JIS-B5, JIS-B6,
       JIS-B7, JIS-B8, JIS-B9, JIS-B10, JIS-B11, JIS-B12
-   
+
    Shirokuban4, Shirokuban5, Shirokuban6
    Kiku4, Kiku5
    AB, B40, Shikisen`
@@ -812,11 +955,17 @@ Examples: pdfcpu grid out.pdf 1 10 in.pdf
 	usageLongSelectedPages = "Print definition of the -pages flag."
 
 	usageLongInfo = `Print info about a PDF file.
-   
+
    pages ... Please refer to "pdfcpu selectedpages"
    fonts ... include font info
     json ... output JSON
-  inFile ... a list of PDF input files`
+  inFile ... a list of PDF input files, use - to read from stdin
+
+Pipeline example:
+   cat pkg/testdata/go.pdf \
+      | pdfcpu info --json - \
+      | jq '.infos[] \
+      | {source, pageCount}'`
 
 	usageLongFonts = `Print a list of supported fonts (includes the 14 PDF core fonts).
 Install given True Type fonts(.ttf) or True Type collections(.ttc) for usage in stamps/watermarks.
@@ -824,33 +973,63 @@ Create single page PDF cheat sheets in current dir.`
 
 	usageLongKeywords = `Manage keywords.
 
-    inFile ... input PDF file
+    inFile ... input PDF file, use - to read from stdin
+   outFile ... output PDF file, use - to write to stdout
    keyword ... search keyword
-    
-    Eg. adding two keywords: 
+
+    Eg. adding two keywords:
            pdfcpu keywords add test.pdf music 'virtual instruments'
 
         remove all keywords:
            pdfcpu keywords remove test.pdf
+
+Pipeline examples:
+   aws s3 cp s3://acme-assets/brochure.pdf - \
+      | pdfcpu keywords list -
+
+   aws s3 cp s3://acme-assets/brochure.pdf - \
+      | pdfcpu keywords add - - approved campaign-2026 \
+      | aws s3 cp - s3://acme-assets/brochure-tagged.pdf
+
+   aws s3 cp s3://acme-assets/brochure-tagged.pdf - \
+      | pdfcpu keywords remove - - campaign-2026 \
+      | aws s3 cp - s3://acme-assets/brochure-untagged.pdf
     `
 
 	usageLongProperties = `Manage document properties.
 
-       inFile ... input PDF file
+       inFile ... input PDF file, use - to read from stdin
+      outFile ... output PDF file, use - to write to stdout
 nameValuePair ... 'name = value'
          name ... property name
-     
+
      Eg. adding one property:   pdfcpu properties add test.pdf 'key = value'
          adding two properties: pdfcpu properties add test.pdf 'key1 = val1' 'key2 = val2'
 
          remove all properties: pdfcpu properties remove test.pdf
+
+Pipeline examples:
+   aws s3 cp s3://acme-assets/brochure.pdf - \
+      | pdfcpu properties list -
+
+   aws s3 cp s3://acme-assets/brochure.pdf - \
+      | pdfcpu properties add - - 'Subject = Product Launch' \
+      | aws s3 cp - s3://acme-assets/brochure-described.pdf
+
+   aws s3 cp s3://acme-assets/brochure-described.pdf - \
+      | pdfcpu properties remove - - Subject \
+      | aws s3 cp - s3://acme-assets/brochure-clean-meta.pdf
      `
-	usageLongCollect = `Create custom sequence of selected pages. 
+	usageLongCollect = `Create custom sequence of selected pages.
 
         pages ... Please refer to "pdfcpu selectedpages"
-       inFile ... input PDF file
-      outFile ... output PDF file
-  
+       inFile ... input PDF file, use - to read from stdin
+      outFile ... output PDF file, use - to write to stdout
+
+Pipeline example:
+   aws s3 cp s3://acme-dataroom/deck.pdf - \
+      | pdfcpu collect -p 1,3,5-7 - - \
+      | aws s3 cp - s3://acme-dataroom/executive-extract.pdf
   `
 
 	usageBoxDescription = `
@@ -863,7 +1042,7 @@ box:
       bleed box:  region to which the contents of the page shall be clipped when output in a production environment.
        trim box:  intended dimensions of the finished page after trimming.
         art box:  extent of the page’s meaningful content as intended by the page’s creator.
-   
+
    Please refer to the PDF Specification 14.11.2 Page Boundaries for details.
 
    All values are in given display unit (po, in, mm, cm)
@@ -884,7 +1063,7 @@ box:
       "10 5"               absolute, top,bottom:10  left,right:5
       "10 5 15"            absolute, top:10 left,right:5 bottom:15
       "5%"                 relative, top,right,bottom,left:5% of parent box width/height
-      ".1 .5"              absolute, top,bottom:.1  left,right:.5 
+      ".1 .5"              absolute, top,bottom:.1  left,right:.5
       ".1 .3 rel"          relative, top,bottom:.1=10%  left,right:.3=30%
       "-10"                absolute, top,right,bottom,left:-10 relative to parent box (for crop box the media box gets expanded)
 
@@ -896,17 +1075,21 @@ box:
 
 
 `
-	usageLongCrop = `Set crop box for selected pages. 
+	usageLongCrop = `Set crop box for selected pages.
 
         pages ... Please refer to "pdfcpu selectedpages"
   description ... crop box definition abs. or rel. to media box
-       inFile ... input PDF file
-      outFile ... output PDF file
+       inFile ... input PDF file, use - to read from stdin
+      outFile ... output PDF file, use - to write to stdout
 
 Examples:
    pdfcpu crop '[0 0 500 500]' in.pdf ... crop a 500x500 points region located in lower left corner
    pdfcpu crop '20' in.pdf -u mm      ... crop relative to media box using a 20mm margin
 
+Pipeline example:
+   aws s3 cp s3://acme-print/catalog.pdf - \
+      | pdfcpu crop '10' - - -u mm \
+      | aws s3 cp - s3://acme-print/catalog-cropped.pdf
 ` + usageBoxDescription
 
 	usageLongBoxes = `Manage page boundaries.
@@ -914,29 +1097,39 @@ Examples:
      boxTypes ... comma separated list of box types: m(edia), c(rop), t(rim), b(leed), a(rt)
         pages ... Please refer to "pdfcpu selectedpages"
   description ... box definitions abs. or rel. to parent box
-       inFile ... input PDF file
-      outFile ... output PDF file
+       inFile ... input PDF file, use - to read from stdin
+      outFile ... output PDF file, use - to write to stdout
 
 <description> is a sequence of box definitions and assignments:
 
-   m(edia): {box} 
-    c(rop): {box} 
+   m(edia): {box}
+    c(rop): {box}
      a(rt): {box} | m(edia) | c(rop) | b(leed) | t(rim)
    b(leed): {box} | m(edia) | c(rop) | a(rt) | t(rim)
     t(rim): {box} | m(edia) | c(rop) | a(rt) | b(leed)
 
-Examples: 
+Examples:
    pdfcpu boxes list in.pdf
    pdfcpu boxes list 'bleed,trim' in.pdf
    pdfcpu boxes add 'crop:[10 10 200 200], trim:5, bleed:trim' in.pdf
    pdfcpu boxes remove 't,b' in.pdf
-     
-` + usageBoxDescription
 
+Pipeline examples:
+   aws s3 cp s3://acme-print/ad.pdf - \
+      | pdfcpu boxes list -
+
+   aws s3 cp s3://acme-print/ad.pdf - \
+      | pdfcpu boxes add 'trim:5, bleed:10' - - \
+      | aws s3 cp - s3://acme-print/ad-boxes.pdf
+
+   aws s3 cp s3://acme-print/ad-boxes.pdf - \
+      | pdfcpu boxes remove 'trim,bleed' - - \
+      | aws s3 cp - s3://acme-print/ad-clean-boxes.pdf
+` + usageBoxDescription
 	usageLongAnnots = `Manage annotations.
-   
       pages ... Please refer to "pdfcpu selectedpages"
-     inFile ... input PDF file
+     inFile ... input PDF file, use - to read from stdin
+    outFile ... output PDF file, use - to write to stdout
       objNr ... obj# from "pdfcpu annotations list"
     annotId ... id from "pdfcpu annotations list"
   annotType ... Text, Link, FreeText, Line, Square, Circle, Polygon, PolyLine, HighLight, Underline, Squiggly, StrikeOut, Stamp,
@@ -952,7 +1145,7 @@ Examples:
 
       Remove all page annotations and write to out.pdf:
          pdfcpu annot remove in.pdf out.pdf
-      
+
       Remove annotations for first 10 pages:
          pdfcpu annot remove in.pdf --pages 1-10
 
@@ -967,18 +1160,26 @@ Examples:
 
       Remove annotations by type, id and obj# and write to out.pdf:
          pdfcpu annot remove in.pdf out.pdf Link 30 Text someId
+
+Pipeline examples:
+   aws s3 cp s3://acme-redaction/review.pdf - \
+      | pdfcpu annotations list -
+
+   aws s3 cp s3://acme-redaction/review.pdf - \
+      | pdfcpu annotations remove - - Link \
+      | aws s3 cp - s3://acme-redaction/review-no-links.pdf
       `
 
 	usageLongImages = `Manage images.
 
      pages ... Please refer to "pdfcpu selectedpages"
-    inFile ... input PDF file
+    inFile ... input PDF file, use - to read from stdin
  imageFile ... image file
-   outFile ... output PDF file
+   outFile ... output PDF file, use - to write to stdout for update
      objNr ... obj# from "pdfcpu images list"
     pageNr ... Page from "pdfcpu images list"
         Id ... Id from "pdfcpu images list"
-    
+
     Example: pdfcpu images list gallery.pdf
              gallery.pdf:
              1 images available (1.8 MB)
@@ -1003,6 +1204,17 @@ Examples:
              # update image with Id=Im0 on page=1 with logo.jpg
              pdfcpu images update gallery.pdf logo.jpg 1 Im0
              pdfcpu images update gallery.pdf logo.jpg out.pdf 1 Im0
+
+   Pipeline examples:
+             aws s3 cp s3://acme-assets/gallery.pdf - \
+                | pdfcpu images list -
+
+             aws s3 cp s3://acme-assets/gallery.pdf - \
+                | pdfcpu images extract - ./images
+
+             aws s3 cp s3://acme-assets/gallery.pdf - \
+                | pdfcpu images update - logo.jpg - 1 Im0 \
+                | aws s3 cp - s3://acme-assets/gallery-updated.pdf
     `
 
 	usageLongCreate = `Create page content corresponding to declarations in inFileJSON.
@@ -1010,8 +1222,8 @@ Append new page content to existing page content in inFile and write result to o
 If inFile is absent outFile will be overwritten.
 
    inFileJSON ... input json file
-       inFile ... optional input PDF file 
-      outFile ... output PDF file
+       inFile ... optional input PDF file, use - to read from stdin
+      outFile ... output PDF file, use - to write to stdout
 
 A minimalistic sample json:
 {
@@ -1032,17 +1244,25 @@ A minimalistic sample json:
       }
    }
 }
-   
-For more info on json syntax & samples please refer to :
+
+For more info on json syntax & samples please refer to:
    pdfcpu/pkg/testdata/json/*
-   pdfcpu/pkg/samples/create/*`
+   pdfcpu/pkg/samples/create/*
+
+Pipeline examples:
+   pdfcpu create invoice.json - \
+      | aws s3 cp - s3://acme-billing/invoice.pdf
+
+   aws s3 cp s3://acme-forms/template.pdf - \
+      | pdfcpu create overlay.json - - \
+      | aws s3 cp - s3://acme-forms/template-filled.pdf`
 
 	usageLongForm = `Manage PDF forms.
 
-           inFile ... input PDF file
+           inFile ... input PDF file, use - to read from stdin
        inFileData ... input CSV or JSON file
        inFileJSON ... input JSON file
-          outFile ... output PDF file
+          outFile ... output PDF file, use - to write to stdout where the command writes a single PDF
       outFileJSON ... output JSON file
              mode ... output mode (defaults to single)
            outDir ... output directory
@@ -1055,36 +1275,36 @@ The output modes are:
     single ... each filled form instance gets written to a separate output file.
 
     merge  ... all filled form instances are merged together resulting in one output file.
-               
+
 
 Supported usecases:
 
    1) Get a list of form fields:
          "pdfcpu form list in.pdf" returns a list of form fields of in.pdf.
          Each field is identified by its name and id.
-   
+
    2) Remove some form fields:
          "pdfcpu form remove in.pdf middleName birthPlace" removes the the two fields "middleName" and "birthPlace".
          You may supply a mixed list of field ids and field names.
-      
+
    3) Make some or all fields read-only:
          "pdfcpu form lock in.pdf dateOfBirth" turns the field "dateOfBirth" into read-only.
          "pdfcpu from lock in.pdf" makes the form read-only.
          You may supply a mixed list of field ids and field names.
-   
+
    4) Make some or all read-only fields writeable:
          "pdfcpu form unlock in.pdf dateOfBirth" makes the field "dateOfBirth" writeable.
          "pdfcpu form unlock in.pdf" makes all fields of in.pdf writeable.
          You may supply a mixed list of field ids and field names.
-   
+
    5) Clear some or all fields:
          "pdfcpu form reset in.pdf firstName lastName" resets the fields "firstName" and "lastName" to its default values.
          "pdfcpu form reset in.pdf" resets the whole form of in.pdf.
          You may supply a mixed list of field ids and field names.
-       
+
    6) Export all form fields as preparation for form filling:
          "pdfcpu form export in.pdf" exports field data into a JSON structure written to in.json.
-   
+
    7) Fill a form with data:
          a) Export your form into in.json and edit the field values.
          b) Optionally trim down each field to id or name and value(s).
@@ -1116,15 +1336,47 @@ Supported usecases:
             The first line identifies fields via id or name in in.json.
          c) "pdfcpu form multifill -m merge in.pdf in.csv outDir" creates a single output PDF in outDir.
 
+Pipeline examples:
+   aws s3 cp s3://acme-forms/application.pdf - \
+      | pdfcpu form list -
+
+   aws s3 cp s3://acme-forms/application.pdf - \
+      | pdfcpu form export - application.json
+
+   aws s3 cp s3://acme-forms/application.pdf - \
+      | pdfcpu form fill - application.json - \
+      | aws s3 cp - s3://acme-forms/application-filled.pdf
+
+   aws s3 cp s3://acme-forms/application.pdf - \
+      | pdfcpu form lock - - \
+      | aws s3 cp - s3://acme-forms/application-locked.pdf
+
+   aws s3 cp s3://acme-forms/application-locked.pdf - \
+      | pdfcpu form unlock - - \
+      | aws s3 cp - s3://acme-forms/application-unlocked.pdf
+
+   aws s3 cp s3://acme-forms/application-filled.pdf - \
+      | pdfcpu form reset - - \
+      | aws s3 cp - s3://acme-forms/application-reset.pdf
+
+   aws s3 cp s3://acme-forms/application.pdf - \
+      | pdfcpu form remove - - legacyField \
+      | aws s3 cp - s3://acme-forms/application-pruned.pdf
+
+   aws s3 cp s3://acme-forms/application.pdf - \
+      | pdfcpu form multifill -m merge - applications.csv /tmp/pdfcpu-forms - \
+      | aws s3 cp - s3://acme-forms/applications-merged.pdf
+
+   For multifill, outDir is still used for generated form instances even when the merged PDF is written to stdout.
 
    (For syntax and details please refer to pdfcpu/pkg/api/test/form_test.go)`
 
-	usageLongResize = `Resize existing pages. 
+	usageLongResize = `Resize existing pages.
 
       pages ... please refer to "pdfcpu selectedpages"
 description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
-     inFile ... input PDF file
-    outFile ... output PDF file
+     inFile ... input PDF file, use - to read from stdin
+    outFile ... output PDF file, use - to write to stdout
 
     <description> is a comma separated configuration string containing:
 
@@ -1146,9 +1398,9 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
       border:       if dimensions set only, draw content region border (on/off, true/false, t/f).
 
       bgcolor:      if dimensions set only, background color value for unused page regions.
-   
-      
-   Examples: 
+
+
+   Examples:
 
          pdfcpu resize 'scale:2' in.pdf out.pdf
             Enlarge pages by doubling the page dimensions, keep orientation.
@@ -1170,12 +1422,17 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
 
          pdfcpu resize 'dim:400 200, enforce:true' in.pdf out.pdf
             Resize pages to 400 x 200 points, enforce orientation.
+
+Pipeline example:
+   aws s3 cp s3://acme-design/spec-sheet.pdf - \
+      | pdfcpu resize 'form:A4' - - \
+      | aws s3 cp - s3://acme-design/spec-sheet-a4.pdf
 `
 	usageLongPoster = `Create a poster using paper size.
 
          pages ... Please refer to "pdfcpu selectedpages"
    description ... formsize(=papersize), dimensions, scalefactor, margin, bgcolor, border
-        inFile ... input PDF file
+        inFile ... input PDF file, use - to read from stdin
         outDir ... output directory
        outFile ... output file name
 
@@ -1198,22 +1455,26 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
 
       bgcolor:      color value for visualization of margin / glue area.
 
-      border:       if margin set, draw content region border (on/off, true/false, t/f) 
-   
-   
+      border:       if margin set, draw content region border (on/off, true/false, t/f)
+
+
    Examples:
 
          pdfcpu poster 'f:A4' in.pdf outDir
             Page form size is A2, the printer supports A4.
             Generate a poster(A2) via a corresponding 2x2 grid of A4 pages.
-         
+
          pdfcpu poster 'f:A4, scale:2.0' in.pdf outDir
             Page form size is A2, the printer supports A4.
             Generate a poster(A0) via a corresponding 4x4 grid of A4 pages.
 
          pdfcpu poster 'dim:15 10, margin:1, bgcol:DarkGray, border:on' in.pdf outDir -u cm
             Generate a poster via a corresponding grid with cell size 15x10 cm and provide a glue area of 1 cm.
-            
+
+   Pipeline example:
+         aws s3 cp s3://acme-print/poster.pdf - \
+            | pdfcpu poster 'dim:100 100' - /work/poster-tiles
+
    See also the related commands: ndown, cut`
 
 	usageLongNDown = `Cut selected page into n pages symmetrically.
@@ -1221,7 +1482,7 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
          pages ... Please refer to "pdfcpu selectedpages"
    description ... margin, bgcolor, border
              n ... the n-Down value (see below for details)
-        inFile ... input PDF file
+        inFile ... input PDF file, use - to read from stdin
         outDir ... output directory
        outFile ... output file name
 
@@ -1231,16 +1492,16 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
 
       bgcolor:      color value for visualization of margin / glue area.
 
-      border:       if margin set, draw content region border (on/off, true/false, t/f) 
-    
+      border:       if margin set, draw content region border (on/off, true/false, t/f)
 
-                                  grid Eg. 
+
+                                  grid Eg.
    Supported values for n: 2 ...  1x2  A1 -> 2 x A2
-                           3 ...  1x3       
+                           3 ...  1x3
                            4 ...  2x2  A1 -> 4 x A3
                            8 ...  2x4  A1 -> 8 x A4
                            9 ...  3x3
-                          12 ...  3x4      
+                          12 ...  3x4
                           16 ...  4x4  A1 -> 16 x A5
 
 
@@ -1257,14 +1518,18 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
          pdfcpu ndown 'margin:1, bgcol:DarkGray, border:on' 4 in.pdf outDir -u cm
             Page format size is A2, the printer supports A4.
             Quick cut page into 4 equally (A4) sized pages and provide a glue area of 1 cm.
-            
+
+   Pipeline example:
+         aws s3 cp s3://acme-print/poster.pdf - \
+            | pdfcpu ndown 4 - /work/tiles
+
    See also the related commands: poster, cut`
 
 	usageLongCut = `Custom cut pages horizontally or vertically.
 
          pages ... Please refer to "pdfcpu selectedpages"
    description ... horizontal, vertical, margin, bgcolor, border
-        inFile ... input PDF file
+        inFile ... input PDF file, use - to read from stdin
         outDir ... output directory
        outFile ... output file name
 
@@ -1273,7 +1538,7 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
 
    <description> is a comma separated configuration string containing:
 
-      horizontal:   Apply horizontal page cuts at height fraction (origin top left corner) 
+      horizontal:   Apply horizontal page cuts at height fraction (origin top left corner)
                     A sequence of fractions separated by white space.
 
       vertical:     Apply vertical page cuts at width fraction (origin top left corner)
@@ -1282,10 +1547,10 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
       margin:       Apply margin / glue area (float >= 0 in given display unit)
 
       bgcolor:      color value for visualization of margin / glue area.
-              
-      border:       if margin set, draw content region border (on/off, true/false, t/f) 
-    
-   
+
+      border:       if margin set, draw content region border (on/off, true/false, t/f)
+
+
    Examples:
 
          pdfcpu cut 'hor:.25' inFile outDir
@@ -1301,20 +1566,40 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
 
          pdfcpu cut 'hor:.5, ver:.5' inFile outDir
             Has the same effect as: pdfcpu ndown 4 in.pdf outDir
+
+   Pipeline example:
+         aws s3 cp s3://acme-print/poster.pdf - \
+            | pdfcpu cut 'hor:.5, ver:.5' - /work/cut-pages
             
    See also the related commands: poster, ndown`
 
 	usageLongBookmarks = `Manage bookmarks.
 
-           inFile ... input PDF file
-       inFileJSON ... input JSON file
-          outFile ... output PDF file
-      outFileJSON ... output PDF file
+          inFile ... input PDF file, use - to read from stdin
+      inFileJSON ... input JSON file
+         outFile ... output PDF file, use - to write to stdout
+     outFileJSON ... output JSON file
+
+Pipeline examples:
+   aws s3 cp s3://acme-manuals/product.pdf - \
+      | pdfcpu bookmarks list -
+
+   aws s3 cp s3://acme-manuals/product.pdf - \
+      | pdfcpu bookmarks export - bookmarks.json
+
+   aws s3 cp s3://acme-manuals/product.pdf - \
+      | pdfcpu bookmarks import --replace - bookmarks.json - \
+      | aws s3 cp - s3://acme-manuals/product-bookmarked.pdf
+
+   aws s3 cp s3://acme-manuals/product-bookmarked.pdf - \
+      | pdfcpu bookmarks remove - - \
+      | aws s3 cp - s3://acme-manuals/product-flat.pdf
 `
 
 	usageLongPageLayout = `Manage the page layout which shall be used when the document is opened:
 
-    inFile ... input PDF file
+    inFile ... input PDF file, use - to read from stdin
+   outFile ... output PDF file, use - to write to stdout
      value ... one of:
 
      SinglePage     ... Display one page at a time (default)
@@ -1322,17 +1607,30 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
      TwoColumnRight ... Display the pages in two columns, with odd- numbered pages on the right
      TwoPageLeft    ... Display the pages two at a time, with odd-numbered pages on the left
      TwoPageRight   ... Display the pages two at a time, with odd-numbered pages on the right
-    
+
     Eg. set page layout:
            pdfcpu pagelayout set test.pdf TwoPageLeft
 
         reset page layout:
            pdfcpu pagelayout reset test.pdf
+
+Pipeline examples:
+   aws s3 cp s3://acme-publishing/ebook.pdf - \
+      | pdfcpu pagelayout list -
+
+   aws s3 cp s3://acme-publishing/ebook.pdf - \
+      | pdfcpu pagelayout set - TwoPageLeft - \
+      | aws s3 cp - s3://acme-publishing/ebook-spreads.pdf
+
+   aws s3 cp s3://acme-publishing/ebook-spreads.pdf - \
+      | pdfcpu pagelayout reset - - \
+      | aws s3 cp - s3://acme-publishing/ebook-default-layout.pdf
 `
 
 	usageLongPageMode = `Manage how the document shall be displayed when opened:
 
-    inFile ... input PDF file
+    inFile ... input PDF file, use - to read from stdin
+   outFile ... output PDF file, use - to write to stdout
      value ... one of:
 
             UseNone ... Neither document outline nor thumbnail images visible (default)
@@ -1341,23 +1639,36 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
          FullScreen ... Full-screen mode, with no menu bar, window controls, or any other window visible
               UseOC ... Optional content group panel visible (since PDF 1.5)
      UseAttachments ... Attachments panel visible (since PDF 1.6)
-    
+
     Eg. set page mode:
            pdfcpu pagemode set test.pdf UseOutlines
 
         reset page mode:
            pdfcpu pagemode reset test.pdf
+
+Pipeline examples:
+   aws s3 cp s3://acme-publishing/ebook.pdf - \
+      | pdfcpu pagemode list -
+
+   aws s3 cp s3://acme-publishing/ebook.pdf - \
+      | pdfcpu pagemode set - UseOutlines - \
+      | aws s3 cp - s3://acme-publishing/ebook-outlines.pdf
+
+   aws s3 cp s3://acme-publishing/ebook-outlines.pdf - \
+      | pdfcpu pagemode reset - - \
+      | aws s3 cp - s3://acme-publishing/ebook-default-mode.pdf
     `
 
 	usageLongViewerPreferences = `Manage the way the document shall be displayed on the screen and shall be printed:
 
               all ... output all (including default values)
              json ... output JSON
-           inFile ... input PDF file
+           inFile ... input PDF file, use - to read from stdin
        inFileJSON ... input JSON file containing viewing preferences
        JSONstring ... JSON string containing viewing preferences
-             
-    
+          outFile ... output PDF file, use - to write to stdout
+
+
     The preferences are:
 
       HideToolbar           ... Hide tool bars when the document is active (default=false).
@@ -1382,8 +1693,8 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
       ViewClip              ... The name of the page boundary to which the contents of a page shall be clipped when viewing the document on the screen.
       PrintArea             ... The name of the page boundary representing the area of a page that shall be rendered when printing the document.
       PrintClip             ... The name of the page boundary to which the contents of a page shall be clipped when printing the document.
-                                    All 4 since PDF 1.4 and deprecated as of PDF 2.0                              
-                                    Page Boundaries: MediaBox, CropBox(=default), TrimBox, BleedBox, ArtBox                             
+                                    All 4 since PDF 1.4 and deprecated as of PDF 2.0
+                                    Page Boundaries: MediaBox, CropBox(=default), TrimBox, BleedBox, ArtBox
 
       Duplex                ... The paper handling option that shall be used when printing the file from the print dialogue (since PDF 1.7):
                                     Simplex             = Print single-sided
@@ -1395,9 +1706,9 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
       PrintPageRange        ... The page numbers used to initialize the print dialogue box when the file is printed (since PDF 1.7).
                                 The array shall contain an even number of integers to be interpreted in pairs, with each pair specifying
                                 the first and last pages in a sub-range of pages to be printed. The first page of the PDF file shall be denoted by 1.
-      
+
       NumCopies             ... The number of copies that shall be printed when the print dialog is opened for this file (since PDF 1.7).
-     
+
       Enforce               ... Array of names of Viewer preference settings that shall be enforced by PDF processors and
                                 that shall not be overridden by subsequent selections in the application user interface (since PDF 2.0).
                                     Possible values: PrintScaling
@@ -1442,31 +1753,47 @@ description ... scalefactor, dimensions, formsize, enforce, border, bgcolor
                ]
             }
          }
-   
+
+Pipeline examples:
+   aws s3 cp s3://acme-print/catalog.pdf - \
+      | pdfcpu viewerpref list -
+
+   aws s3 cp s3://acme-print/catalog.pdf - \
+      | pdfcpu viewerpref set - '{"Duplex":"DuplexFlipLongEdge","NumCopies":2}' - \
+      | aws s3 cp - s3://acme-print/catalog-print-ready.pdf
+
+   aws s3 cp s3://acme-print/catalog-print-ready.pdf - \
+      | pdfcpu viewerpref reset - - \
+      | aws s3 cp - s3://acme-print/catalog-default-viewer.pdf
     `
 
 	usageLongZoom = `Zoom in/out of selected pages either by magnification factor or corresponding margin.
 
       pages ... Please refer to "pdfcpu selectedpages"
 description ... factor, hmargin, vmargin, border, bgcolor
-     inFile ... input PDF file
-    outFile ... output PDF file
+     inFile ... input PDF file, use - to read from stdin
+    outFile ... output PDF file, use - to write to stdout
 
 Examples:
    pdfcpu zoom 'factor: '   in.pdf out.pdf            ... zoom in to magnification of 200%
    pdfcpu zoom 'factor: .5' in.pdf out.pdf            ... zoom out to magnification of 50%
-   
+
    pdfcpu zoom 'hmargin: -10' in.pdf out.pdf          ... zoom in to horizontal margin of -10 points
    pdfcpu zoom 'hmargin:  10' in.pdf out.pdf          ... zoom out to horizontal margin of 10 points
 
    pdfcpu zoom 'hmargin: -1' in.pdf out.pdf --unit cm ... zoom in to horizontal margin of -1 cm
    pdfcpu zoom 'hmargin:  1' in.pdf out.pdf --unit cm ... zoom out to horizontal margin of 1 cm
-   
+
    pdfcpu zoom 'vmargin: -10' in.pdf out.pdf          ... zoom in to vertical margin of -10 points
    pdfcpu zoom 'vmargin:  10' in.pdf out.pdf          ... zoom out to vertical margin of 10 points
 
    pdfcpu zoom 'vmargin: -1' in.pdf out.pdf --unit cm ... zoom in to vertical margin of -1 cm
    pdfcpu zoom 'vmargin: 1, border:true, bgcolor:lightgray' in.pdf out.pdf --unit cm ... zoom out to vertical margin of 1 cm
+
+Pipeline example:
+   aws s3 cp s3://acme-presentations/deck.pdf - \
+      | pdfcpu zoom 'hmargin: 10' - - \
+      | aws s3 cp - s3://acme-presentations/deck-with-margin.pdf
 `
 
 	usageLongConfig = `Manage your pdfcpu configuration.`
@@ -1487,12 +1814,19 @@ Examples:
 
            all ... validate all signatures (certified, approval, usage rights, digital timestamps)
           full ... comprehensive output including certificate chains, revocation status and any problems encountered
-        inFile ... input PDF file
-       outFile ... output PDF file
+        inFile ... input PDF file, use - to read from stdin
+       outFile ... output PDF file, use - to write to stdout
 
       Related configuration parameters: timeoutCRL,
                                         timeoutOCSP,
                                         preferredCertRevocationChecker
 
+Pipeline examples:
+   aws s3 cp s3://acme-signing/executed.pdf - \
+      | pdfcpu signatures validate -
+
+   aws s3 cp s3://acme-signing/executed.pdf - \
+      | pdfcpu signatures remove - - \
+      | aws s3 cp - s3://acme-signing/executed-unsigned.pdf
 `
 )
