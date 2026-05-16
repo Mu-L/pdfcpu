@@ -392,6 +392,9 @@ func (sd *StreamDict) decodeLength(maxLen int64) ([]byte, error) {
 		sd.Content = data
 		return data, nil
 	}
+	if maxLen > int64(len(data)) {
+		return nil, io.ErrUnexpectedEOF
+	}
 
 	return data[:maxLen], nil
 }
@@ -401,6 +404,9 @@ func (sd *StreamDict) DecodeLength(maxLen int64) ([]byte, error) {
 		// This stream has already been decoded.
 		if maxLen < 0 {
 			return sd.Content, nil
+		}
+		if maxLen > int64(len(sd.Content)) {
+			return nil, io.ErrUnexpectedEOF
 		}
 
 		return sd.Content[:maxLen], nil
@@ -414,6 +420,9 @@ func (sd *StreamDict) DecodeLength(maxLen int64) ([]byte, error) {
 		//fmt.Printf("decodedStream returning %d(#%02x)bytes: \n%s\n", len(sd.Content), len(sd.Content), hex.Dump(sd.Content))
 		if maxLen < 0 {
 			return sd.Content, nil
+		}
+		if maxLen > int64(len(sd.Content)) {
+			return nil, io.ErrUnexpectedEOF
 		}
 
 		return sd.Content[:maxLen], nil

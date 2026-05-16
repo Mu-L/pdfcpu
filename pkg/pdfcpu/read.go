@@ -37,8 +37,9 @@ import (
 )
 
 const (
-	defaultBufSize = 1024
-	maximumBufSize = 1024 * 1024
+	defaultBufSize         = 1 << 10   // 1 KiB
+	maxBufSize             = 1 << 20   // 1 MiB
+	maxStreamContentLength = 512 << 20 // 512 MiB
 )
 
 var (
@@ -1817,7 +1818,7 @@ func buffer(c context.Context, rd io.Reader) (buf []byte, endInd int, streamInd 
 			return nil, 0, 0, 0, err
 		}
 
-		growSize = min(growSize*2, maximumBufSize)
+		growSize = min(growSize*2, maxBufSize)
 		line := string(buf)
 
 		endInd, streamInd, err = model.DetectKeywordsWithContext(c, line)
@@ -2330,32 +2331,47 @@ func readStreamContentBlindly(rd io.Reader) (buf []byte, err error) {
 	// ...data...{eol}endstream{eol}endobj
 
 	growSize := defaultBufSize
+	if growSize > maxStreamContentLength {
+		growSize = maxStreamContentLength
+	}
+
 	if buf, err = growBufBy(buf, growSize, rd); err != nil {
 		return nil, err
 	}
 
 	i := bytes.Index(buf, []byte("endstream"))
-	if i < 0 {
-		for i = -1; i < 0; i = bytes.Index(buf, []byte("endstream")) {
-			growSize = min(growSize*2, maximumBufSize)
-			buf, err = growBufBy(buf, growSize, rd)
-			if err != nil {
-				return nil, err
-			}
+	for i < 0 {
+		if len(buf) >= maxStreamContentLength {
+			return nil, errors.Errorf(
+				"pdfcpu: stream content exceeds maximum blind read length %d",
+				maxStreamContentLength,
+			)
 		}
+
+		growSize = min(growSize*2, maxBufSize)
+
+		remaining := maxStreamContentLength - len(buf)
+		if growSize > remaining {
+			growSize = remaining
+		}
+
+		buf, err = growBufBy(buf, growSize, rd)
+		if err != nil {
+			return nil, err
+		}
+
+		i = bytes.Index(buf, []byte("endstream"))
 	}
 
 	buf = buf[:i]
 
-	j := 0
-
 	// Cut off trailing eol's.
-	for i = len(buf) - 1; i >= 0 && (buf[i] == 0x0A || buf[i] == 0x0D); i-- {
-		j++
-	}
-
-	if j > 0 {
-		buf = buf[:len(buf)-j]
+	for len(buf) > 0 {
+		last := buf[len(buf)-1]
+		if last != 0x0A && last != 0x0D {
+			break
+		}
+		buf = buf[:len(buf)-1]
 	}
 
 	return buf, nil
@@ -2367,32 +2383,53 @@ func readStreamContent(rd io.Reader, streamLength int) ([]byte, error) {
 		log.Read.Printf("readStreamContent: begin streamLength:%d\n", streamLength)
 	}
 
-	if streamLength <= 0 { // TODO logcli...
-		// Read until "endstream" then fix "Length".
+	if streamLength <= 0 {
+		// Read until "endstream" then fix "Length", but do not allow
+		// unbounded memory growth for missing or corrupt markers.
 		return readStreamContentBlindly(rd)
+	}
+
+	if streamLength > maxStreamContentLength {
+		return nil, errors.Errorf(
+			"pdfcpu: stream length %d exceeds maximum supported length %d",
+			streamLength,
+			maxStreamContentLength,
+		)
 	}
 
 	buf := make([]byte, streamLength)
 
-	for totalCount := 0; totalCount < streamLength; {
+	totalCount := 0
+	for totalCount < streamLength {
 		count, err := fillBuffer(rd, buf[totalCount:])
+		if count < 0 || count > streamLength-totalCount {
+			return nil, errors.Errorf("readStreamContent: invalid stream read count=%d\n", count)
+		}
+		if count > 0 {
+			totalCount += count
+
+			if log.ReadEnabled() {
+				log.Read.Printf("readStreamContent: count=%d, buflen=%d(%X)\n", count, len(buf), len(buf))
+			}
+		}
+
 		if err != nil {
 			if err != io.EOF {
 				return nil, err
 			}
-			// Weak heuristic to detect the actual end of this stream
-			// once we have reached EOF due to incorrect streamLength.
-			eob := bytes.Index(buf, []byte("endstream"))
+
+			// Search only the bytes actually read. Searching the whole
+			// preallocated buffer includes zero-filled unread bytes.
+			eob := bytes.Index(buf[:totalCount], []byte("endstream"))
 			if eob < 0 {
 				return nil, err
 			}
 			return buf[:eob], nil
 		}
 
-		if log.ReadEnabled() {
-			log.Read.Printf("readStreamContent: count=%d, buflen=%d(%X)\n", count, len(buf), len(buf))
+		if count == 0 {
+			return nil, io.ErrNoProgress
 		}
-		totalCount += count
 	}
 
 	if log.ReadEnabled() {

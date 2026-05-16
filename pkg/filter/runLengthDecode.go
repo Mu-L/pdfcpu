@@ -25,21 +25,28 @@ type runLengthDecode struct {
 	baseFilter
 }
 
-func (f runLengthDecode) decode(w io.ByteWriter, src []byte, maxLen int64) {
+func (f runLengthDecode) decode(w io.ByteWriter, src []byte, maxLen int64) error {
 	var written int64
+	limit := decodeLimit(maxLen)
 
 	for i := 0; i < len(src); {
 		b := src[i]
 		if b == 0x80 {
 			// eod
-			break
+			return nil
 		}
 		i++
 		if b < 0x80 {
 			c := int(b) + 1
+			if len(src)-i < c {
+				return io.ErrUnexpectedEOF
+			}
 			for j := 0; j < c; j++ {
-				if maxLen >= 0 && maxLen == written {
-					break
+				if limit >= 0 && limit == written {
+					if maxLen >= 0 {
+						return nil
+					}
+					return ErrDecodeLimitExceeded
 				}
 
 				w.WriteByte(src[i])
@@ -48,10 +55,16 @@ func (f runLengthDecode) decode(w io.ByteWriter, src []byte, maxLen int64) {
 			}
 			continue
 		}
+		if i >= len(src) {
+			return io.ErrUnexpectedEOF
+		}
 		c := 257 - int(b)
 		for j := 0; j < c; j++ {
-			if maxLen >= 0 && maxLen == written {
-				break
+			if limit >= 0 && limit == written {
+				if maxLen >= 0 {
+					return nil
+				}
+				return ErrDecodeLimitExceeded
 			}
 
 			w.WriteByte(src[i])
@@ -59,12 +72,18 @@ func (f runLengthDecode) decode(w io.ByteWriter, src []byte, maxLen int64) {
 		}
 		i++
 	}
+	return nil
 }
 
 func (f runLengthDecode) encode(w io.ByteWriter, src []byte) {
 
 	const maxLen = 0x80
 	const eod = 0x80
+
+	if len(src) == 0 {
+		w.WriteByte(eod)
+		return
+	}
 
 	i := 0
 	b := src[i]
@@ -147,7 +166,9 @@ func (f runLengthDecode) DecodeLength(r io.Reader, maxLen int64) (io.Reader, err
 	}
 
 	var b2 bytes.Buffer
-	f.decode(&b2, b1, maxLen)
+	if err := f.decode(&b2, b1, maxLen); err != nil {
+		return nil, err
+	}
 
 	return &b2, nil
 }

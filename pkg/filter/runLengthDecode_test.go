@@ -19,6 +19,8 @@ package filter
 import (
 	"bytes"
 	"encoding/hex"
+	"errors"
+	"io"
 	"testing"
 )
 
@@ -71,8 +73,45 @@ func TestRunLengthEncoding(t *testing.T) {
 		compare(t, enc.Bytes(), []byte(tt.enc))
 
 		var raw bytes.Buffer
-		f.decode(&raw, enc.Bytes(), -1)
+		if err := f.decode(&raw, enc.Bytes(), -1); err != nil {
+			t.Fatal(err)
+		}
 		compare(t, raw.Bytes(), []byte(tt.raw))
 	}
 
+}
+
+func TestRunLengthDecodeTruncatedLiteralRun(t *testing.T) {
+	f := runLengthDecode{baseFilter{}}
+
+	_, err := f.Decode(bytes.NewReader([]byte{0x02, 'a'}))
+	if !errors.Is(err, io.ErrUnexpectedEOF) {
+		t.Fatalf("got %v, want %v", err, io.ErrUnexpectedEOF)
+	}
+}
+
+func TestRunLengthDecodeTruncatedRepeatRun(t *testing.T) {
+	f := runLengthDecode{baseFilter{}}
+
+	_, err := f.Decode(bytes.NewReader([]byte{0xff}))
+	if !errors.Is(err, io.ErrUnexpectedEOF) {
+		t.Fatalf("got %v, want %v", err, io.ErrUnexpectedEOF)
+	}
+}
+
+func TestRunLengthDecodeLengthStopsAtLimit(t *testing.T) {
+	f := runLengthDecode{baseFilter{}}
+
+	r, err := f.DecodeLength(bytes.NewReader([]byte{0x02, 'a', 'b', 'c', 0x80}), 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != "ab" {
+		t.Fatalf("got %q, want %q", got, "ab")
+	}
 }

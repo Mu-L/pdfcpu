@@ -41,6 +41,15 @@ const (
 // ErrUnsupportedFilter signals unsupported filter encountered.
 var ErrUnsupportedFilter = errors.New("pdfcpu: filter not supported")
 
+// ErrDecodeLimitExceeded signals that decoded filter output exceeds MaxDecodeBytes.
+var ErrDecodeLimitExceeded = errors.New("pdfcpu: filter decode limit exceeded")
+
+// MaxDecodeBytes limits full filter decodes.
+var MaxDecodeBytes int64 = 512 << 20 // 512 MiB
+
+const maxInt = int(^uint(0) >> 1)
+const maxInt64 = int64(^uint64(0) >> 1)
+
 // Filter defines an interface for encoding/decoding PDF object streams.
 type Filter interface {
 	Encode(r io.Reader) (io.Reader, error)
@@ -122,4 +131,55 @@ func getReaderBytes(r io.Reader) ([]byte, error) {
 	}
 
 	return bb, nil
+}
+
+func decodeLimit(maxLen int64) int64 {
+	if maxLen >= 0 {
+		return maxLen
+	}
+	return MaxDecodeBytes
+}
+
+func copyDecoded(r io.Reader, maxLen int64) (*bytes.Buffer, error) {
+	if maxLen >= 0 {
+		var b bytes.Buffer
+		_, err := io.CopyN(&b, r, maxLen)
+		return &b, err
+	}
+
+	limit := decodeLimit(maxLen)
+	if limit < 0 {
+		var b bytes.Buffer
+		_, err := io.Copy(&b, r)
+		return &b, err
+	}
+	if limit == maxInt64 {
+		var b bytes.Buffer
+		_, err := io.Copy(&b, r)
+		return &b, err
+	}
+
+	lr := &io.LimitedReader{R: r, N: limit + 1}
+	var b bytes.Buffer
+	if _, err := io.Copy(&b, lr); err != nil {
+		return &b, err
+	}
+	if int64(b.Len()) > limit {
+		return nil, ErrDecodeLimitExceeded
+	}
+	return &b, nil
+}
+
+func checkedAddInt(a, b int) (int, error) {
+	if a < 0 || b < 0 || a > maxInt-b {
+		return 0, errors.New("pdfcpu: filter: integer overflow")
+	}
+	return a + b, nil
+}
+
+func checkedMultiplyInt(a, b int) (int, error) {
+	if a < 0 || b < 0 || a != 0 && b > maxInt/a {
+		return 0, errors.New("pdfcpu: filter: integer overflow")
+	}
+	return a * b, nil
 }

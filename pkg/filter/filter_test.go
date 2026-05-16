@@ -17,6 +17,8 @@ limitations under the License.
 package filter_test
 
 import (
+	"bytes"
+	"compress/zlib"
 	"errors"
 	"io"
 	"os"
@@ -25,6 +27,20 @@ import (
 
 	"github.com/pdfcpu/pdfcpu/pkg/filter"
 )
+
+func zlibEncoded(t *testing.T, s string) *bytes.Buffer {
+	t.Helper()
+
+	var b bytes.Buffer
+	w := zlib.NewWriter(&b)
+	if _, err := w.Write([]byte(s)); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return &b
+}
 
 func TestFilterSupport(t *testing.T) {
 	var filtersTests = []struct {
@@ -325,5 +341,53 @@ func TestASCII85DecodeWithCRLF(t *testing.T) {
 				t.Errorf("Mismatch: got %q, want %q", string(result), tc.expected)
 			}
 		})
+	}
+}
+
+func TestDecodeLimitExceeded(t *testing.T) {
+	old := filter.MaxDecodeBytes
+	filter.MaxDecodeBytes = 4
+	defer func() {
+		filter.MaxDecodeBytes = old
+	}()
+
+	f, err := filter.NewFilter(filter.Flate, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = f.Decode(zlibEncoded(t, "hello"))
+	if !errors.Is(err, filter.ErrDecodeLimitExceeded) {
+		t.Fatalf("got %v, want %v", err, filter.ErrDecodeLimitExceeded)
+	}
+}
+
+func TestASCIIHexDecodeLengthTooLongReturnsError(t *testing.T) {
+	f, err := filter.NewFilter(filter.ASCIIHex, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = f.DecodeLength(strings.NewReader("00>"), 2)
+	if !errors.Is(err, io.ErrUnexpectedEOF) {
+		t.Fatalf("got %v, want %v", err, io.ErrUnexpectedEOF)
+	}
+}
+
+func TestASCIIHexDecodeLimitExceeded(t *testing.T) {
+	old := filter.MaxDecodeBytes
+	filter.MaxDecodeBytes = 1
+	defer func() {
+		filter.MaxDecodeBytes = old
+	}()
+
+	f, err := filter.NewFilter(filter.ASCIIHex, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = f.Decode(strings.NewReader("0000>"))
+	if !errors.Is(err, filter.ErrDecodeLimitExceeded) {
+		t.Fatalf("got %v, want %v", err, filter.ErrDecodeLimitExceeded)
 	}
 }

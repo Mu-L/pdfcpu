@@ -101,13 +101,7 @@ func (f flate) DecodeLength(r io.Reader, maxLen int64) (io.Reader, error) {
 }
 
 func passThru(rin io.Reader, maxLen int64) (*bytes.Buffer, error) {
-	var b bytes.Buffer
-	var err error
-	if maxLen < 0 {
-		_, err = io.Copy(&b, rin)
-	} else {
-		_, err = io.CopyN(&b, rin, maxLen)
-	}
+	b, err := copyDecoded(rin, maxLen)
 	if err != nil && strings.Contains(err.Error(), "invalid checksum") {
 		if log.CLIEnabled() {
 			log.CLI.Println("skipped: truncated zlib stream")
@@ -122,7 +116,7 @@ func passThru(rin io.Reader, maxLen int64) (*bytes.Buffer, error) {
 		}
 		err = nil
 	}
-	return &b, err
+	return b, err
 }
 
 func intMemberOf(i int, list []int) bool {
@@ -236,6 +230,8 @@ func processRow(pr, cr []byte, p, colors, bytesPerPixel int) ([]byte, error) {
 	case PNGPaeth:
 		filterPaeth(cdat, pdat, bytesPerPixel)
 
+	default:
+		return nil, errors.Errorf("pdfcpu: filter FlateDecode: unexpected PNG predictor %d", f)
 	}
 
 	return cdat, nil
@@ -249,7 +245,7 @@ func (f flate) parameters() (colors, bpc, columns int, err error) {
 	colors, found := f.parms["Colors"]
 	if !found {
 		colors = 1
-	} else if colors == 0 {
+	} else if colors <= 0 {
 		return 0, 0, 0, errors.Errorf("pdfcpu: filter FlateDecode: \"Colors\" must be > 0")
 	}
 
@@ -269,6 +265,8 @@ func (f flate) parameters() (colors, bpc, columns int, err error) {
 	columns, found = f.parms["Columns"]
 	if !found {
 		columns = 1
+	} else if columns <= 0 {
+		return 0, 0, 0, errors.Errorf("pdfcpu: filter FlateDecode: \"Columns\" must be > 0")
 	}
 
 	return colors, bpc, columns, nil
@@ -314,13 +312,37 @@ func (f flate) decodePostProcess(r io.Reader, maxLen int64) (io.Reader, error) {
 		return nil, err
 	}
 
-	bytesPerPixel := (bpc*colors + 7) / 8
-	rowSize := (bpc*colors*columns + 7) / 8
+	bitsPerPixel, err := checkedMultiplyInt(bpc, colors)
+	if err != nil {
+		return nil, err
+	}
+	bitsPerPixelRounded, err := checkedAddInt(bitsPerPixel, 7)
+	if err != nil {
+		return nil, err
+	}
+	bytesPerPixel := bitsPerPixelRounded / 8
+
+	rowBits, err := checkedMultiplyInt(bitsPerPixel, columns)
+	if err != nil {
+		return nil, err
+	}
+	rowBitsRounded, err := checkedAddInt(rowBits, 7)
+	if err != nil {
+		return nil, err
+	}
+	rowSize := rowBitsRounded / 8
 
 	m := rowSize
 	if predictor != PredictorTIFF {
 		// PNG prediction uses a row filter byte prefixing the pixelbytes of a row.
-		m++
+		m, err = checkedAddInt(m, 1)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if MaxDecodeBytes >= 0 && int64(m) > MaxDecodeBytes {
+		return nil, ErrDecodeLimitExceeded
 	}
 
 	// cr and pr are the bytes for the current and previous row.
@@ -350,6 +372,12 @@ func (f flate) decodePostProcess(r io.Reader, maxLen int64) (io.Reader, error) {
 
 		if err := process(&b, pr, cr, predictor, colors, bytesPerPixel); err != nil {
 			return nil, err
+		}
+
+		if maxLen < 0 {
+			if limit := decodeLimit(maxLen); limit >= 0 && int64(b.Len()) > limit {
+				return nil, ErrDecodeLimitExceeded
+			}
 		}
 
 		if err == io.EOF {

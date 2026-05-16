@@ -17,7 +17,6 @@ limitations under the License.
 package filter
 
 import (
-	"bytes"
 	"io"
 
 	"github.com/pdfcpu/pdfcpu/pkg/log"
@@ -87,15 +86,14 @@ func (f ccittDecode) DecodeLength(r io.Reader, maxLen int64) (io.Reader, error) 
 	}
 	rd := ccitt.NewReader(r, ccitt.MSB, mode, cols, rows, opts)
 
-	var b bytes.Buffer
-	written, err := io.Copy(&b, rd)
+	b, err := copyDecoded(rd, maxLen)
 	if err != nil {
 		return nil, err
 	}
 
 	if log.TraceEnabled() {
-		log.Trace.Printf("DecodeCCITT: decoded %d bytes.\n", written)
+		log.Trace.Printf("DecodeCCITT: decoded %d bytes.\n", b.Len())
 	}
 
-	return &b, nil
+	return b, nil
 }

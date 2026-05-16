@@ -20,6 +20,8 @@ import (
 	"bytes"
 	"encoding/hex"
 	"io"
+
+	"github.com/pkg/errors"
 )
 
 type asciiHexDecode struct {
@@ -34,6 +36,10 @@ func (f asciiHexDecode) Encode(r io.Reader) (io.Reader, error) {
 	bb, err := getReaderBytes(r)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(bb) > maxInt/2 {
+		return nil, errors.New("pdfcpu: filter ASCIIHexDecode: encoded length overflow")
 	}
 
 	dst := make([]byte, hex.EncodedLen(len(bb)))
@@ -73,8 +79,18 @@ func (f asciiHexDecode) DecodeLength(r io.Reader, maxLen int64) (io.Reader, erro
 		p = append(p, '0')
 	}
 
+	decodedLen := int64(hex.DecodedLen(len(p)))
 	if maxLen < 0 {
-		maxLen = int64(hex.DecodedLen(len(p)))
+		maxLen = decodedLen
+		if limit := decodeLimit(-1); limit >= 0 && maxLen > limit {
+			return nil, ErrDecodeLimitExceeded
+		}
+	} else if maxLen > decodedLen {
+		return nil, io.ErrUnexpectedEOF
+	}
+
+	if maxLen > int64(maxInt) || maxLen > maxInt64/2 {
+		return nil, errors.New("pdfcpu: filter ASCIIHexDecode: decode length overflow")
 	}
 	dst := make([]byte, maxLen)
 

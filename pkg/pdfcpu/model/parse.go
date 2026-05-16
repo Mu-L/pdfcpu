@@ -1074,13 +1074,20 @@ func ParseXRefStreamDict(sd *types.StreamDict) (*types.XRefStreamDict, error) {
 	if log.ParseEnabled() {
 		log.Parse.Println("ParseXRefStreamDict: begin")
 	}
-	if sd.Size() == nil {
+
+	sizePtr := sd.Size()
+	if sizePtr == nil {
 		return nil, errors.New("pdfcpu: ParseXRefStreamDict: \"Size\" not available")
 	}
 
-	objs := []int{}
+	size := *sizePtr
+	if size <= 0 {
+		return nil, errors.New("pdfcpu: ParseXRefStreamDict: invalid \"Size\"")
+	}
 
-	//	Read optional parameter Index
+	objs := make([]int, 0, size)
+
+	// Read optional parameter Index.
 	indArr := sd.Index()
 	if indArr != nil {
 		if log.ParseEnabled() {
@@ -1091,8 +1098,9 @@ func ParseXRefStreamDict(sd *types.StreamDict) (*types.XRefStreamDict, error) {
 			return nil, errXrefStreamCorruptIndex
 		}
 
-		for i := 0; i < len(indArr)/2; i++ {
+		total := 0
 
+		for i := 0; i < len(indArr)/2; i++ {
 			startObj, ok := indArr[i*2].(types.Integer)
 			if !ok {
 				return nil, errXrefStreamCorruptIndex
@@ -1103,18 +1111,30 @@ func ParseXRefStreamDict(sd *types.StreamDict) (*types.XRefStreamDict, error) {
 				return nil, errXrefStreamCorruptIndex
 			}
 
-			for j := 0; j < count.Value(); j++ {
-				objs = append(objs, startObj.Value()+j)
-			}
-		}
+			start := startObj.Value()
+			n := count.Value()
 
+			if start < 0 || n < 0 {
+				return nil, errXrefStreamCorruptIndex
+			}
+
+			if n > size-total {
+				return nil, errXrefStreamCorruptIndex
+			}
+
+			for j := 0; j < n; j++ {
+				objs = append(objs, start+j)
+			}
+
+			total += n
+		}
 	} else {
 		if log.ParseEnabled() {
 			log.Parse.Println("ParseXRefStreamDict: no index dict")
 		}
-		for i := 0; i < *sd.Size(); i++ {
-			objs = append(objs, i)
 
+		for i := 0; i < size; i++ {
+			objs = append(objs, i)
 		}
 	}
 

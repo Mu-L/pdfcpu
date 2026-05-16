@@ -80,21 +80,14 @@ func (f lzwDecode) DecodeLength(r io.Reader, maxLen int64) (io.Reader, error) {
 	rc := lzw.NewReader(r, ec == 1)
 	defer rc.Close()
 
-	var b bytes.Buffer
-	var written int64
-	var err error
-	if maxLen < 0 {
-		written, err = io.Copy(&b, rc)
-	} else {
-		written, err = io.CopyN(&b, rc, maxLen)
-	}
+	b, err := copyDecoded(rc, maxLen)
 	if err != nil {
 		return nil, err
 	}
 
 	if log.TraceEnabled() {
-		log.Trace.Printf("DecodeLZW: decoded %d bytes.\n", written)
+		log.Trace.Printf("DecodeLZW: decoded %d bytes.\n", b.Len())
 	}
 
-	return &b, nil
+	return b, nil
 }
