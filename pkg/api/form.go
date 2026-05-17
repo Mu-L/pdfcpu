@@ -32,6 +32,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/fault"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/form"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/sanitize"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 	"github.com/pkg/errors"
 )
@@ -706,6 +707,7 @@ func parseFormGroup(rd io.Reader) (*form.FormGroup, error) {
 }
 
 func mergeForms(outDir, fileName string, outFiles []string, conf *model.Configuration) error {
+	fileName = sanitizeFilenamePart(fileName, "form")
 	outFile := filepath.Join(outDir, fileName+".pdf")
 	if err := MergeCreateFile(outFiles, outFile, false, conf); err != nil {
 		return err
@@ -764,6 +766,10 @@ func multiFillFormJSON(inFilePDF string, rd io.Reader, outDir, fileName string, 
 		if outFile == "" {
 			outFile = filepath.Join(outDir, fmt.Sprintf("%s_%02d.pdf", fileName, i+1))
 		} else {
+			outFile, err = sanitize.Path(outFile)
+			if err != nil {
+				outFile = fmt.Sprintf("form_%02d", i+1)
+			}
 			if !strings.HasSuffix(strings.ToLower(outFile), ".pdf") {
 				outFile += ".pdf"
 			}
@@ -865,6 +871,10 @@ func multiFillFormCSV(inFilePDF string, rd io.Reader, outDir, fileName string, m
 		if outFile == "" {
 			outFile = filepath.Join(outDir, fmt.Sprintf("%s_%02d.pdf", fileName, i+1))
 		} else {
+			outFile, err = sanitize.Path(outFile)
+			if err != nil {
+				outFile = fmt.Sprintf("form_%02d", i+1)
+			}
 			outFile = filepath.Join(outDir, fmt.Sprintf("%s", outFile))
 		}
 
@@ -893,6 +903,7 @@ func MultiFillForm(inFilePDF string, rd io.Reader, outDir, fileName string, form
 	conf.Cmd = model.MULTIFILLFORMFIELDS
 
 	fileName = strings.TrimSuffix(filepath.Base(fileName), ".pdf")
+	fileName = sanitizeFilenamePart(fileName, "form")
 
 	if format == form.JSON {
 		return multiFillFormJSON(inFilePDF, rd, outDir, fileName, merge, conf)

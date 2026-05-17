@@ -29,12 +29,19 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/fault"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/sanitize"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 	"github.com/pkg/errors"
 )
 
+func sanitizeFilenamePart(s, fallback string) string {
+	return sanitize.PathOr(s, fallback)
+}
+
 // WriteImageToDisk returns a closure for writing an image to disk.
 func WriteImageToDisk(outDir, fileName string) func(model.Image, bool, int) error {
+	fileName = sanitizeFilenamePart(fileName, "file")
+
 	return func(img model.Image, singleImgPerPage bool, maxPageDigits int) error {
 		if img.Reader == nil {
 			return nil
@@ -44,7 +51,9 @@ func WriteImageToDisk(outDir, fileName string) func(model.Image, bool, int) erro
 		if img.Thumb {
 			qual = "thumb"
 		}
-		f := fmt.Sprintf(s+"_%s.%s", fileName, img.PageNr, qual, img.FileType)
+		qual = sanitizeFilenamePart(qual, "image")
+		fileType := sanitizeFilenamePart(img.FileType, "img")
+		f := fmt.Sprintf(s+"_%s.%s", fileName, img.PageNr, qual, fileType)
 		outFile := filepath.Join(outDir, f)
 		logWritingTo(outFile)
 		return pdfcpu.WriteReader(outFile, img)
@@ -53,8 +62,12 @@ func WriteImageToDisk(outDir, fileName string) func(model.Image, bool, int) erro
 
 // WriteFontToDisk returns a closure for writing a font file to disk.
 func WriteFontToDisk(outDir, fnBase string) func(pdfcpu.Font) error {
+	fnBase = sanitizeFilenamePart(fnBase, "file")
+
 	return func(font pdfcpu.Font) error {
-		outFile := filepath.Join(outDir, fmt.Sprintf("%s_%s.%s", fnBase, font.Name, font.Type))
+		fontName := sanitizeFilenamePart(font.Name, "fontName")
+		fontType := sanitizeFilenamePart(font.Type, "fontType")
+		outFile := filepath.Join(outDir, fmt.Sprintf("%s_%s.%s", fnBase, fontName, fontType))
 		logWritingTo(outFile)
 		return pdfcpu.WriteReader(outFile, font)
 	}
@@ -62,6 +75,8 @@ func WriteFontToDisk(outDir, fnBase string) func(pdfcpu.Font) error {
 
 // WritePageToDisk returns a closure for writing a single page PDF to disk.
 func WritePageToDisk(outDir, fnBase string) func(io.Reader, int) error {
+	fnBase = sanitizeFilenamePart(fnBase, "file")
+
 	return func(rd io.Reader, pageNr int) error {
 		outFile := filepath.Join(outDir, fmt.Sprintf("%s_page_%d.pdf", fnBase, pageNr))
 		logWritingTo(outFile)
@@ -71,6 +86,8 @@ func WritePageToDisk(outDir, fnBase string) func(io.Reader, int) error {
 
 // WriteContentToDisk returns a closure for writing content to disk.
 func WriteContentToDisk(outDir, fnBase string) func(io.Reader, int) error {
+	fnBase = sanitizeFilenamePart(fnBase, "file")
+
 	return func(rd io.Reader, pageNr int) error {
 		outFile := filepath.Join(outDir, fmt.Sprintf("%s_Content_page_%d.txt", fnBase, pageNr))
 		logWritingTo(outFile)
@@ -80,8 +97,11 @@ func WriteContentToDisk(outDir, fnBase string) func(io.Reader, int) error {
 
 // WriteMetadataToDisk returns a closure for writing metadata to disk.
 func WriteMetadataToDisk(outDir, fnBase string) func(pdfcpu.Metadata) error {
+	fnBase = sanitizeFilenamePart(fnBase, "file")
+
 	return func(md pdfcpu.Metadata) error {
-		outFile := filepath.Join(outDir, fmt.Sprintf("%s_Metadata_%s_%d_%d.txt", fnBase, md.ParentType, md.ParentObjNr, md.ObjNr))
+		parentType := sanitizeFilenamePart(md.ParentType, "metadata")
+		outFile := filepath.Join(outDir, fmt.Sprintf("%s_Metadata_%s_%d_%d.txt", fnBase, parentType, md.ParentObjNr, md.ObjNr))
 		logWritingTo(outFile)
 		return pdfcpu.WriteReader(outFile, md)
 	}

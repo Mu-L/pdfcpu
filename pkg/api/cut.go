@@ -66,6 +66,7 @@ func Poster(rs io.ReadSeeker, outDir, fileName string, selectedPages []string, c
 		conf = model.NewDefaultConfiguration()
 	}
 	conf.Cmd = model.POSTER
+	fileName = sanitizeFilenamePart(fileName, "poster")
 
 	ctxSrc, pages, err := prepareForCut(rs, selectedPages, conf)
 	if err != nil {
@@ -132,6 +133,7 @@ func NDown(rs io.ReadSeeker, outDir, fileName string, selectedPages []string, n 
 		conf = model.NewDefaultConfiguration()
 	}
 	conf.Cmd = model.NDOWN
+	fileName = sanitizeFilenamePart(fileName, "ndown")
 
 	ctxSrc, pages, err := prepareForCut(rs, selectedPages, conf)
 	if err != nil {
@@ -236,6 +238,7 @@ func Cut(rs io.ReadSeeker, outDir, fileName string, selectedPages []string, cut 
 		conf = model.NewDefaultConfiguration()
 	}
 	conf.Cmd = model.CUT
+	fileName = sanitizeFilenamePart(fileName, "cut")
 
 	ctxSrc, pages, err := prepareForCut(rs, selectedPages, conf)
 	if err != nil {

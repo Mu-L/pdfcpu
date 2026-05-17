@@ -17,6 +17,7 @@
 package api
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -25,6 +26,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/log"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/fault"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/sanitize"
 	"github.com/pkg/errors"
 )
 
@@ -258,36 +260,6 @@ func ExtractAttachmentsRaw(rs io.ReadSeeker, outDir string, fileNames []string, 
 	return ctx.ExtractAttachments(fileNames)
 }
 
-func SanitizePath(path string) string {
-
-	// Do not process "'" and "..".
-
-	if path == "" || path == "." || path == ".." {
-		return "attachment"
-	}
-
-	path = strings.TrimPrefix(path, string(filepath.Separator))
-
-	parts := strings.Split(path, string(filepath.Separator))
-
-	cleanParts := []string{}
-	for i := 0; i < len(parts); i++ {
-		if parts[i] != "" && parts[i] != "." && parts[i] != ".." {
-			cleanParts = append(cleanParts, parts[i])
-			continue
-		}
-		if i == len(parts)-1 {
-			cleanParts = append(cleanParts, "attachment")
-		}
-	}
-
-	if len(cleanParts) == 0 {
-		return "attachment"
-	}
-
-	return filepath.Join(cleanParts...)
-}
-
 // ExtractAttachments extracts embedded files from a PDF context read from rs into outDir.
 func ExtractAttachments(rs io.ReadSeeker, outDir string, fileNames []string, conf *model.Configuration) (err error) {
 	defer fault.Catch(&err)
@@ -297,18 +269,17 @@ func ExtractAttachments(rs io.ReadSeeker, outDir string, fileNames []string, con
 		return err
 	}
 
-	for _, a := range aa {
+	for i, a := range aa {
 
-		fn := SanitizePath(a.FileName)
+		fn, err := sanitize.Path(a.FileName)
+		if err != nil {
+			fn = fmt.Sprintf("attachment_%d", i+1)
+		}
 		fileName := filepath.Join(outDir, fn)
 
 		f, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
 		if err != nil {
-			fileName = filepath.Base(a.FileName)
-			f, err = os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.ModePerm)
-			if err != nil {
-				return err
-			}
+			return err
 		}
 		logWritingTo(fileName)
 		if _, err = io.Copy(f, a); err != nil {

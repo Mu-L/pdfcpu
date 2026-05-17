@@ -29,6 +29,7 @@ import (
 
 	"github.com/pdfcpu/pdfcpu/internal/corefont/metrics"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/fault"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/sanitize"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 
 	"github.com/pkg/errors"
@@ -216,6 +217,10 @@ func load(fileName string, fd *TTFLight) error {
 
 // Read reads in the font file bytes from gob
 func Read(fileName string) ([]byte, error) {
+	fileName, err := sanitize.Path(fileName)
+	if err != nil {
+		return nil, err
+	}
 	fn := filepath.Join(UserFontDir, fileName+".gob")
 	f, err := os.Open(fn)
 	if err != nil {

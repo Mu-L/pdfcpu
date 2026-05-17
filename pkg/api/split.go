@@ -28,6 +28,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/fault"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/sanitize"
 	"github.com/pkg/errors"
 )
 
@@ -175,8 +176,11 @@ func writePageSpansSplitAlongBookmarks(ctx *model.Context, outDir string) error 
 		return err
 	}
 
-	for _, bm := range bms {
-		fileName := strings.Replace(bm.Title, " ", "_", -1)
+	for i, bm := range bms {
+		fileName, err := sanitize.Path(bm.Title)
+		if err != nil {
+			fileName = "bookmark_" + strconv.Itoa(i+1)
+		}
 		from, thru := bm.PageFrom, bm.PageThru
 		if thru == 0 {
 			thru = ctx.PageCount

@@ -31,6 +31,7 @@ import (
 	"unicode/utf16"
 
 	"github.com/pdfcpu/pdfcpu/pkg/log"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/sanitize"
 	"github.com/pkg/errors"
 )
 
@@ -667,6 +668,10 @@ func installTrueTypeRep(fontDir, fontName string, header []byte, tables map[stri
 		log.CLI.Println(fd.PostscriptName)
 	}
 
+	fd.PostscriptName, err = sanitize.Path(fd.PostscriptName)
+	if err != nil {
+		return err
+	}
 	gobName := filepath.Join(fontDir, fd.PostscriptName+".gob")
 
 	// Write the populated ttf struct as gob.
