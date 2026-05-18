@@ -27,7 +27,7 @@ type runLengthDecode struct {
 
 func (f runLengthDecode) decode(w io.ByteWriter, src []byte, maxLen int64) error {
 	var written int64
-	limit := decodeLimit(maxLen)
+	limit := f.decodeLimit(maxLen)
 
 	for i := 0; i < len(src); {
 		b := src[i]

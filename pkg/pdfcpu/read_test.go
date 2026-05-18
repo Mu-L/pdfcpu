@@ -23,6 +23,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -130,6 +131,13 @@ func TestReadLargeDictObject(t *testing.T) {
 
 	if expected := "Hello world!"; string(d.Content) != expected {
 		t.Errorf("expected stream content %s, got %s", expected, string(d.Content))
+	}
+}
+
+func TestReadStreamContentRejectsStreamLimit(t *testing.T) {
+	_, err := readStreamContent(bytes.NewReader([]byte("abc")), 3, 2)
+	if err == nil || !strings.Contains(err.Error(), "exceeds maximum") {
+		t.Fatalf("got %v, want stream limit error", err)
 	}
 }
 

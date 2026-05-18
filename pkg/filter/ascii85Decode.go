@@ -73,7 +73,7 @@ func (f ascii85Decode) DecodeLength(r io.Reader, maxLen int64) (io.Reader, error
 
 	decoder := ascii85.NewDecoder(bytes.NewReader(bb))
 
-	b2, err := copyDecoded(decoder, maxLen)
+	b2, err := f.copyDecoded(decoder, maxLen)
 	if err != nil {
 		return nil, err
 	}

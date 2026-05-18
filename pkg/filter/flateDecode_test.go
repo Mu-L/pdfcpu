@@ -38,7 +38,7 @@ func flateTestData(t *testing.T, s string) *bytes.Buffer {
 }
 
 func TestFlatePredictorRejectsInvalidColors(t *testing.T) {
-	f := flate{baseFilter{map[string]int{
+	f := flate{baseFilter{parms: map[string]int{
 		"Predictor": PredictorNone,
 		"Colors":    -1,
 	}}}
@@ -50,7 +50,7 @@ func TestFlatePredictorRejectsInvalidColors(t *testing.T) {
 }
 
 func TestFlatePredictorRejectsInvalidColumns(t *testing.T) {
-	f := flate{baseFilter{map[string]int{
+	f := flate{baseFilter{parms: map[string]int{
 		"Predictor": PredictorNone,
 		"Columns":   -1,
 	}}}
@@ -62,7 +62,7 @@ func TestFlatePredictorRejectsInvalidColumns(t *testing.T) {
 }
 
 func TestFlatePredictorRejectsOverflowingRowSize(t *testing.T) {
-	f := flate{baseFilter{map[string]int{
+	f := flate{baseFilter{parms: map[string]int{
 		"Predictor": PredictorNone,
 		"Colors":    maxInt,
 		"Columns":   2,
@@ -75,16 +75,13 @@ func TestFlatePredictorRejectsOverflowingRowSize(t *testing.T) {
 }
 
 func TestFlatePredictorRejectsRowLargerThanDecodeLimit(t *testing.T) {
-	old := MaxDecodeBytes
-	MaxDecodeBytes = 4
-	defer func() {
-		MaxDecodeBytes = old
-	}()
-
-	f := flate{baseFilter{map[string]int{
-		"Predictor": PredictorNone,
-		"Columns":   8,
-	}}}
+	f := flate{baseFilter{
+		parms: map[string]int{
+			"Predictor": PredictorNone,
+			"Columns":   8,
+		},
+		maxDecodeBytes: 4,
+	}}
 
 	_, err := f.Decode(flateTestData(t, ""))
 	if err != ErrDecodeLimitExceeded {

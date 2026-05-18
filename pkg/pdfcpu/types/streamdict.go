@@ -151,14 +151,20 @@ func (l LazyObjectStreamObject) String() string {
 }
 
 func (l *LazyObjectStreamObject) GetData() ([]byte, error) {
-	if err := l.osd.Decode(); err != nil {
+	if err := l.osd.DecodeWithLimit(l.osd.MaxDecodeBytes); err != nil {
 		return nil, err
 	}
 
 	var data []byte
 	if l.endOffset == -1 {
+		if l.startOffset < 0 || l.startOffset > len(l.osd.Content) {
+			return nil, errors.Errorf("pdfcpu: object stream offset %d out of bounds", l.startOffset)
+		}
 		data = l.osd.Content[l.startOffset:]
 	} else {
+		if l.startOffset < 0 || l.startOffset > l.endOffset || l.endOffset > len(l.osd.Content) {
+			return nil, errors.Errorf("pdfcpu: object stream offset range [%d:%d] out of bounds", l.startOffset, l.endOffset)
+		}
 		data = l.osd.Content[l.startOffset:l.endOffset]
 	}
 	return data, nil
@@ -193,6 +199,7 @@ type ObjectStreamDict struct {
 	Prolog         []byte
 	ObjCount       int
 	FirstObjOffset int
+	MaxDecodeBytes int64
 	ObjArray       Array
 }
 
@@ -321,11 +328,16 @@ func fixParms(f PDFFilter, parms map[string]int, sd *StreamDict) error {
 
 // Decode applies sd's filter pipeline to sd.Raw in order to produce sd.Content.
 func (sd *StreamDict) Decode() error {
-	_, err := sd.DecodeLength(-1)
+	_, err := sd.DecodeLengthWithLimit(-1, filter.DefaultMaxDecodeBytes)
 	return err
 }
 
-func (sd *StreamDict) decodeLength(maxLen int64) ([]byte, error) {
+func (sd *StreamDict) DecodeWithLimit(maxDecodeBytes int64) error {
+	_, err := sd.DecodeLengthWithLimit(-1, maxDecodeBytes)
+	return err
+}
+
+func (sd *StreamDict) decodeLength(maxLen, maxDecodeBytes int64) ([]byte, error) {
 	var b, c io.Reader
 	b = bytes.NewReader(sd.Raw)
 
@@ -358,7 +370,7 @@ func (sd *StreamDict) decodeLength(maxLen int64) ([]byte, error) {
 			return nil, err
 		}
 
-		fi, err := filter.NewFilter(f.Name, parms)
+		fi, err := filter.NewFilter(f.Name, parms, maxDecodeBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -400,6 +412,10 @@ func (sd *StreamDict) decodeLength(maxLen int64) ([]byte, error) {
 }
 
 func (sd *StreamDict) DecodeLength(maxLen int64) ([]byte, error) {
+	return sd.DecodeLengthWithLimit(maxLen, filter.DefaultMaxDecodeBytes)
+}
+
+func (sd *StreamDict) DecodeLengthWithLimit(maxLen, maxDecodeBytes int64) ([]byte, error) {
 	if sd.Content != nil {
 		// This stream has already been decoded.
 		if maxLen < 0 {
@@ -430,7 +446,7 @@ func (sd *StreamDict) DecodeLength(maxLen int64) ([]byte, error) {
 
 	//fmt.Printf("decodedStream before:\n%s\n", hex.Dump(sd.Raw))
 
-	return sd.decodeLength(maxLen)
+	return sd.decodeLength(maxLen, maxDecodeBytes)
 }
 
 // IndexedObject returns the object at given index from a ObjectStreamDict.

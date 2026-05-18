@@ -345,13 +345,7 @@ func TestASCII85DecodeWithCRLF(t *testing.T) {
 }
 
 func TestDecodeLimitExceeded(t *testing.T) {
-	old := filter.MaxDecodeBytes
-	filter.MaxDecodeBytes = 4
-	defer func() {
-		filter.MaxDecodeBytes = old
-	}()
-
-	f, err := filter.NewFilter(filter.Flate, nil)
+	f, err := filter.NewFilter(filter.Flate, nil, 4)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -375,13 +369,7 @@ func TestASCIIHexDecodeLengthTooLongReturnsError(t *testing.T) {
 }
 
 func TestASCIIHexDecodeLimitExceeded(t *testing.T) {
-	old := filter.MaxDecodeBytes
-	filter.MaxDecodeBytes = 1
-	defer func() {
-		filter.MaxDecodeBytes = old
-	}()
-
-	f, err := filter.NewFilter(filter.ASCIIHex, nil)
+	f, err := filter.NewFilter(filter.ASCIIHex, nil, 1)
 	if err != nil {
 		t.Fatal(err)
 	}

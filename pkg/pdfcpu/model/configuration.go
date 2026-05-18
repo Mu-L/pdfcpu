@@ -285,11 +285,55 @@ type Configuration struct {
 	// If > 0 affects the columns AltName, Default and Value.
 	FormFieldListMaxColWidth int
 
+	// Limits controls resource usage for input-driven allocation.
+	Limits ResourceLimits
+
 	// Do not encrypt output files.
 	RemoveEncryption bool
 
 	// Remove existing signatures.
 	RemoveSignatures bool
+}
+
+// ResourceLimits controls resource usage for input-driven allocation.
+type ResourceLimits struct {
+	// MaxStreamBytes limits encoded stream bytes read from a PDF.
+	MaxStreamBytes int64
+
+	// MaxDecodeBytes limits decoded stream bytes produced by filters.
+	MaxDecodeBytes int64
+
+	// MaxImagePixels limits decoded/rendered image dimensions.
+	MaxImagePixels int64
+
+	// MaxImageBytes limits decoded/rendered image buffer sizes.
+	MaxImageBytes int64
+
+	// MaxObjectCount limits xref stream /Size expansion.
+	MaxObjectCount int
+
+	// MaxObjectStreamCount limits object stream /N.
+	MaxObjectStreamCount int
+
+	// MaxObjectStreamFirst limits object stream /First prolog bytes.
+	MaxObjectStreamFirst int64
+
+	// MaxXRefEntries limits xref stream Index expansion.
+	MaxXRefEntries int
+}
+
+// DefaultResourceLimits returns the default resource limits.
+func DefaultResourceLimits() ResourceLimits {
+	return ResourceLimits{
+		MaxStreamBytes:       512 << 20,
+		MaxDecodeBytes:       512 << 20,
+		MaxImagePixels:       100_000_000,
+		MaxImageBytes:        512 << 20,
+		MaxObjectCount:       10_000_000,
+		MaxObjectStreamCount: 1_000_000,
+		MaxObjectStreamFirst: 16 << 20,
+		MaxXRefEntries:       10_000_000,
+	}
 }
 
 // ConfigPath defines the location of pdfcpu's configuration directory.
@@ -497,6 +541,7 @@ func newDefaultConfiguration() *Configuration {
 		Timeout:                         5,
 		PreferredCertRevocationChecker:  CRL,
 		FormFieldListMaxColWidth:        0,
+		Limits:                          DefaultResourceLimits(),
 	}
 }
 

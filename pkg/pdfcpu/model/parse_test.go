@@ -17,7 +17,10 @@ limitations under the License.
 package model
 
 import (
+	"strings"
 	"testing"
+
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
 func TestDecodeNameHexInvalid(t *testing.T) {
@@ -33,6 +36,52 @@ func TestDecodeNameHexInvalid(t *testing.T) {
 		if decoded, err := decodeNameHexSequence(tc); err == nil {
 			t.Errorf("expected error decoding %s, got %s", tc, decoded)
 		}
+	}
+}
+
+func TestParseXRefStreamDictRejectsSizeLimit(t *testing.T) {
+	sd := types.StreamDict{
+		Dict: types.Dict{
+			"Size": types.Integer(3),
+			"W":    types.Array{types.Integer(1), types.Integer(1), types.Integer(1)},
+		},
+	}
+
+	_, err := ParseXRefStreamDictWithLimits(&sd, ResourceLimits{
+		MaxObjectCount:       2,
+		MaxXRefEntries:       10,
+		MaxObjectStreamCount: 1,
+		MaxObjectStreamFirst: 1,
+	})
+	if err == nil || !strings.Contains(err.Error(), "Size") {
+		t.Fatalf("got %v, want Size limit error", err)
+	}
+}
+
+func TestObjectStreamDictRejectsLimits(t *testing.T) {
+	sd := types.StreamDict{
+		Dict: types.Dict{
+			"Type":  types.Name("ObjStm"),
+			"N":     types.Integer(3),
+			"First": types.Integer(10),
+		},
+	}
+
+	_, err := ObjectStreamDictWithLimits(&sd, ResourceLimits{
+		MaxObjectStreamCount: 2,
+		MaxObjectStreamFirst: 20,
+	})
+	if err == nil || !strings.Contains(err.Error(), "N") {
+		t.Fatalf("got %v, want N limit error", err)
+	}
+
+	sd.Dict["N"] = types.Integer(2)
+	_, err = ObjectStreamDictWithLimits(&sd, ResourceLimits{
+		MaxObjectStreamCount: 2,
+		MaxObjectStreamFirst: 9,
+	})
+	if err == nil || !strings.Contains(err.Error(), "First") {
+		t.Fatalf("got %v, want First limit error", err)
 	}
 }
 

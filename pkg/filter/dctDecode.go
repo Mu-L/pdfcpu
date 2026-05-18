@@ -21,6 +21,8 @@ import (
 	"encoding/gob"
 	"image/jpeg"
 	"io"
+
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/safemath"
 )
 
 type dctDecode struct {
@@ -49,15 +51,15 @@ func (f dctDecode) DecodeLength(r io.Reader, maxLen int64) (io.Reader, error) {
 		return nil, err
 	}
 
-	pixels, err := checkedMultiplyInt(cfg.Width, cfg.Height)
+	pixels, err := safemath.MultiplyInt(cfg.Width, cfg.Height)
 	if err != nil {
 		return nil, err
 	}
-	imageBytes, err := checkedMultiplyInt(pixels, 4)
+	imageBytes, err := safemath.MultiplyInt(pixels, 4)
 	if err != nil {
 		return nil, err
 	}
-	if limit := decodeLimit(maxLen); limit >= 0 && int64(imageBytes) > limit {
+	if limit := f.decodeLimit(maxLen); limit >= 0 && int64(imageBytes) > limit {
 		return nil, ErrDecodeLimitExceeded
 	}
 

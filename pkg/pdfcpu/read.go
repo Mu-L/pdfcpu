@@ -37,9 +37,8 @@ import (
 )
 
 const (
-	defaultBufSize         = 1 << 10   // 1 KiB
-	maxBufSize             = 1 << 20   // 1 MiB
-	maxStreamContentLength = 512 << 20 // 512 MiB
+	defaultBufSize = 1 << 10 // 1 KiB
+	maxBufSize     = 1 << 20 // 1 MiB
 )
 
 var (
@@ -441,19 +440,23 @@ func compressedObject(c context.Context, s string) (types.Object, error) {
 }
 
 // Parse all objects of an object stream and save them into objectStreamDict.ObjArray.
-func parseObjectStream(c context.Context, osd *types.ObjectStreamDict) error {
+func parseObjectStream(c context.Context, osd *types.ObjectStreamDict, limits model.ResourceLimits) error {
 	if log.ReadEnabled() {
 		log.Read.Printf("parseObjectStream begin: decoding %d objects.\n", osd.ObjCount)
 	}
 
 	decodedContent := osd.Content
+	fullContent := decodedContent != nil
 	if decodedContent == nil {
 		// The actual content will be decoded lazily, only decode the prolog here.
 		var err error
-		decodedContent, err = osd.DecodeLength(int64(osd.FirstObjOffset))
+		decodedContent, err = osd.DecodeLengthWithLimit(int64(osd.FirstObjOffset), limits.MaxDecodeBytes)
 		if err != nil {
 			return err
 		}
+	}
+	if osd.FirstObjOffset > len(decodedContent) {
+		return errors.New("pdfcpu: parseObjectStream: corrupt object stream dict")
 	}
 	prolog := decodedContent[:osd.FirstObjOffset]
 
@@ -469,6 +472,9 @@ func parseObjectStream(c context.Context, osd *types.ObjectStreamDict) error {
 	objs := strings.Fields(string(prolog))
 	if len(objs)%2 > 0 {
 		return errors.New("pdfcpu: parseObjectStream: corrupt object stream dict")
+	}
+	if len(objs)/2 > limits.MaxObjectStreamCount {
+		return errors.Errorf("pdfcpu: object stream object count %d exceeds limit %d", len(objs)/2, limits.MaxObjectStreamCount)
 	}
 
 	// e.g., 10 0 11 25 = 2 Objects: #10 @ offset 0, #11 @ offset 25
@@ -489,6 +495,15 @@ func parseObjectStream(c context.Context, osd *types.ObjectStreamDict) error {
 		}
 
 		offset += osd.FirstObjOffset
+		if offset < osd.FirstObjOffset {
+			return errors.New("pdfcpu: parseObjectStream: corrupt object stream dict")
+		}
+		if fullContent && offset > len(decodedContent) {
+			return errors.New("pdfcpu: parseObjectStream: corrupt object stream dict")
+		}
+		if i > 0 && offset < offsetOld {
+			return errors.New("pdfcpu: parseObjectStream: corrupt object stream dict")
+		}
 
 		if i > 0 {
 			o := types.NewLazyObjectStreamObject(osd, offsetOld, offset, compressedObject)
@@ -689,7 +704,7 @@ func xRefStreamDict(c context.Context, ctx *model.Context, o types.Object, objNr
 		return nil, errors.Wrapf(err, "xRefStreamDict: cannot decode stream for obj#:%d\n", objNr)
 	}
 
-	return model.ParseXRefStreamDict(&sd)
+	return model.ParseXRefStreamDictWithLimits(&sd, ctx.Configuration.Limits)
 }
 
 func processXRefStream(ctx *model.Context, xsd *types.XRefStreamDict, objNr *int, offset *int64, offExtra int64, incr int) (prevOffset *int64, err error) {
@@ -2326,13 +2341,13 @@ func int64Object(c context.Context, ctx *model.Context, objNr int) (*int64, erro
 
 }
 
-func readStreamContentBlindly(rd io.Reader) (buf []byte, err error) {
+func readStreamContentBlindly(rd io.Reader, maxStreamBytes int64) (buf []byte, err error) {
 	// Weak heuristic for reading in stream data for cases where stream length is unknown.
 	// ...data...{eol}endstream{eol}endobj
 
 	growSize := defaultBufSize
-	if growSize > maxStreamContentLength {
-		growSize = maxStreamContentLength
+	if int64(growSize) > maxStreamBytes {
+		growSize = int(maxStreamBytes)
 	}
 
 	if buf, err = growBufBy(buf, growSize, rd); err != nil {
@@ -2341,18 +2356,18 @@ func readStreamContentBlindly(rd io.Reader) (buf []byte, err error) {
 
 	i := bytes.Index(buf, []byte("endstream"))
 	for i < 0 {
-		if len(buf) >= maxStreamContentLength {
+		if int64(len(buf)) >= maxStreamBytes {
 			return nil, errors.Errorf(
 				"pdfcpu: stream content exceeds maximum blind read length %d",
-				maxStreamContentLength,
+				maxStreamBytes,
 			)
 		}
 
 		growSize = min(growSize*2, maxBufSize)
 
-		remaining := maxStreamContentLength - len(buf)
-		if growSize > remaining {
-			growSize = remaining
+		remaining := maxStreamBytes - int64(len(buf))
+		if int64(growSize) > remaining {
+			growSize = int(remaining)
 		}
 
 		buf, err = growBufBy(buf, growSize, rd)
@@ -2378,7 +2393,7 @@ func readStreamContentBlindly(rd io.Reader) (buf []byte, err error) {
 }
 
 // Reads and returns a file buffer with length = stream length using provided reader positioned at offset.
-func readStreamContent(rd io.Reader, streamLength int) ([]byte, error) {
+func readStreamContent(rd io.Reader, streamLength int, maxStreamBytes int64) ([]byte, error) {
 	if log.ReadEnabled() {
 		log.Read.Printf("readStreamContent: begin streamLength:%d\n", streamLength)
 	}
@@ -2386,14 +2401,14 @@ func readStreamContent(rd io.Reader, streamLength int) ([]byte, error) {
 	if streamLength <= 0 {
 		// Read until "endstream" then fix "Length", but do not allow
 		// unbounded memory growth for missing or corrupt markers.
-		return readStreamContentBlindly(rd)
+		return readStreamContentBlindly(rd, maxStreamBytes)
 	}
 
-	if streamLength > maxStreamContentLength {
+	if int64(streamLength) > maxStreamBytes {
 		return nil, errors.Errorf(
 			"pdfcpu: stream length %d exceeds maximum supported length %d",
 			streamLength,
-			maxStreamContentLength,
+			maxStreamBytes,
 		)
 	}
 
@@ -2447,6 +2462,20 @@ func ensureStreamLength(sd *types.StreamDict, fixLength bool) {
 	}
 }
 
+func decodeLimit(ctx *model.Context) int64 {
+	if ctx == nil || ctx.Configuration == nil {
+		return model.DefaultResourceLimits().MaxDecodeBytes
+	}
+	return ctx.Configuration.Limits.MaxDecodeBytes
+}
+
+func streamLimit(ctx *model.Context) int64 {
+	if ctx == nil || ctx.Configuration == nil {
+		return model.DefaultResourceLimits().MaxStreamBytes
+	}
+	return ctx.Configuration.Limits.MaxStreamBytes
+}
+
 // loadEncodedStreamContent loads the encoded stream content into sd.
 func loadEncodedStreamContent(c context.Context, ctx *model.Context, sd *types.StreamDict, fixLength bool) error {
 	if sd.Raw != nil {
@@ -2487,7 +2516,7 @@ func loadEncodedStreamContent(c context.Context, ctx *model.Context, sd *types.S
 	if !fixLength && sd.StreamLength != nil {
 		l1 = int(*sd.StreamLength)
 	}
-	sd.Raw, err = readStreamContent(rd, l1)
+	sd.Raw, err = readStreamContent(rd, l1, streamLimit(ctx))
 	if err != nil {
 		return err
 	}
@@ -2539,7 +2568,7 @@ func saveDecodedStreamContent(ctx *model.Context, sd *types.StreamDict, objNr, g
 	}
 
 	// Actual decoding of stream data.
-	err = sd.Decode()
+	err = sd.DecodeWithLimit(decodeLimit(ctx))
 	if err == filter.ErrUnsupportedFilter {
 		err = nil
 	}
@@ -2630,8 +2659,8 @@ func logStream(o types.Object) {
 
 }
 
-func decodeObjectStreamObjects(c context.Context, sd *types.StreamDict, objNr int) (*types.ObjectStreamDict, error) {
-	osd, err := model.ObjectStreamDict(sd)
+func decodeObjectStreamObjects(c context.Context, ctx *model.Context, sd *types.StreamDict, objNr int) (*types.ObjectStreamDict, error) {
+	osd, err := model.ObjectStreamDictWithLimits(sd, ctx.Configuration.Limits)
 	if err != nil {
 		return nil, errors.Wrapf(err, "decodeObjectStreamObjects: problem dereferencing object stream %d", objNr)
 	}
@@ -2641,7 +2670,7 @@ func decodeObjectStreamObjects(c context.Context, sd *types.StreamDict, objNr in
 	}
 
 	// Parse all objects of this object stream and save them to ObjectStreamDict.ObjArray.
-	if err = parseObjectStream(c, osd); err != nil {
+	if err = parseObjectStream(c, osd, ctx.Configuration.Limits); err != nil {
 		return nil, errors.Wrapf(err, "decodeObjectStreamObjects: problem decoding object stream %d\n", objNr)
 	}
 
@@ -2703,7 +2732,7 @@ func decodeObjectStream(c context.Context, ctx *model.Context, objNr int) error 
 
 	ctx.Read.UsingObjectStreams = true
 
-	osd, err := decodeObjectStreamObjects(c, &sd, objNr)
+	osd, err := decodeObjectStreamObjects(c, ctx, &sd, objNr)
 	if err != nil {
 		return err
 	}

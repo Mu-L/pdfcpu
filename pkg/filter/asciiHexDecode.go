@@ -82,7 +82,7 @@ func (f asciiHexDecode) DecodeLength(r io.Reader, maxLen int64) (io.Reader, erro
 	decodedLen := int64(hex.DecodedLen(len(p)))
 	if maxLen < 0 {
 		maxLen = decodedLen
-		if limit := decodeLimit(-1); limit >= 0 && maxLen > limit {
+		if limit := f.decodeLimit(-1); limit >= 0 && maxLen > limit {
 			return nil, ErrDecodeLimitExceeded
 		}
 	} else if maxLen > decodedLen {

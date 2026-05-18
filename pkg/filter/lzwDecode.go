@@ -80,7 +80,7 @@ func (f lzwDecode) DecodeLength(r io.Reader, maxLen int64) (io.Reader, error) {
 	rc := lzw.NewReader(r, ec == 1)
 	defer rc.Close()
 
-	b, err := copyDecoded(rc, maxLen)
+	b, err := f.copyDecoded(rc, maxLen)
 	if err != nil {
 		return nil, err
 	}

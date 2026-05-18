@@ -86,7 +86,7 @@ func (f ccittDecode) DecodeLength(r io.Reader, maxLen int64) (io.Reader, error) 
 	}
 	rd := ccitt.NewReader(r, ccitt.MSB, mode, cols, rows, opts)
 
-	b, err := copyDecoded(rd, maxLen)
+	b, err := f.copyDecoded(rd, maxLen)
 	if err != nil {
 		return nil, err
 	}

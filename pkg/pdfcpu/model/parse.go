@@ -1071,6 +1071,10 @@ func createXRefStreamDict(sd *types.StreamDict, objs []int) (*types.XRefStreamDi
 
 // ParseXRefStreamDict creates a XRefStreamDict out of a StreamDict.
 func ParseXRefStreamDict(sd *types.StreamDict) (*types.XRefStreamDict, error) {
+	return ParseXRefStreamDictWithLimits(sd, DefaultResourceLimits())
+}
+
+func ParseXRefStreamDictWithLimits(sd *types.StreamDict, limits ResourceLimits) (*types.XRefStreamDict, error) {
 	if log.ParseEnabled() {
 		log.Parse.Println("ParseXRefStreamDict: begin")
 	}
@@ -1083,6 +1087,9 @@ func ParseXRefStreamDict(sd *types.StreamDict) (*types.XRefStreamDict, error) {
 	size := *sizePtr
 	if size <= 0 {
 		return nil, errors.New("pdfcpu: ParseXRefStreamDict: invalid \"Size\"")
+	}
+	if size > limits.MaxObjectCount {
+		return nil, errors.Errorf("pdfcpu: ParseXRefStreamDict: \"Size\" %d exceeds limit %d", size, limits.MaxObjectCount)
 	}
 
 	objs := make([]int, 0, size)
@@ -1121,6 +1128,9 @@ func ParseXRefStreamDict(sd *types.StreamDict) (*types.XRefStreamDict, error) {
 			if n > size-total {
 				return nil, errXrefStreamCorruptIndex
 			}
+			if total+n > limits.MaxXRefEntries {
+				return nil, errors.Errorf("pdfcpu: ParseXRefStreamDict: xref entry count %d exceeds limit %d", total+n, limits.MaxXRefEntries)
+			}
 
 			for j := 0; j < n; j++ {
 				objs = append(objs, start+j)
@@ -1131,6 +1141,9 @@ func ParseXRefStreamDict(sd *types.StreamDict) (*types.XRefStreamDict, error) {
 	} else {
 		if log.ParseEnabled() {
 			log.Parse.Println("ParseXRefStreamDict: no index dict")
+		}
+		if size > limits.MaxXRefEntries {
+			return nil, errors.Errorf("pdfcpu: ParseXRefStreamDict: xref entry count %d exceeds limit %d", size, limits.MaxXRefEntries)
 		}
 
 		for i := 0; i < size; i++ {
@@ -1152,6 +1165,10 @@ func ParseXRefStreamDict(sd *types.StreamDict) (*types.XRefStreamDict, error) {
 
 // ObjectStreamDict creates a ObjectStreamDict out of a StreamDict.
 func ObjectStreamDict(sd *types.StreamDict) (*types.ObjectStreamDict, error) {
+	return ObjectStreamDictWithLimits(sd, DefaultResourceLimits())
+}
+
+func ObjectStreamDictWithLimits(sd *types.StreamDict, limits ResourceLimits) (*types.ObjectStreamDict, error) {
 	if sd.First() == nil {
 		return nil, errObjStreamMissingFirst
 	}
@@ -1159,11 +1176,18 @@ func ObjectStreamDict(sd *types.StreamDict) (*types.ObjectStreamDict, error) {
 	if sd.N() == nil {
 		return nil, errObjStreamMissingN
 	}
+	if *sd.N() <= 0 || *sd.N() > limits.MaxObjectStreamCount {
+		return nil, errors.Errorf("pdfcpu: object stream N %d exceeds limit %d", *sd.N(), limits.MaxObjectStreamCount)
+	}
+	if *sd.First() < 0 || int64(*sd.First()) > limits.MaxObjectStreamFirst {
+		return nil, errors.Errorf("pdfcpu: object stream First %d exceeds limit %d", *sd.First(), limits.MaxObjectStreamFirst)
+	}
 
 	osd := types.ObjectStreamDict{
 		StreamDict:     *sd,
 		ObjCount:       *sd.N(),
 		FirstObjOffset: *sd.First(),
+		MaxDecodeBytes: limits.MaxDecodeBytes,
 		ObjArray:       nil}
 
 	return &osd, nil

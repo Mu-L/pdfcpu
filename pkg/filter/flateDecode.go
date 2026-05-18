@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	"github.com/pdfcpu/pdfcpu/pkg/log"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/safemath"
 	"github.com/pkg/errors"
 )
 
@@ -100,8 +101,8 @@ func (f flate) DecodeLength(r io.Reader, maxLen int64) (io.Reader, error) {
 	return f.decodePostProcess(rc, maxLen)
 }
 
-func passThru(rin io.Reader, maxLen int64) (*bytes.Buffer, error) {
-	b, err := copyDecoded(rin, maxLen)
+func (f flate) passThru(rin io.Reader, maxLen int64) (*bytes.Buffer, error) {
+	b, err := f.copyDecoded(rin, maxLen)
 	if err != nil && strings.Contains(err.Error(), "invalid checksum") {
 		if log.CLIEnabled() {
 			log.CLI.Println("skipped: truncated zlib stream")
@@ -291,7 +292,7 @@ func process(w io.Writer, pr, cr []byte, predictor, colors, bytesPerPixel int) e
 func (f flate) decodePostProcess(r io.Reader, maxLen int64) (io.Reader, error) {
 	predictor, found := f.parms["Predictor"]
 	if !found || predictor == PredictorNo {
-		return passThru(r, maxLen)
+		return f.passThru(r, maxLen)
 	}
 
 	if !intMemberOf(
@@ -312,21 +313,21 @@ func (f flate) decodePostProcess(r io.Reader, maxLen int64) (io.Reader, error) {
 		return nil, err
 	}
 
-	bitsPerPixel, err := checkedMultiplyInt(bpc, colors)
+	bitsPerPixel, err := safemath.MultiplyInt(bpc, colors)
 	if err != nil {
 		return nil, err
 	}
-	bitsPerPixelRounded, err := checkedAddInt(bitsPerPixel, 7)
+	bitsPerPixelRounded, err := safemath.AddInt(bitsPerPixel, 7)
 	if err != nil {
 		return nil, err
 	}
 	bytesPerPixel := bitsPerPixelRounded / 8
 
-	rowBits, err := checkedMultiplyInt(bitsPerPixel, columns)
+	rowBits, err := safemath.MultiplyInt(bitsPerPixel, columns)
 	if err != nil {
 		return nil, err
 	}
-	rowBitsRounded, err := checkedAddInt(rowBits, 7)
+	rowBitsRounded, err := safemath.AddInt(rowBits, 7)
 	if err != nil {
 		return nil, err
 	}
@@ -335,13 +336,13 @@ func (f flate) decodePostProcess(r io.Reader, maxLen int64) (io.Reader, error) {
 	m := rowSize
 	if predictor != PredictorTIFF {
 		// PNG prediction uses a row filter byte prefixing the pixelbytes of a row.
-		m, err = checkedAddInt(m, 1)
+		m, err = safemath.AddInt(m, 1)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if MaxDecodeBytes >= 0 && int64(m) > MaxDecodeBytes {
+	if limit := f.decodeLimit(-1); limit >= 0 && int64(m) > limit {
 		return nil, ErrDecodeLimitExceeded
 	}
 
@@ -375,7 +376,7 @@ func (f flate) decodePostProcess(r io.Reader, maxLen int64) (io.Reader, error) {
 		}
 
 		if maxLen < 0 {
-			if limit := decodeLimit(maxLen); limit >= 0 && int64(b.Len()) > limit {
+			if limit := f.decodeLimit(maxLen); limit >= 0 && int64(b.Len()) > limit {
 				return nil, ErrDecodeLimitExceeded
 			}
 		}
