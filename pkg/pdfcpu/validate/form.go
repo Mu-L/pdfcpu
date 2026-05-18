@@ -438,7 +438,7 @@ func validateFormFieldParts(xRefTable *model.XRefTable, objNr, incr int, d types
 	return err
 }
 
-func validateFormFieldKids(xRefTable *model.XRefTable, objNr, incr int, d types.Dict, o types.Object, inFieldType *types.Name, requiresDA bool) error {
+func validateFormFieldKids(xRefTable *model.XRefTable, objNr, incr int, d types.Dict, o types.Object, inFieldType *types.Name, requiresDA bool, depth int) error {
 	var err error
 	// dict represents a non terminal field.
 	if d.Subtype() != nil && *d.Subtype() == "Widget" {
@@ -482,7 +482,7 @@ func validateFormFieldKids(xRefTable *model.XRefTable, objNr, incr int, d types.
 		}
 
 		if !valid {
-			if err = validateFormFieldDict(xRefTable, ir, xInFieldType, requiresDA); err != nil {
+			if err = validateFormFieldDictDepth(xRefTable, ir, xInFieldType, requiresDA, depth+1); err != nil {
 				return err
 			}
 		}
@@ -492,6 +492,14 @@ func validateFormFieldKids(xRefTable *model.XRefTable, objNr, incr int, d types.
 }
 
 func validateFormFieldDict(xRefTable *model.XRefTable, ir types.IndirectRef, inFieldType *types.Name, requiresDA bool) error {
+	return validateFormFieldDictDepth(xRefTable, ir, inFieldType, requiresDA, 0)
+}
+
+func validateFormFieldDictDepth(xRefTable *model.XRefTable, ir types.IndirectRef, inFieldType *types.Name, requiresDA bool, depth int) error {
+	if err := xRefTable.CheckRecursionDepth("form field tree", depth); err != nil {
+		return err
+	}
+
 	d, incr, err := xRefTable.DereferenceDictWithIncr(ir)
 	if err != nil || d == nil {
 		return err
@@ -510,7 +518,7 @@ func validateFormFieldDict(xRefTable *model.XRefTable, ir types.IndirectRef, inF
 	objNr := ir.ObjectNumber.Value()
 
 	if o, ok := d.Find("Kids"); ok {
-		return validateFormFieldKids(xRefTable, objNr, incr, d, o, inFieldType, requiresDA)
+		return validateFormFieldKids(xRefTable, objNr, incr, d, o, inFieldType, requiresDA, depth)
 	}
 
 	return validateFormFieldParts(xRefTable, objNr, incr, d, inFieldType, requiresDA)

@@ -320,19 +320,28 @@ type ResourceLimits struct {
 
 	// MaxXRefEntries limits xref stream Index expansion.
 	MaxXRefEntries int
+
+	// MaxRecursionDepth limits recursive parsing and object graph traversal.
+	MaxRecursionDepth int
 }
 
 // DefaultResourceLimits returns the default resource limits.
 func DefaultResourceLimits() ResourceLimits {
+	const (
+		MB = 1 << 20
+		MP = 1 << 20
+	)
+
 	return ResourceLimits{
-		MaxStreamBytes:       512 << 20,
-		MaxDecodeBytes:       512 << 20,
-		MaxImagePixels:       100_000_000,
-		MaxImageBytes:        512 << 20,
+		MaxStreamBytes:       512 * MB,
+		MaxDecodeBytes:       512 * MB,
+		MaxImagePixels:       100 * MP,
+		MaxImageBytes:        512 * MB,
 		MaxObjectCount:       10_000_000,
 		MaxObjectStreamCount: 1_000_000,
-		MaxObjectStreamFirst: 16 << 20,
+		MaxObjectStreamFirst: 16 * MB,
 		MaxXRefEntries:       10_000_000,
+		MaxRecursionDepth:    100,
 	}
 }
 

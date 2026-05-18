@@ -192,8 +192,18 @@ func bookmark(d types.Dict, title string, pageFrom int, parent *Bookmark) Bookma
 	return bm
 }
 
-// BookmarksForOutlineItem returns the bookmarks tree for an outline item.
-func BookmarksForOutlineItem(ctx *model.Context, item *types.IndirectRef, parent *Bookmark) ([]Bookmark, error) {
+func checkBookmarkRecursionDepth(ctx *model.Context, name string, depth int) error {
+	if ctx == nil || ctx.XRefTable == nil {
+		return model.CheckRecursionDepth(name, depth, 0)
+	}
+	return ctx.XRefTable.CheckRecursionDepth(name, depth)
+}
+
+func bookmarksForOutlineItem(ctx *model.Context, item *types.IndirectRef, parent *Bookmark, depth int) ([]Bookmark, error) {
+	if err := checkBookmarkRecursionDepth(ctx, "outline item", depth); err != nil {
+		return nil, err
+	}
+
 	bms := []Bookmark{}
 
 	var (
@@ -255,7 +265,10 @@ func BookmarksForOutlineItem(ctx *model.Context, item *types.IndirectRef, parent
 		first := d["First"]
 		if first != nil {
 			indRef := first.(types.IndirectRef)
-			kids, _ := BookmarksForOutlineItem(ctx, &indRef, &bm)
+			kids, err := bookmarksForOutlineItem(ctx, &indRef, &bm, depth+1)
+			if err != nil {
+				return nil, err
+			}
 			bm.Kids = kids
 		}
 
@@ -263,6 +276,11 @@ func BookmarksForOutlineItem(ctx *model.Context, item *types.IndirectRef, parent
 	}
 
 	return bms, nil
+}
+
+// BookmarksForOutlineItem returns the bookmarks tree for an outline item.
+func BookmarksForOutlineItem(ctx *model.Context, item *types.IndirectRef, parent *Bookmark) ([]Bookmark, error) {
+	return bookmarksForOutlineItem(ctx, item, parent, 0)
 }
 
 // Bookmarks returns all ctx bookmark information recursively.
@@ -283,13 +301,17 @@ func Bookmarks(ctx *model.Context) ([]Bookmark, error) {
 	return BookmarksForOutlineItem(ctx, first, nil)
 }
 
-func bookmarkList(bms []Bookmark, level int) ([]string, error) {
+func bookmarkList(bms []Bookmark, level, maxDepth int) ([]string, error) {
+	if err := model.CheckRecursionDepth("bookmark list", level, maxDepth); err != nil {
+		return nil, err
+	}
+
 	pre := strings.Repeat("    ", level)
 	ss := []string{}
 	for _, bm := range bms {
 		ss = append(ss, pre+bm.Title)
 		if len(bm.Kids) > 0 {
-			ss1, err := bookmarkList(bm.Kids, level+1)
+			ss1, err := bookmarkList(bm.Kids, level+1, maxDepth)
 			if err != nil {
 				return nil, err
 			}
@@ -310,7 +332,7 @@ func BookmarkList(ctx *model.Context) ([]string, error) {
 		return []string{"no bookmarks available"}, nil
 	}
 
-	return bookmarkList(bms, 0)
+	return bookmarkList(bms, 0, ctx.XRefTable.MaxRecursionDepth())
 }
 
 func ExportBookmarks(ctx *model.Context, source string) (*BookmarkTree, error) {
@@ -387,7 +409,11 @@ func bmDict(ctx *model.Context, bm Bookmark, parent types.IndirectRef) (types.Di
 	return d, nil
 }
 
-func createOutlineItemDict(ctx *model.Context, bms []Bookmark, parent *types.IndirectRef, parentPageNr *int) (*types.IndirectRef, *types.IndirectRef, int, int, error) {
+func createOutlineItemDictDepth(ctx *model.Context, bms []Bookmark, parent *types.IndirectRef, parentPageNr *int, depth int) (*types.IndirectRef, *types.IndirectRef, int, int, error) {
+	if err := checkBookmarkRecursionDepth(ctx, "bookmark import", depth); err != nil {
+		return nil, nil, 0, 0, err
+	}
+
 	var (
 		first   *types.IndirectRef
 		irPrev  *types.IndirectRef
@@ -424,7 +450,7 @@ func createOutlineItemDict(ctx *model.Context, bms []Bookmark, parent *types.Ind
 
 		if len(bm.Kids) > 0 {
 
-			first, last, c, visc, err := createOutlineItemDict(ctx, bm.Kids, ir, &bm.PageFrom)
+			first, last, c, visc, err := createOutlineItemDictDepth(ctx, bm.Kids, ir, &bm.PageFrom, depth+1)
 			if err != nil {
 				return nil, nil, 0, 0, err
 			}
@@ -456,6 +482,10 @@ func createOutlineItemDict(ctx *model.Context, bms []Bookmark, parent *types.Ind
 	}
 
 	return first, irPrev, total, visible, nil
+}
+
+func createOutlineItemDict(ctx *model.Context, bms []Bookmark, parent *types.IndirectRef, parentPageNr *int) (*types.IndirectRef, *types.IndirectRef, int, int, error) {
+	return createOutlineItemDictDepth(ctx, bms, parent, parentPageNr, 0)
 }
 
 func cleanupDestinations(ctx *model.Context, dNamesEmpty bool) error {
@@ -496,7 +526,11 @@ func removeDest(ctx *model.Context, name string) (bool, bool, error) {
 	return dNamesEmpty, ok, err
 }
 
-func removeNamedDests(ctx *model.Context, item *types.IndirectRef) error {
+func removeNamedDests(ctx *model.Context, item *types.IndirectRef, depth int) error {
+	if err := checkBookmarkRecursionDepth(ctx, "bookmark destinations", depth); err != nil {
+		return err
+	}
+
 	var (
 		d               types.Dict
 		err             error
@@ -544,7 +578,7 @@ func removeNamedDests(ctx *model.Context, item *types.IndirectRef) error {
 		first := d["First"]
 		if first != nil {
 			indRef := first.(types.IndirectRef)
-			if err := removeNamedDests(ctx, &indRef); err != nil {
+			if err := removeNamedDests(ctx, &indRef, depth+1); err != nil {
 				return err
 			}
 		}
@@ -562,7 +596,7 @@ func RemoveBookmarks(ctx *model.Context) (bool, error) {
 		}
 		return false, nil
 	}
-	if err := removeNamedDests(ctx, first); err != nil {
+	if err := removeNamedDests(ctx, first, 0); err != nil {
 		return false, err
 	}
 

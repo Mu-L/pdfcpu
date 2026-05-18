@@ -789,7 +789,7 @@ func parseXRefStream(c context.Context, ctx *model.Context, rd io.Reader, offset
 		log.Read.Printf("parseXRefStream: dereferencing object %d\n", *objNr)
 	}
 
-	o, err := model.ParseObjectContext(c, &l, 0)
+	o, err := model.ParseObjectContext(c, &l, 0, recursionLimit(ctx))
 	if err != nil {
 		return nil, errors.Wrapf(err, "parseXRefStream: no object")
 	}
@@ -1181,7 +1181,7 @@ func processTrailer(c context.Context, ctx *model.Context, s *bufio.Scanner, lin
 		log.Read.Printf("processTrailer: trailerString: (len:%d) <%s>\n", len(trailerString), trailerString)
 	}
 
-	o, err := model.ParseObjectContext(c, &trailerString, 0)
+	o, err := model.ParseObjectContext(c, &trailerString, 0, recursionLimit(ctx))
 	if err != nil {
 		return nil, err
 	}
@@ -2179,7 +2179,7 @@ func object(c context.Context, ctx *model.Context, offset int64, objNr, genNr in
 		return nil, endInd, streamInd, streamOffset, err
 	}
 
-	o, err = model.ParseObjectContext(c, &l, 0)
+	o, err = model.ParseObjectContext(c, &l, 0, recursionLimit(ctx))
 
 	return o, endInd, streamInd, streamOffset, err
 }
@@ -2285,7 +2285,9 @@ func dereferencedObject(c context.Context, ctx *model.Context, objNr int) (types
 			return nil, errors.Wrapf(err, "dereferencedObject: problem dereferencing object %d", objNr)
 		}
 
-		model.ProcessRefCounts(ctx.XRefTable, o)
+		if err := model.ProcessRefCountsWithError(ctx.XRefTable, o); err != nil {
+			return nil, err
+		}
 		entry.Object = o
 	}
 
@@ -2474,6 +2476,13 @@ func streamLimit(ctx *model.Context) int64 {
 		return model.DefaultResourceLimits().MaxStreamBytes
 	}
 	return ctx.Configuration.Limits.MaxStreamBytes
+}
+
+func recursionLimit(ctx *model.Context) int {
+	if ctx == nil || ctx.Configuration == nil {
+		return model.DefaultResourceLimits().MaxRecursionDepth
+	}
+	return ctx.Configuration.Limits.MaxRecursionDepth
 }
 
 // loadEncodedStreamContent loads the encoded stream content into sd.
@@ -2992,7 +3001,9 @@ func dereferenceObjectsSorted(c context.Context, ctx *model.Context) error {
 		if err := c.Err(); err != nil {
 			return err
 		}
-		model.ProcessRefCounts(xRefTable, entry.Object)
+		if err := model.ProcessRefCountsWithError(xRefTable, entry.Object); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -3017,7 +3028,9 @@ func dereferenceObjectsRaw(c context.Context, ctx *model.Context) error {
 		if err := c.Err(); err != nil {
 			return err
 		}
-		model.ProcessRefCounts(xRefTable, entry.Object)
+		if err := model.ProcessRefCountsWithError(xRefTable, entry.Object); err != nil {
+			return err
+		}
 	}
 
 	return nil

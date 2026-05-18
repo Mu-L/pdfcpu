@@ -185,6 +185,14 @@ func evalOutlineCount(xRefTable *model.XRefTable, c, visc int, count int, total,
 }
 
 func validateOutlineTree(xRefTable *model.XRefTable, first, last *types.IndirectRef, m map[int]bool, fixed *bool) (int, int, error) {
+	return validateOutlineTreeDepth(xRefTable, first, last, m, fixed, 0)
+}
+
+func validateOutlineTreeDepth(xRefTable *model.XRefTable, first, last *types.IndirectRef, m map[int]bool, fixed *bool, depth int) (int, int, error) {
+	if err := xRefTable.CheckRecursionDepth("outline tree", depth); err != nil {
+		return 0, 0, err
+	}
+
 	var (
 		d       types.Dict
 		objNr   int
@@ -228,7 +236,7 @@ func validateOutlineTree(xRefTable *model.XRefTable, first, last *types.Indirect
 			return 0, 0, err
 		}
 
-		c, visc, err := validateOutlineTree(xRefTable, firstChild, lastChild, m, fixed)
+		c, visc, err := validateOutlineTreeDepth(xRefTable, firstChild, lastChild, m, fixed, depth+1)
 		if err != nil {
 			return 0, 0, err
 		}

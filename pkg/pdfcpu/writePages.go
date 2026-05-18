@@ -148,7 +148,7 @@ func pageNodeDict(ctx *model.Context, o types.Object) (types.Dict, *types.Indire
 	return d, &indRef, nil
 }
 
-func writeKids(ctx *model.Context, a types.Array, pageNr *int) (types.Array, int, error) {
+func writeKids(ctx *model.Context, a types.Array, pageNr *int, depth int) (types.Array, int, error) {
 	kids := types.Array{}
 	count := 0
 
@@ -166,7 +166,7 @@ func writeKids(ctx *model.Context, a types.Array, pageNr *int) (types.Array, int
 
 		case "Pages":
 			// Recurse over pagetree
-			skip, c, err := writePagesDict(ctx, ir, pageNr)
+			skip, c, err := writePagesDictDepth(ctx, ir, pageNr, depth+1)
 			if err != nil {
 				return nil, 0, err
 			}
@@ -239,9 +239,13 @@ func writePageEntries(ctx *model.Context, d types.Dict, dictName string) error {
 	return nil
 }
 
-func writePagesDict(ctx *model.Context, indRef *types.IndirectRef, pageNr *int) (skip bool, writtenPages int, err error) {
+func writePagesDictDepth(ctx *model.Context, indRef *types.IndirectRef, pageNr *int, depth int) (skip bool, writtenPages int, err error) {
 	if log.WriteEnabled() {
 		log.Write.Printf("writePagesDict: begin pageNr=%d\n", *pageNr)
+	}
+
+	if err := ctx.XRefTable.CheckRecursionDepth("page tree", depth); err != nil {
+		return false, 0, err
 	}
 
 	dictName := "pagesDict"
@@ -259,7 +263,7 @@ func writePagesDict(ctx *model.Context, indRef *types.IndirectRef, pageNr *int) 
 
 	// Iterate over page tree.
 	kidsArray := d.ArrayEntry("Kids")
-	kidsNew, countNew, err := writeKids(ctx, kidsArray, pageNr)
+	kidsNew, countNew, err := writeKids(ctx, kidsArray, pageNr, depth)
 	if err != nil {
 		return false, 0, err
 	}
@@ -287,4 +291,8 @@ func writePagesDict(ctx *model.Context, indRef *types.IndirectRef, pageNr *int) 
 	}
 
 	return false, countNew, nil
+}
+
+func writePagesDict(ctx *model.Context, indRef *types.IndirectRef, pageNr *int) (skip bool, writtenPages int, err error) {
+	return writePagesDictDepth(ctx, indRef, pageNr, 0)
 }

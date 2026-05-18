@@ -24,41 +24,66 @@ import (
 	"github.com/pkg/errors"
 )
 
-func processDictRefCounts(xRefTable *XRefTable, d types.Dict) {
+func processDictRefCounts(xRefTable *XRefTable, d types.Dict, depth int) error {
+	if err := xRefTable.CheckRecursionDepth("reference count traversal", depth); err != nil {
+		return err
+	}
 	for _, e := range d {
 		switch o1 := e.(type) {
 		case types.IndirectRef:
 			xRefTable.IncrementRefCount(&o1)
 		case types.Dict:
-			ProcessRefCounts(xRefTable, o1)
+			if err := processRefCounts(xRefTable, o1, depth+1); err != nil {
+				return err
+			}
 		case types.Array:
-			ProcessRefCounts(xRefTable, o1)
+			if err := processRefCounts(xRefTable, o1, depth+1); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
-func processArrayRefCounts(xRefTable *XRefTable, a types.Array) {
+func processArrayRefCounts(xRefTable *XRefTable, a types.Array, depth int) error {
+	if err := xRefTable.CheckRecursionDepth("reference count traversal", depth); err != nil {
+		return err
+	}
 	for _, e := range a {
 		switch o1 := e.(type) {
 		case types.IndirectRef:
 			xRefTable.IncrementRefCount(&o1)
 		case types.Dict:
-			ProcessRefCounts(xRefTable, o1)
+			if err := processRefCounts(xRefTable, o1, depth+1); err != nil {
+				return err
+			}
 		case types.Array:
-			ProcessRefCounts(xRefTable, o1)
+			if err := processRefCounts(xRefTable, o1, depth+1); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
+}
+
+func processRefCounts(xRefTable *XRefTable, o types.Object, depth int) error {
+	switch o := o.(type) {
+	case types.Dict:
+		return processDictRefCounts(xRefTable, o, depth)
+	case types.StreamDict:
+		return processDictRefCounts(xRefTable, o.Dict, depth)
+	case types.Array:
+		return processArrayRefCounts(xRefTable, o, depth)
+	}
+	return nil
+}
+
+func ProcessRefCountsWithError(xRefTable *XRefTable, o types.Object) error {
+	return processRefCounts(xRefTable, o, 0)
 }
 
 func ProcessRefCounts(xRefTable *XRefTable, o types.Object) {
-	switch o := o.(type) {
-	case types.Dict:
-		processDictRefCounts(xRefTable, o)
-	case types.StreamDict:
-		processDictRefCounts(xRefTable, o.Dict)
-	case types.Array:
-		processArrayRefCounts(xRefTable, o)
-	}
+	_ = ProcessRefCountsWithError(xRefTable, o)
 }
 
 func (xRefTable *XRefTable) indRefToObject(ir *types.IndirectRef, decodeLazy bool) (types.Object, int, error) {
@@ -82,7 +107,9 @@ func (xRefTable *XRefTable) indRefToObject(ir *types.IndirectRef, decodeLazy boo
 			return nil, 0, err
 		}
 
-		ProcessRefCounts(xRefTable, ob)
+		if err := ProcessRefCountsWithError(xRefTable, ob); err != nil {
+			return nil, 0, err
+		}
 		entry.Object = ob
 	}
 

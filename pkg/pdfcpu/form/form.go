@@ -116,7 +116,10 @@ func Fields(xRefTable *model.XRefTable) (types.Array, error) {
 	return fields, nil
 }
 
-func fullyQualifiedFieldName(xRefTable *model.XRefTable, indRef types.IndirectRef, fields types.Array, id, name *string) (bool, error) {
+func fullyQualifiedFieldNameDepth(xRefTable *model.XRefTable, indRef types.IndirectRef, fields types.Array, id, name *string, depth int) (bool, error) {
+	if err := xRefTable.CheckRecursionDepth("form field tree", depth); err != nil {
+		return false, err
+	}
 
 	d, err := xRefTable.DereferenceDict(indRef)
 	if err != nil {
@@ -150,7 +153,7 @@ func fullyQualifiedFieldName(xRefTable *model.XRefTable, indRef types.IndirectRe
 
 	// non-terminal field
 
-	ok, err := fullyQualifiedFieldName(xRefTable, *pIndRef, fields, id, name)
+	ok, err := fullyQualifiedFieldNameDepth(xRefTable, *pIndRef, fields, id, name, depth+1)
 	if !ok || err != nil {
 		return false, err
 	}
@@ -161,6 +164,10 @@ func fullyQualifiedFieldName(xRefTable *model.XRefTable, indRef types.IndirectRe
 	}
 
 	return true, nil
+}
+
+func fullyQualifiedFieldName(xRefTable *model.XRefTable, indRef types.IndirectRef, fields types.Array, id, name *string) (bool, error) {
+	return fullyQualifiedFieldNameDepth(xRefTable, indRef, fields, id, name, 0)
 }
 
 type fieldInfo struct {
@@ -1053,7 +1060,11 @@ func ListFormFields(ctx *model.Context) ([]string, error) {
 	return renderFields(ctx, fs, fm)
 }
 
-func annotIndRefs(xRefTable *model.XRefTable, fields types.Array) ([]types.IndirectRef, error) {
+func annotIndRefsDepth(xRefTable *model.XRefTable, fields types.Array, depth int) ([]types.IndirectRef, error) {
+	if err := xRefTable.CheckRecursionDepth("form field tree", depth); err != nil {
+		return nil, err
+	}
+
 	var indRefs []types.IndirectRef
 	for _, v := range fields {
 		indRef := v.(types.IndirectRef)
@@ -1075,13 +1086,17 @@ func annotIndRefs(xRefTable *model.XRefTable, fields types.Array) ([]types.Indir
 			continue
 		}
 		// Non terminal field
-		kidIndRefs, err := annotIndRefs(xRefTable, kids)
+		kidIndRefs, err := annotIndRefsDepth(xRefTable, kids, depth+1)
 		if err != nil {
 			return nil, err
 		}
 		indRefs = append(indRefs, kidIndRefs...)
 	}
 	return indRefs, nil
+}
+
+func annotIndRefs(xRefTable *model.XRefTable, fields types.Array) ([]types.IndirectRef, error) {
+	return annotIndRefsDepth(xRefTable, fields, 0)
 }
 
 func annotIndRefSameLevel(xRefTable *model.XRefTable, fields types.Array, fieldIDOrName string) (*types.IndirectRef, error) {
@@ -1109,7 +1124,11 @@ func annotIndRefSameLevel(xRefTable *model.XRefTable, fields types.Array, fieldI
 	return nil, nil
 }
 
-func annotIndRefForField(xRefTable *model.XRefTable, fields types.Array, fieldIDOrName string) (*types.IndirectRef, error) {
+func annotIndRefForFieldDepth(xRefTable *model.XRefTable, fields types.Array, fieldIDOrName string, depth int) (*types.IndirectRef, error) {
+	if err := xRefTable.CheckRecursionDepth("form field tree", depth); err != nil {
+		return nil, err
+	}
+
 	if strings.IndexByte(fieldIDOrName, '.') < 0 {
 		// Must be on this level
 		return annotIndRefSameLevel(xRefTable, fields, fieldIDOrName)
@@ -1134,7 +1153,7 @@ func annotIndRefForField(xRefTable *model.XRefTable, fields types.Array, fieldID
 			return nil, err
 		}
 		if indRef.ObjectNumber.String() == partialName {
-			return annotIndRefForField(xRefTable, kids, fieldIDOrName[len(partialName)+1:])
+			return annotIndRefForFieldDepth(xRefTable, kids, fieldIDOrName[len(partialName)+1:], depth+1)
 		}
 		id, err := d.StringOrHexLiteralEntry("T")
 		if err != nil {
@@ -1142,12 +1161,16 @@ func annotIndRefForField(xRefTable *model.XRefTable, fields types.Array, fieldID
 		}
 		if id != nil {
 			if *id == partialName {
-				return annotIndRefForField(xRefTable, kids, fieldIDOrName[len(partialName)+1:])
+				return annotIndRefForFieldDepth(xRefTable, kids, fieldIDOrName[len(partialName)+1:], depth+1)
 			}
 		}
 	}
 
 	return nil, nil
+}
+
+func annotIndRefForField(xRefTable *model.XRefTable, fields types.Array, fieldIDOrName string) (*types.IndirectRef, error) {
+	return annotIndRefForFieldDepth(xRefTable, fields, fieldIDOrName, 0)
 }
 
 func annotIndRefsForFields(xRefTable *model.XRefTable, f []string, fields types.Array) ([]types.IndirectRef, error) {
@@ -1180,7 +1203,11 @@ func removeIndRefByIndex(indRefs []types.IndirectRef, i int) []types.IndirectRef
 	return indRefs[:lastIndex]
 }
 
-func removeFormFields(xRefTable *model.XRefTable, indRefs *[]types.IndirectRef, fields *types.Array) error {
+func removeFormFieldsDepth(xRefTable *model.XRefTable, indRefs *[]types.IndirectRef, fields *types.Array, depth int) error {
+	if err := xRefTable.CheckRecursionDepth("form field tree", depth); err != nil {
+		return err
+	}
+
 	f := types.Array{}
 	for _, v := range *fields {
 		indRef1 := v.(types.IndirectRef)
@@ -1214,7 +1241,7 @@ func removeFormFields(xRefTable *model.XRefTable, indRefs *[]types.IndirectRef, 
 		if err != nil {
 			return err
 		}
-		if err := removeFormFields(xRefTable, indRefs, &kids); err != nil {
+		if err := removeFormFieldsDepth(xRefTable, indRefs, &kids, depth+1); err != nil {
 			return err
 		}
 		if len(kids) > 0 {
@@ -1224,6 +1251,10 @@ func removeFormFields(xRefTable *model.XRefTable, indRefs *[]types.IndirectRef, 
 	}
 	*fields = f
 	return nil
+}
+
+func removeFormFields(xRefTable *model.XRefTable, indRefs *[]types.IndirectRef, fields *types.Array) error {
+	return removeFormFieldsDepth(xRefTable, indRefs, fields, 0)
 }
 
 func deletePageAnnots(xRefTable *model.XRefTable, m map[types.IndirectRef]bool, ok *bool) error {

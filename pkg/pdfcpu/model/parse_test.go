@@ -17,6 +17,7 @@ limitations under the License.
 package model
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
@@ -36,6 +37,64 @@ func TestDecodeNameHexInvalid(t *testing.T) {
 		if decoded, err := decodeNameHexSequence(tc); err == nil {
 			t.Errorf("expected error decoding %s, got %s", tc, decoded)
 		}
+	}
+}
+
+func TestParseObjectContextRejectsRecursionDepth(t *testing.T) {
+	s := "[[[1]]]"
+
+	_, err := ParseObjectContext(t.Context(), &s, 0, 1)
+	if !errors.Is(err, ErrMaxRecursionDepthExceeded) {
+		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
+	}
+}
+
+func TestProcessRefCountsRejectsRecursionDepth(t *testing.T) {
+	conf := NewDefaultConfiguration()
+	conf.Limits.MaxRecursionDepth = 1
+	xRefTable := newXRefTable(conf)
+
+	o := types.Array{types.Array{types.Array{types.Integer(1)}}}
+
+	err := ProcessRefCountsWithError(xRefTable, o)
+	if !errors.Is(err, ErrMaxRecursionDepthExceeded) {
+		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
+	}
+}
+
+func TestPageTreeLookupRejectsRecursionDepth(t *testing.T) {
+	xRefTable := newXRefTable(NewDefaultConfiguration())
+	maxDepth := xRefTable.MaxRecursionDepth()
+	ir := types.NewIndirectRef(1, 0)
+	attrs := InheritedPageAttrs{}
+	pageCount := 0
+
+	_, _, err := xRefTable.processPageTreeForPageDictDepth(ir, &attrs, &pageCount, 1, false, maxDepth+1)
+	if !errors.Is(err, ErrMaxRecursionDepthExceeded) {
+		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
+	}
+
+	_, err = xRefTable.processPageTreeForPageNumberDepth(ir, &pageCount, 1, maxDepth+1)
+	if !errors.Is(err, ErrMaxRecursionDepthExceeded) {
+		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
+	}
+}
+
+func TestPageTreeMutationRejectsRecursionDepth(t *testing.T) {
+	xRefTable := newXRefTable(NewDefaultConfiguration())
+	maxDepth := xRefTable.MaxRecursionDepth()
+	ir := types.NewIndirectRef(1, 0)
+	attrs := InheritedPageAttrs{}
+	pageCount := 0
+
+	_, err := xRefTable.insertBlankPagesDepth(ir, &attrs, &pageCount, nil, nil, false, maxDepth+1)
+	if !errors.Is(err, ErrMaxRecursionDepthExceeded) {
+		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
+	}
+
+	_, err = xRefTable.insertPagesDepth(ir, &pageCount, nil, maxDepth+1)
+	if !errors.Is(err, ErrMaxRecursionDepthExceeded) {
+		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
 	}
 }
 

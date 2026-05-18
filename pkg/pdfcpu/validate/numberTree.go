@@ -166,6 +166,13 @@ func validateNumberTreeDictLimitsEntry(xRefTable *model.XRefTable, d types.Dict,
 }
 
 func validateNumberTree(xRefTable *model.XRefTable, name string, d types.Dict, root, useIDs bool) (firstKey, lastKey int, err error) {
+	return validateNumberTreeDepth(xRefTable, name, d, root, useIDs, 0)
+}
+
+func validateNumberTreeDepth(xRefTable *model.XRefTable, name string, d types.Dict, root, useIDs bool, depth int) (firstKey, lastKey int, err error) {
+	if err := xRefTable.CheckRecursionDepth("number tree", depth); err != nil {
+		return 0, 0, err
+	}
 
 	// A node has "Kids" or "Nums" entry.
 
@@ -189,7 +196,7 @@ func validateNumberTree(xRefTable *model.XRefTable, name string, d types.Dict, r
 			}
 
 			var fk int
-			fk, lastKey, err = validateNumberTree(xRefTable, name, d1, false, useIDs)
+			fk, lastKey, err = validateNumberTreeDepth(xRefTable, name, d1, false, useIDs, depth+1)
 			if err != nil {
 				return 0, 0, err
 			}
