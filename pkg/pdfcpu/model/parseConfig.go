@@ -125,6 +125,15 @@ func parseReadableInt64(s string) (int64, error) {
 	return n * m, nil
 }
 
+func loadValidationMode(c configuration, conf *Configuration) {
+	switch c.ValidationMode {
+	case "ValidationStrict":
+		conf.ValidationMode = ValidationStrict
+	case "ValidationRelaxed":
+		conf.ValidationMode = ValidationRelaxed
+	}
+}
+
 func loadedConfig(c configuration, configPath string) *Configuration {
 	var conf Configuration
 	conf.Path = configPath
@@ -140,12 +149,7 @@ func loadedConfig(c configuration, configPath string) *Configuration {
 	conf.EncryptKeyLength = c.EncryptKeyLength
 	conf.Permissions = PermissionFlags(c.Permissions)
 
-	switch c.ValidationMode {
-	case "ValidationStrict":
-		conf.ValidationMode = ValidationStrict
-	case "ValidationRelaxed":
-		conf.ValidationMode = ValidationRelaxed
-	}
+	loadValidationMode(c, &conf)
 
 	conf.PostProcessValidate = c.PostProcessValidate
 
@@ -183,6 +187,7 @@ func loadedConfig(c configuration, configPath string) *Configuration {
 	conf.TimeoutOCSP = c.TimeoutOCSP
 	conf.FormFieldListMaxColWidth = c.FormFieldListMaxColWidth
 	conf.Limits = DefaultResourceLimits()
+
 	if c.MaxStreamBytes != nil {
 		conf.Limits.MaxStreamBytes = int64(*c.MaxStreamBytes)
 	}

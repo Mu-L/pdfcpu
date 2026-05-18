@@ -1324,6 +1324,22 @@ func processImportImagesCommand(conf *model.Configuration, args []string) {
 	process(cli.ImportImagesCommand(imageFileNames, outFile, imp, conf))
 }
 
+func insertPagesWithoutDesc(inFile string, conf *model.Configuration, pages []string, args []string, opts *pagesInsertOptions) {
+	outFile := ""
+	if inFile == "-" {
+		outFile = "-"
+	}
+	if len(args) == 2 {
+		outFile = args[1]
+		if outFile != "-" {
+			ensurePDFExtension(outFile)
+		}
+		ensureOutputFileAvailableOrExit(outFile)
+	}
+
+	process(cli.InsertPagesCommand(inFile, outFile, pages, conf, opts.mode, nil))
+}
+
 func processInsertPagesCommand(conf *model.Configuration, args []string, opts *pagesInsertOptions) {
 	pages, err := api.ParsePageSelection(selectedPages)
 	if err != nil {
@@ -1339,21 +1355,7 @@ func processInsertPagesCommand(conf *model.Configuration, args []string, opts *p
 	inFile := args[0]
 	if hasPDFExtension(inFile) || inFile == "-" {
 		// pdfcpu pages insert inFile [outFile]
-
-		outFile := ""
-		if inFile == "-" {
-			outFile = "-"
-		}
-		if len(args) == 2 {
-			outFile = args[1]
-			if outFile != "-" {
-				ensurePDFExtension(outFile)
-			}
-			ensureOutputFileAvailableOrExit(outFile)
-		}
-
-		process(cli.InsertPagesCommand(inFile, outFile, pages, conf, opts.mode, nil))
-
+		insertPagesWithoutDesc(inFile, conf, pages, args, opts)
 		return
 	}
 

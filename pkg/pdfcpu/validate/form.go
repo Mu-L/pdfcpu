@@ -438,10 +438,15 @@ func validateFormFieldParts(xRefTable *model.XRefTable, objNr, incr int, d types
 	return err
 }
 
-func validateFormFieldKids(xRefTable *model.XRefTable, objNr, incr int, d types.Dict, o types.Object, inFieldType *types.Name, requiresDA bool, depth int) error {
+func isWidget(d types.Dict) bool {
+	return d.Subtype() != nil && *d.Subtype() == "Widget"
+}
+
+func validateFormFieldKids(xRefTable *model.XRefTable, objNr, incr int, d types.Dict, o types.Object, inFieldType *types.Name, requiresDA bool, depth int, visit *model.FormFieldVisit) error {
 	var err error
+
 	// dict represents a non terminal field.
-	if d.Subtype() != nil && *d.Subtype() == "Widget" {
+	if isWidget(d) {
 		if xRefTable.ValidationMode == model.ValidationStrict {
 			return errors.New("pdfcpu: validateFormFieldKids: non terminal field can not be widget annotation")
 		}
@@ -472,6 +477,9 @@ func validateFormFieldKids(xRefTable *model.XRefTable, objNr, incr int, d types.
 		if !ok {
 			return errors.New("pdfcpu: validateFormFieldKids: corrupt kids array: entries must be indirect reference")
 		}
+		if err := visit.Check(ir.ObjectNumber.Value()); err != nil {
+			return err
+		}
 		valid, err := xRefTable.IsValid(ir)
 		if err != nil {
 			if xRefTable.ValidationMode == model.ValidationStrict {
@@ -482,7 +490,7 @@ func validateFormFieldKids(xRefTable *model.XRefTable, objNr, incr int, d types.
 		}
 
 		if !valid {
-			if err = validateFormFieldDictDepth(xRefTable, ir, xInFieldType, requiresDA, depth+1); err != nil {
+			if err = validateFormFieldDictDepth(xRefTable, ir, xInFieldType, requiresDA, depth+1, visit); err != nil {
 				return err
 			}
 		}
@@ -492,13 +500,18 @@ func validateFormFieldKids(xRefTable *model.XRefTable, objNr, incr int, d types.
 }
 
 func validateFormFieldDict(xRefTable *model.XRefTable, ir types.IndirectRef, inFieldType *types.Name, requiresDA bool) error {
-	return validateFormFieldDictDepth(xRefTable, ir, inFieldType, requiresDA, 0)
+	return validateFormFieldDictDepth(xRefTable, ir, inFieldType, requiresDA, 0, model.NewFormFieldVisit())
 }
 
-func validateFormFieldDictDepth(xRefTable *model.XRefTable, ir types.IndirectRef, inFieldType *types.Name, requiresDA bool, depth int) error {
+func validateFormFieldDictDepth(xRefTable *model.XRefTable, ir types.IndirectRef, inFieldType *types.Name, requiresDA bool, depth int, visit *model.FormFieldVisit) error {
 	if err := xRefTable.CheckRecursionDepth("form field tree", depth); err != nil {
 		return err
 	}
+	objNr := ir.ObjectNumber.Value()
+	if err := visit.Enter(objNr); err != nil {
+		return err
+	}
+	defer visit.Leave(objNr)
 
 	d, incr, err := xRefTable.DereferenceDictWithIncr(ir)
 	if err != nil || d == nil {
@@ -515,10 +528,8 @@ func validateFormFieldDictDepth(xRefTable *model.XRefTable, ir types.IndirectRef
 		return err
 	}
 
-	objNr := ir.ObjectNumber.Value()
-
 	if o, ok := d.Find("Kids"); ok {
-		return validateFormFieldKids(xRefTable, objNr, incr, d, o, inFieldType, requiresDA, depth)
+		return validateFormFieldKids(xRefTable, objNr, incr, d, o, inFieldType, requiresDA, depth, visit)
 	}
 
 	return validateFormFieldParts(xRefTable, objNr, incr, d, inFieldType, requiresDA)

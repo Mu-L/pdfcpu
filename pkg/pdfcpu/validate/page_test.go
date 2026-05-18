@@ -31,7 +31,7 @@ func TestValidatePagesDictRejectsRecursionDepth(t *testing.T) {
 	}
 
 	pageCount := 0
-	err = validatePagesDictDepth(ctx.XRefTable, nil, 1, false, nil, &pageCount, ctx.XRefTable.MaxRecursionDepth()+1)
+	err = validatePagesDictDepth(ctx.XRefTable, nil, 1, false, nil, &pageCount, ctx.XRefTable.MaxRecursionDepth()+1, model.NewPageTreeVisit())
 	if !errors.Is(err, model.ErrMaxRecursionDepthExceeded) {
 		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
 	}

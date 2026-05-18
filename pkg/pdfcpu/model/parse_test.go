@@ -69,12 +69,12 @@ func TestPageTreeLookupRejectsRecursionDepth(t *testing.T) {
 	attrs := InheritedPageAttrs{}
 	pageCount := 0
 
-	_, _, err := xRefTable.processPageTreeForPageDictDepth(ir, &attrs, &pageCount, 1, false, maxDepth+1)
+	_, _, err := xRefTable.processPageTreeForPageDictDepth(ir, &attrs, &pageCount, 1, false, maxDepth+1, NewPageTreeVisit())
 	if !errors.Is(err, ErrMaxRecursionDepthExceeded) {
 		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
 	}
 
-	_, err = xRefTable.processPageTreeForPageNumberDepth(ir, &pageCount, 1, maxDepth+1)
+	_, err = xRefTable.processPageTreeForPageNumberDepth(ir, &pageCount, 1, maxDepth+1, NewPageTreeVisit())
 	if !errors.Is(err, ErrMaxRecursionDepthExceeded) {
 		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
 	}
@@ -87,14 +87,58 @@ func TestPageTreeMutationRejectsRecursionDepth(t *testing.T) {
 	attrs := InheritedPageAttrs{}
 	pageCount := 0
 
-	_, err := xRefTable.insertBlankPagesDepth(ir, &attrs, &pageCount, nil, nil, false, maxDepth+1)
+	_, err := xRefTable.insertBlankPagesDepth(ir, &attrs, &pageCount, nil, nil, false, maxDepth+1, NewPageTreeVisit())
 	if !errors.Is(err, ErrMaxRecursionDepthExceeded) {
 		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
 	}
 
-	_, err = xRefTable.insertPagesDepth(ir, &pageCount, nil, maxDepth+1)
+	_, err = xRefTable.insertPagesDepth(ir, &pageCount, nil, maxDepth+1, NewPageTreeVisit())
 	if !errors.Is(err, ErrMaxRecursionDepthExceeded) {
 		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
+	}
+}
+
+func TestPageTreeRejectsCycle(t *testing.T) {
+	xRefTable := newXRefTable(NewDefaultConfiguration())
+	ir := types.NewIndirectRef(1, 0)
+	pageCount := 0
+
+	_, err := xRefTable.IndRefForObject(1, types.Dict{
+		"Type": types.Name("Pages"),
+		"Kids": types.Array{*ir},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = xRefTable.processPageTreeForPageNumber(ir, &pageCount, 1)
+	if !errors.Is(err, ErrPageTreeCycle) {
+		t.Fatalf("got %v, want ErrPageTreeCycle", err)
+	}
+}
+
+func TestPageTreeRejectsDuplicateNode(t *testing.T) {
+	xRefTable := newXRefTable(NewDefaultConfiguration())
+	root := types.NewIndirectRef(1, 0)
+	child := types.NewIndirectRef(2, 0)
+	pageCount := 0
+
+	if _, err := xRefTable.IndRefForObject(1, types.Dict{
+		"Type": types.Name("Pages"),
+		"Kids": types.Array{*child, *child},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := xRefTable.IndRefForObject(2, types.Dict{
+		"Type": types.Name("Pages"),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := xRefTable.processPageTreeForPageNumber(root, &pageCount, 1)
+	if !errors.Is(err, ErrPageTreeDuplicate) {
+		t.Fatalf("got %v, want ErrPageTreeDuplicate", err)
 	}
 }
 

@@ -997,7 +997,7 @@ func detectPageNodeDict(xRefTable *model.XRefTable, indRef types.IndirectRef, ob
 	return xRefTable.DereferenceDict(indRef)
 }
 
-func processPagesKids(xRefTable *model.XRefTable, kids types.Array, parentObjNr int, hasResources bool, mediaBoxArr types.Array, curPage *int, depth int) (types.Array, error) {
+func processPagesKids(xRefTable *model.XRefTable, kids types.Array, parentObjNr int, hasResources bool, mediaBoxArr types.Array, curPage *int, depth int, visit *model.PageTreeVisit) (types.Array, error) {
 	var a types.Array
 
 	for _, o := range kids {
@@ -1035,7 +1035,7 @@ func processPagesKids(xRefTable *model.XRefTable, kids types.Array, parentObjNr 
 		switch dictType {
 
 		case "Pages":
-			if err = validatePagesDictDepth(xRefTable, pageNodeDict, objNr, hasResources, mediaBoxArr, curPage, depth+1); err != nil {
+			if err = validatePagesDictDepth(xRefTable, pageNodeDict, objNr, hasResources, mediaBoxArr, curPage, depth+1, visit); err != nil {
 				return nil, err
 			}
 
@@ -1062,10 +1062,14 @@ func processPagesKids(xRefTable *model.XRefTable, kids types.Array, parentObjNr 
 	return a, nil
 }
 
-func validatePagesDictDepth(xRefTable *model.XRefTable, d types.Dict, objNr int, hasResources bool, mediaBoxArr types.Array, curPage *int, depth int) error {
+func validatePagesDictDepth(xRefTable *model.XRefTable, d types.Dict, objNr int, hasResources bool, mediaBoxArr types.Array, curPage *int, depth int, visit *model.PageTreeVisit) error {
 	if err := xRefTable.CheckRecursionDepth("page tree", depth); err != nil {
 		return err
 	}
+	if err := visit.Enter(objNr); err != nil {
+		return err
+	}
+	defer visit.Leave(objNr)
 
 	dHasResources, dMediaBoxArr, err := validatePagesDictGeneralEntries(xRefTable, d)
 	if err != nil {
@@ -1089,13 +1093,13 @@ func validatePagesDictDepth(xRefTable *model.XRefTable, d types.Dict, objNr int,
 		return nil
 	}
 
-	d["Kids"], err = processPagesKids(xRefTable, kids, objNr, hasResources, mediaBoxArr, curPage, depth)
+	d["Kids"], err = processPagesKids(xRefTable, kids, objNr, hasResources, mediaBoxArr, curPage, depth, visit)
 
 	return err
 }
 
 func validatePagesDict(xRefTable *model.XRefTable, d types.Dict, objNr int, hasResources bool, mediaBoxArr types.Array, curPage *int) error {
-	return validatePagesDictDepth(xRefTable, d, objNr, hasResources, mediaBoxArr, curPage, 0)
+	return validatePagesDictDepth(xRefTable, d, objNr, hasResources, mediaBoxArr, curPage, 0, model.NewPageTreeVisit())
 }
 
 func repairPagesDict(xRefTable *model.XRefTable, obj types.Object, rootDict types.Dict) (types.Dict, int, error) {

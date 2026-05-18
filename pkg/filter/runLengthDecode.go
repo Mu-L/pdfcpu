@@ -75,6 +75,12 @@ func (f runLengthDecode) decode(w io.ByteWriter, src []byte, maxLen int64) error
 	return nil
 }
 
+func detect(i, start, maxLen int, b byte, src []byte) int {
+	for i < len(src) && src[i] == b && (i-start < maxLen) {
+		i++
+	}
+	return i
+}
 func (f runLengthDecode) encode(w io.ByteWriter, src []byte) {
 
 	const maxLen = 0x80
@@ -92,9 +98,7 @@ func (f runLengthDecode) encode(w io.ByteWriter, src []byte) {
 	for {
 
 		// Detect constant run eg. 0x1414141414141414
-		for i < len(src) && src[i] == b && (i-start < maxLen) {
-			i++
-		}
+		i = detect(i, start, maxLen, b, src)
 		c := i - start
 		if c > 1 {
 			// Write constant run with length=c

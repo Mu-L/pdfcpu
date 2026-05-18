@@ -976,10 +976,6 @@ func parsePagesDict(ctx *model.Context, pagesDict types.Dict, pageNr int) (int, 
 		// Dereference next page node dict.
 		ir, _ := v.(types.IndirectRef)
 
-		if log.OptimizeEnabled() {
-			log.Optimize.Printf("parsePagesDict PageNode: %s\n", ir)
-		}
-
 		d, err := ctx.DereferencePageNodeDict(ir)
 		if err != nil {
 			return 0, errors.Wrap(err, "parsePagesDict: can't locate Pagedict or Pagesdict")
@@ -1019,10 +1015,6 @@ func parsePagesDict(ctx *model.Context, pagesDict types.Dict, pageNr int) (int, 
 		}
 
 		pageNr++
-	}
-
-	if log.OptimizeEnabled() {
-		log.Optimize.Printf("parsePagesDict end: %s\n", pagesDict)
 	}
 
 	return pageNr, nil

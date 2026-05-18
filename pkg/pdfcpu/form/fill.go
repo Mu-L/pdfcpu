@@ -338,6 +338,37 @@ func imageBox(s, src, url string) (*primitives.ImageBox, string, error) {
 	return &ib, ib.PageNr, nil
 }
 
+func addImageBox(vv []string, fieldName string, im map[string]*Page) error {
+	src, url := "", ""
+	if len(vv) == 1 && vv[0][0] == '(' {
+		// link only, no image
+		url = vv[0][1 : len(vv[0])-1]
+	} else {
+		src = vv[0]
+		if len(vv) == 2 {
+			url = vv[1][1 : len(vv[1])-1]
+		}
+	}
+
+	ib, pageNr, err := imageBox(fieldName, src, url)
+	if err != nil {
+		return err
+	}
+
+	if ib == nil {
+		return nil
+	}
+
+	p, ok := im[pageNr]
+	if !ok {
+		p = &Page{}
+		im[pageNr] = p
+	}
+	p.ImageBoxes = append(p.ImageBoxes, ib)
+
+	return nil
+}
+
 // FieldMap returns structures needed to fill a form via CSV.
 func FieldMap(fieldNames, formRecord []string) (map[string]CSVFieldAttributes, map[string]*Page, string, error) {
 	fm := map[string]CSVFieldAttributes{}
@@ -374,32 +405,10 @@ func FieldMap(fieldNames, formRecord []string) (map[string]CSVFieldAttributes, m
 				continue
 			}
 
-			src, url := "", ""
-			if len(vv) == 1 && vv[0][0] == '(' {
-				// link only, no image
-				url = vv[0][1 : len(vv[0])-1]
-			} else {
-				src = vv[0]
-				if len(vv) == 2 {
-					url = vv[1][1 : len(vv[1])-1]
-				}
-			}
-
-			ib, pageNr, err := imageBox(fieldName, src, url)
-			if err != nil {
+			if err := addImageBox(vv, fieldName, im); err != nil {
 				return nil, nil, "", err
 			}
 
-			if ib == nil {
-				continue
-			}
-
-			p, ok := im[pageNr]
-			if !ok {
-				p = &Page{}
-				im[pageNr] = p
-			}
-			p.ImageBoxes = append(p.ImageBoxes, ib)
 			continue
 		}
 

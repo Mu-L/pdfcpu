@@ -14,7 +14,7 @@
 	limitations under the License.
 */
 
-package pdfcpu
+package validate
 
 import (
 	"errors"
@@ -25,15 +25,21 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
-func TestWritePagesDictRejectsRecursionDepth(t *testing.T) {
+func TestValidateFormFieldDictRejectsCycle(t *testing.T) {
 	ctx, err := model.NewContext(strings.NewReader(""), model.NewDefaultConfiguration())
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	pageNr := 0
-	_, _, err = writePagesDictDepth(ctx, types.NewIndirectRef(1, 0), &pageNr, ctx.XRefTable.MaxRecursionDepth()+1, model.NewPageTreeVisit())
-	if !errors.Is(err, model.ErrMaxRecursionDepthExceeded) {
-		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
+	ir := *types.NewIndirectRef(1, 0)
+	if _, err := ctx.IndRefForObject(1, types.Dict{
+		"Kids": types.Array{ir},
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	err = validateFormFieldDict(ctx.XRefTable, ir, nil, false)
+	if !errors.Is(err, model.ErrFormFieldCycle) {
+		t.Fatalf("got %v, want ErrFormFieldCycle", err)
 	}
 }

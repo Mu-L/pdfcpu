@@ -941,6 +941,51 @@ func ParseObject(line *string) (types.Object, error) {
 	return ParseObjectContext(context.Background(), line, 0)
 }
 
+func parseObjectDepthLimit(maxDepth []int) int {
+	depthLimit := DefaultResourceLimits().MaxRecursionDepth
+	if len(maxDepth) > 0 {
+		depthLimit = maxDepth[0]
+	}
+	return depthLimit
+}
+
+func parseObjectValue(c context.Context, l *string, level, depthLimit int) (types.Object, error) {
+	switch (*l)[0] {
+
+	case '[': // array
+		a, err := parseArray(c, l, level, depthLimit)
+		if err != nil {
+			return nil, err
+		}
+		return *a, nil
+
+	case '/': // name
+		nameObj, err := parseName(l)
+		if err != nil {
+			return nil, err
+		}
+		return *nameObj, nil
+
+	case '<': // hex literal or dict
+		return parseHexLiteralOrDict(c, l, level, depthLimit)
+
+	case '(': // string literal
+		return parseStringLiteral(l)
+
+	default:
+		value, valStr, ok := parseBooleanOrNull(*l)
+		if ok {
+			*l = forwardParseBuf(*l, len(valStr))
+			return value, nil
+		}
+		// Must be numeric or indirect reference:
+		// int 0 r
+		// int
+		// float
+		return parseNumericOrIndRef(l)
+	}
+}
+
 // ParseObjectContext parses next Object from string buffer and returns the updated (left clipped) buffer.
 // If the passed context is cancelled, parsing will be interrupted.
 func ParseObjectContext(c context.Context, line *string, level int, maxDepth ...int) (types.Object, error) {
@@ -948,10 +993,7 @@ func ParseObjectContext(c context.Context, line *string, level int, maxDepth ...
 		return nil, errBufNotAvailable
 	}
 
-	depthLimit := DefaultResourceLimits().MaxRecursionDepth
-	if len(maxDepth) > 0 {
-		depthLimit = maxDepth[0]
-	}
+	depthLimit := parseObjectDepthLimit(maxDepth)
 	if err := CheckRecursionDepth("parse object", level, depthLimit); err != nil {
 		return nil, err
 	}
@@ -969,52 +1011,9 @@ func ParseObjectContext(c context.Context, line *string, level int, maxDepth ...
 		return nil, errBufNotAvailable
 	}
 
-	var value types.Object
-	var err error
-
-	switch l[0] {
-
-	case '[': // array
-		a, err := parseArray(c, &l, level, depthLimit)
-		if err != nil {
-			return nil, err
-		}
-		value = *a
-
-	case '/': // name
-		nameObj, err := parseName(&l)
-		if err != nil {
-			return nil, err
-		}
-		value = *nameObj
-
-	case '<': // hex literal or dict
-		value, err = parseHexLiteralOrDict(c, &l, level, depthLimit)
-		if err != nil {
-			return nil, err
-		}
-
-	case '(': // string literal
-		if value, err = parseStringLiteral(&l); err != nil {
-			return nil, err
-		}
-
-	default:
-		var valStr string
-		var ok bool
-		value, valStr, ok = parseBooleanOrNull(l)
-		if ok {
-			l = forwardParseBuf(l, len(valStr))
-			break
-		}
-		// Must be numeric or indirect reference:
-		// int 0 r
-		// int
-		// float
-		if value, err = parseNumericOrIndRef(&l); err != nil {
-			return nil, err
-		}
-
+	value, err := parseObjectValue(c, &l, level, depthLimit)
+	if err != nil {
+		return nil, err
 	}
 
 	if log.ParseEnabled() {
@@ -1078,81 +1077,104 @@ func ParseXRefStreamDict(sd *types.StreamDict) (*types.XRefStreamDict, error) {
 	return ParseXRefStreamDictWithLimits(sd, DefaultResourceLimits())
 }
 
-func ParseXRefStreamDictWithLimits(sd *types.StreamDict, limits ResourceLimits) (*types.XRefStreamDict, error) {
-	if log.ParseEnabled() {
-		log.Parse.Println("ParseXRefStreamDict: begin")
-	}
-
+func xRefStreamSize(sd *types.StreamDict, limits ResourceLimits) (int, error) {
 	sizePtr := sd.Size()
 	if sizePtr == nil {
-		return nil, errors.New("pdfcpu: ParseXRefStreamDict: \"Size\" not available")
+		return 0, errors.New("pdfcpu: ParseXRefStreamDict: \"Size\" not available")
 	}
 
 	size := *sizePtr
 	if size <= 0 {
-		return nil, errors.New("pdfcpu: ParseXRefStreamDict: invalid \"Size\"")
+		return 0, errors.New("pdfcpu: ParseXRefStreamDict: invalid \"Size\"")
 	}
 	if size > limits.MaxObjectCount {
-		return nil, errors.Errorf("pdfcpu: ParseXRefStreamDict: \"Size\" %d exceeds limit %d", size, limits.MaxObjectCount)
+		return 0, errors.Errorf("pdfcpu: ParseXRefStreamDict: \"Size\" %d exceeds limit %d", size, limits.MaxObjectCount)
+	}
+	return size, nil
+}
+
+func xRefStreamObjectsFromIndex(indArr types.Array, size int, limits ResourceLimits) ([]int, error) {
+	objs := make([]int, 0, size)
+
+	if len(indArr)%2 != 0 {
+		return nil, errXrefStreamCorruptIndex
+	}
+
+	total := 0
+
+	for i := 0; i < len(indArr)/2; i++ {
+		startObj, ok := indArr[i*2].(types.Integer)
+		if !ok {
+			return nil, errXrefStreamCorruptIndex
+		}
+
+		count, ok := indArr[i*2+1].(types.Integer)
+		if !ok {
+			return nil, errXrefStreamCorruptIndex
+		}
+
+		start := startObj.Value()
+		n := count.Value()
+		if start < 0 || n < 0 || n > size-total {
+			return nil, errXrefStreamCorruptIndex
+		}
+		if total+n > limits.MaxXRefEntries {
+			return nil, errors.Errorf("pdfcpu: ParseXRefStreamDict: xref entry count %d exceeds limit %d", total+n, limits.MaxXRefEntries)
+		}
+
+		for j := 0; j < n; j++ {
+			objs = append(objs, start+j)
+		}
+
+		total += n
+	}
+
+	return objs, nil
+}
+
+func xRefStreamObjectsFromSize(size int, limits ResourceLimits) ([]int, error) {
+	if size > limits.MaxXRefEntries {
+		return nil, errors.Errorf("pdfcpu: ParseXRefStreamDict: xref entry count %d exceeds limit %d", size, limits.MaxXRefEntries)
 	}
 
 	objs := make([]int, 0, size)
+	for i := 0; i < size; i++ {
+		objs = append(objs, i)
+	}
 
+	return objs, nil
+}
+
+func xRefStreamObjects(sd *types.StreamDict, size int, limits ResourceLimits) ([]int, error) {
 	// Read optional parameter Index.
 	indArr := sd.Index()
 	if indArr != nil {
 		if log.ParseEnabled() {
 			log.Parse.Println("ParseXRefStreamDict: using index dict")
 		}
+		return xRefStreamObjectsFromIndex(indArr, size, limits)
+	}
 
-		if len(indArr)%2 != 0 {
-			return nil, errXrefStreamCorruptIndex
-		}
+	if log.ParseEnabled() {
+		log.Parse.Println("ParseXRefStreamDict: no index dict")
+	}
+	return xRefStreamObjectsFromSize(size, limits)
+}
 
-		total := 0
+// ParseXRefStreamDictWithLimits creates a XRefStreamDict out of a StreamDict using resource limits.
+func ParseXRefStreamDictWithLimits(sd *types.StreamDict, limits ResourceLimits) (*types.XRefStreamDict, error) {
+	if log.ParseEnabled() {
+		log.Parse.Println("ParseXRefStreamDict: begin")
+	}
 
-		for i := 0; i < len(indArr)/2; i++ {
-			startObj, ok := indArr[i*2].(types.Integer)
-			if !ok {
-				return nil, errXrefStreamCorruptIndex
-			}
+	size, err := xRefStreamSize(sd, limits)
+	if err != nil {
+		return nil, err
+	}
 
-			count, ok := indArr[i*2+1].(types.Integer)
-			if !ok {
-				return nil, errXrefStreamCorruptIndex
-			}
-
-			start := startObj.Value()
-			n := count.Value()
-
-			if start < 0 || n < 0 {
-				return nil, errXrefStreamCorruptIndex
-			}
-
-			if n > size-total {
-				return nil, errXrefStreamCorruptIndex
-			}
-			if total+n > limits.MaxXRefEntries {
-				return nil, errors.Errorf("pdfcpu: ParseXRefStreamDict: xref entry count %d exceeds limit %d", total+n, limits.MaxXRefEntries)
-			}
-
-			for j := 0; j < n; j++ {
-				objs = append(objs, start+j)
-			}
-
-			total += n
-		}
-	} else {
-		if log.ParseEnabled() {
-			log.Parse.Println("ParseXRefStreamDict: no index dict")
-		}
-		if size > limits.MaxXRefEntries {
-			return nil, errors.Errorf("pdfcpu: ParseXRefStreamDict: xref entry count %d exceeds limit %d", size, limits.MaxXRefEntries)
-		}
-
-		for i := 0; i < size; i++ {
-			objs = append(objs, i)
-		}
+	objs, err := xRefStreamObjects(sd, size, limits)
+	if err != nil {
+		return nil, err
 	}
 
 	xsd, err := createXRefStreamDict(sd, objs)
@@ -1172,6 +1194,7 @@ func ObjectStreamDict(sd *types.StreamDict) (*types.ObjectStreamDict, error) {
 	return ObjectStreamDictWithLimits(sd, DefaultResourceLimits())
 }
 
+// ObjectStreamDictWithLimits creates a ObjectStreamDict out of a StreamDict using resource limits.
 func ObjectStreamDictWithLimits(sd *types.StreamDict, limits ResourceLimits) (*types.ObjectStreamDict, error) {
 	if sd.First() == nil {
 		return nil, errObjStreamMissingFirst
@@ -1338,6 +1361,7 @@ func isComment(commentPos, strLitPos int) bool {
 	return commentPos >= 0 && (strLitPos < 0 || commentPos < strLitPos)
 }
 
+// DetectKeywords detects endobj and stream keywords in line.
 func DetectKeywords(line string) (endInd int, streamInd int, err error) {
 	return DetectKeywordsWithContext(context.Background(), line)
 }
@@ -1397,6 +1421,7 @@ func skipCommentOrStringLiteral(line string, commentPos, slPos int, off, endInd,
 	return skipStringLit(line, slPos, off, endInd, streamInd)
 }
 
+// DetectKeywordsWithContext detects endobj and stream keywords in line using c for cancellation.
 func DetectKeywordsWithContext(c context.Context, line string) (endInd int, streamInd int, err error) {
 	// return endInd or streamInd which ever first encountered.
 	off := 0

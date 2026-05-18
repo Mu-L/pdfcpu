@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"time"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
@@ -909,14 +910,7 @@ func ExtractAttachments(cmd *Command) ([]string, error) {
 
 // ListInfo gathers information about inFile and returns the result as []string.
 func ListInfo(cmd *Command) ([]string, error) {
-	stdin := false
-	for _, fn := range cmd.InFiles {
-		if fn == "-" {
-			stdin = true
-			break
-		}
-	}
-	if !stdin {
+	if !slices.Contains(cmd.InFiles, "-") {
 		return ListInfoFiles(cmd.InFiles, cmd.PageSelection, cmd.BoolVal1, cmd.BoolVal2, cmd.Conf)
 	}
 

@@ -96,6 +96,14 @@ func catalogMetaData(xRefTable *model.XRefTable, rootDict types.Dict, required b
 	return &x, nil
 }
 
+func populateKeywordList(xRefTable *model.XRefTable, d model.Description) {
+	ss := strings.FieldsFunc(d.Keywords, func(c rune) bool { return c == ',' || c == ';' || c == '\r' })
+	for _, s := range ss {
+		keyword := strings.TrimSpace(s)
+		xRefTable.KeywordList[keyword] = true
+	}
+}
+
 func validateRootMetadata(xRefTable *model.XRefTable, rootDict types.Dict, required bool, sinceVersion model.Version) error {
 
 	if xRefTable.CatalogXMPMeta == nil {
@@ -153,11 +161,7 @@ func validateRootMetadata(xRefTable *model.XRefTable, rootDict types.Dict, requi
 
 	// TODO xRefTable.Trapped = d.Trapped
 
-	ss := strings.FieldsFunc(d.Keywords, func(c rune) bool { return c == ',' || c == ';' || c == '\r' })
-	for _, s := range ss {
-		keyword := strings.TrimSpace(s)
-		xRefTable.KeywordList[keyword] = true
-	}
+	populateKeywordList(xRefTable, d)
 
 	return nil
 }

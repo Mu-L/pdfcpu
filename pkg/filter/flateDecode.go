@@ -288,7 +288,52 @@ func process(w io.Writer, pr, cr []byte, predictor, colors, bytesPerPixel int) e
 	return err
 }
 
-// decodePostProcess
+func (f flate) decodePostProcessRows(r io.Reader, maxLen int64, m, predictor, colors, bytesPerPixel int) (*bytes.Buffer, error) {
+	// cr and pr are the bytes for the current and previous row.
+	cr := make([]byte, m)
+	pr := make([]byte, m)
+
+	// Output buffer
+	var b bytes.Buffer
+
+	for checkBufLen(b, maxLen) {
+
+		// Read decompressed bytes for one pixel row.
+		n, err := io.ReadFull(r, cr)
+		if err != nil {
+			if err != io.EOF {
+				return nil, err
+			}
+			// eof
+			if n == 0 {
+				break
+			}
+		}
+
+		if n != m {
+			return nil, errors.Errorf("pdfcpu: filter FlateDecode: read error, expected %d bytes, got: %d", m, n)
+		}
+
+		if err := process(&b, pr, cr, predictor, colors, bytesPerPixel); err != nil {
+			return nil, err
+		}
+
+		if maxLen < 0 {
+			if limit := f.decodeLimit(maxLen); limit >= 0 && int64(b.Len()) > limit {
+				return nil, ErrDecodeLimitExceeded
+			}
+		}
+
+		if err == io.EOF {
+			break
+		}
+
+		pr, cr = cr, pr
+	}
+
+	return &b, nil
+}
+
 func (f flate) decodePostProcess(r io.Reader, maxLen int64) (io.Reader, error) {
 	predictor, found := f.parms["Predictor"]
 	if !found || predictor == PredictorNo {
@@ -346,52 +391,12 @@ func (f flate) decodePostProcess(r io.Reader, maxLen int64) (io.Reader, error) {
 		return nil, ErrDecodeLimitExceeded
 	}
 
-	// cr and pr are the bytes for the current and previous row.
-	cr := make([]byte, m)
-	pr := make([]byte, m)
-
-	// Output buffer
-	var b bytes.Buffer
-
-	for checkBufLen(b, maxLen) {
-
-		// Read decompressed bytes for one pixel row.
-		n, err := io.ReadFull(r, cr)
-		if err != nil {
-			if err != io.EOF {
-				return nil, err
-			}
-			// eof
-			if n == 0 {
-				break
-			}
-		}
-
-		if n != m {
-			return nil, errors.Errorf("pdfcpu: filter FlateDecode: read error, expected %d bytes, got: %d", m, n)
-		}
-
-		if err := process(&b, pr, cr, predictor, colors, bytesPerPixel); err != nil {
-			return nil, err
-		}
-
-		if maxLen < 0 {
-			if limit := f.decodeLimit(maxLen); limit >= 0 && int64(b.Len()) > limit {
-				return nil, ErrDecodeLimitExceeded
-			}
-		}
-
-		if err == io.EOF {
-			break
-		}
-
-		pr, cr = cr, pr
-	}
+	b, err := f.decodePostProcessRows(r, maxLen, m, predictor, colors, bytesPerPixel)
 
 	if maxLen < 0 && b.Len()%rowSize > 0 {
 		log.Info.Printf("failed postprocessing: %d %d\n", b.Len(), rowSize)
 		return nil, errors.New("pdfcpu: filter FlateDecode: postprocessing failed")
 	}
 
-	return &b, nil
+	return b, nil
 }

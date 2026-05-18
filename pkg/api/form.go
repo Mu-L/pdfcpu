@@ -785,9 +785,7 @@ func multiFillFormJSON(inFilePDF string, rd io.Reader, outDir, fileName string, 
 	}
 
 	if merge {
-		if err := mergeForms(outDir, fileName, outFiles, conf); err != nil {
-			return err
-		}
+		return mergeForms(outDir, fileName, outFiles, conf)
 	}
 
 	return nil
@@ -887,9 +885,7 @@ func multiFillFormCSV(inFilePDF string, rd io.Reader, outDir, fileName string, m
 	}
 
 	if merge {
-		if err := mergeForms(outDir, fileName, outFiles, conf); err != nil {
-			return err
-		}
+		return mergeForms(outDir, fileName, outFiles, conf)
 	}
 
 	return nil

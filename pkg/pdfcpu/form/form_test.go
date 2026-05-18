@@ -36,23 +36,71 @@ func TestFormFieldHelpersRejectRecursionDepth(t *testing.T) {
 	id, name := "", ""
 	fields := types.Array{}
 
-	_, err = fullyQualifiedFieldNameDepth(xRefTable, ir, fields, &id, &name, maxDepth+1)
+	_, err = fullyQualifiedFieldNameDepth(xRefTable, ir, fields, &id, &name, maxDepth+1, model.NewFormFieldVisit())
 	if !errors.Is(err, model.ErrMaxRecursionDepthExceeded) {
 		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
 	}
 
-	_, err = annotIndRefsDepth(xRefTable, fields, maxDepth+1)
+	_, err = annotIndRefsDepth(xRefTable, fields, maxDepth+1, model.NewFormFieldVisit())
 	if !errors.Is(err, model.ErrMaxRecursionDepthExceeded) {
 		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
 	}
 
-	_, err = annotIndRefForFieldDepth(xRefTable, fields, "1.2", maxDepth+1)
+	_, err = annotIndRefForFieldDepth(xRefTable, fields, "1.2", maxDepth+1, model.NewFormFieldVisit())
 	if !errors.Is(err, model.ErrMaxRecursionDepthExceeded) {
 		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
 	}
 
-	err = removeFormFieldsDepth(xRefTable, nil, &fields, maxDepth+1)
+	err = removeFormFieldsDepth(xRefTable, nil, &fields, maxDepth+1, model.NewFormFieldVisit())
 	if !errors.Is(err, model.ErrMaxRecursionDepthExceeded) {
 		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
+	}
+}
+
+func cyclicFormContext(t *testing.T) (*model.XRefTable, types.Array) {
+	t.Helper()
+
+	ctx, err := model.NewContext(strings.NewReader(""), model.NewDefaultConfiguration())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	ir := *types.NewIndirectRef(1, 0)
+	d := types.Dict{
+		"Kids":   types.Array{ir},
+		"Parent": ir,
+		"T":      types.StringLiteral("1"),
+	}
+	if _, err := ctx.IndRefForObject(1, d); err != nil {
+		t.Fatal(err)
+	}
+
+	return ctx.XRefTable, types.Array{ir}
+}
+
+func TestFormFieldHelpersRejectCycle(t *testing.T) {
+	xRefTable, fields := cyclicFormContext(t)
+	ir := fields[0].(types.IndirectRef)
+	id, name := "", ""
+
+	_, err := fullyQualifiedFieldNameDepth(xRefTable, ir, fields, &id, &name, 0, model.NewFormFieldVisit())
+	if !errors.Is(err, model.ErrFormFieldCycle) {
+		t.Fatalf("got %v, want ErrFormFieldCycle", err)
+	}
+
+	_, err = annotIndRefsDepth(xRefTable, fields, 0, model.NewFormFieldVisit())
+	if !errors.Is(err, model.ErrFormFieldCycle) {
+		t.Fatalf("got %v, want ErrFormFieldCycle", err)
+	}
+
+	_, err = annotIndRefForFieldDepth(xRefTable, fields, "1.1.2", 0, model.NewFormFieldVisit())
+	if !errors.Is(err, model.ErrFormFieldCycle) {
+		t.Fatalf("got %v, want ErrFormFieldCycle", err)
+	}
+
+	indRefs := []types.IndirectRef{ir}
+	err = removeFormFieldsDepth(xRefTable, &indRefs, &fields, 0, model.NewFormFieldVisit())
+	if !errors.Is(err, model.ErrFormFieldCycle) {
+		t.Fatalf("got %v, want ErrFormFieldCycle", err)
 	}
 }

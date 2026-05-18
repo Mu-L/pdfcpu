@@ -361,6 +361,13 @@ func parseKeysPart2(k, v string, c *Configuration) (bool, error) {
 
 	case "preferredCertRevocationChecker":
 		return true, handlePreferredCertRevocationChecker(v, c)
+	}
+
+	return false, nil
+}
+
+func parseKeysPart3(k, v string, c *Configuration) (bool, error) {
+	switch k {
 
 	case "maxStreamBytes":
 		return true, handleLimitInt64(k, v, &c.Limits.MaxStreamBytes)
@@ -390,7 +397,7 @@ func parseKeysPart2(k, v string, c *Configuration) (bool, error) {
 	return false, nil
 }
 
-func parseKeysPart3(k, v string, c *Configuration) (err error) {
+func parseKeysPart4(k, v string, c *Configuration) (err error) {
 	switch k {
 
 	case "optimize":
@@ -433,7 +440,15 @@ func parseKeyValue(k, v string, c *Configuration) error {
 		return nil
 	}
 
-	return parseKeysPart3(k, v, c)
+	ok, err = parseKeysPart3(k, v, c)
+	if err != nil {
+		return err
+	}
+	if ok {
+		return nil
+	}
+
+	return parseKeysPart4(k, v, c)
 }
 
 func parseConfigFile(r io.Reader, configPath string) error {

@@ -18,9 +18,11 @@ package pdfcpu
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
 func nestedBookmarks(depth int) []Bookmark {
@@ -42,5 +44,43 @@ func TestCreateOutlineItemDictRejectsRecursionDepth(t *testing.T) {
 	_, _, _, _, err := createOutlineItemDictDepth(nil, nestedBookmarks(0), nil, nil, model.DefaultResourceLimits().MaxRecursionDepth+1)
 	if !errors.Is(err, model.ErrMaxRecursionDepthExceeded) {
 		t.Fatalf("got %v, want ErrMaxRecursionDepthExceeded", err)
+	}
+}
+
+func cyclicBookmarkContext(t *testing.T) *model.Context {
+	t.Helper()
+
+	ctx, err := model.NewContext(strings.NewReader(""), model.NewDefaultConfiguration())
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	dest := types.Array{types.Integer(1)}
+	d := types.Dict{
+		"Title": types.StringLiteral("bookmark"),
+		"Dest":  dest,
+		"Next":  *types.NewIndirectRef(1, 0),
+	}
+	if _, err := ctx.IndRefForObject(1, d); err != nil {
+		t.Fatal(err)
+	}
+	return ctx
+}
+
+func TestBookmarksForOutlineItemRejectsCycle(t *testing.T) {
+	ctx := cyclicBookmarkContext(t)
+
+	_, err := BookmarksForOutlineItem(ctx, types.NewIndirectRef(1, 0), nil)
+	if !errors.Is(err, errCircularBookmarks) {
+		t.Fatalf("got %v, want errCircularBookmarks", err)
+	}
+}
+
+func TestRemoveNamedDestsRejectsCycle(t *testing.T) {
+	ctx := cyclicBookmarkContext(t)
+
+	err := removeNamedDests(ctx, types.NewIndirectRef(1, 0), 0, map[int]bool{})
+	if !errors.Is(err, errCircularBookmarks) {
+		t.Fatalf("got %v, want errCircularBookmarks", err)
 	}
 }

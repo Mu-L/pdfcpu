@@ -439,6 +439,53 @@ func compressedObject(c context.Context, s string) (types.Object, error) {
 	return nil, errors.New("pdfcpu: compressedObject: stream objects are not to be stored in an object stream")
 }
 
+func buildObjectArrayForObjectStream(
+	c context.Context,
+	osd *types.ObjectStreamDict,
+	objs []string,
+	fullContent bool,
+	decodedContent []byte) (types.Array, error) {
+	var objArray types.Array
+	var offsetOld int
+
+	for i := 0; i < len(objs); i += 2 {
+
+		if err := c.Err(); err != nil {
+			return nil, err
+		}
+
+		offset, err := strconv.Atoi(objs[i+1])
+		if err != nil {
+			return nil, err
+		}
+
+		offset += osd.FirstObjOffset
+		if offset < osd.FirstObjOffset {
+			return nil, errors.New("pdfcpu: parseObjectStream: corrupt object stream dict")
+		}
+		if fullContent && offset > len(decodedContent) {
+			return nil, errors.New("pdfcpu: parseObjectStream: corrupt object stream dict")
+		}
+		if i > 0 && offset < offsetOld {
+			return nil, errors.New("pdfcpu: parseObjectStream: corrupt object stream dict")
+		}
+
+		if i > 0 {
+			o := types.NewLazyObjectStreamObject(osd, offsetOld, offset, compressedObject)
+			objArray = append(objArray, o)
+		}
+
+		if i == len(objs)-2 {
+			o := types.NewLazyObjectStreamObject(osd, offset, -1, compressedObject)
+			objArray = append(objArray, o)
+		}
+
+		offsetOld = offset
+	}
+
+	return objArray, nil
+}
+
 // Parse all objects of an object stream and save them into objectStreamDict.ObjArray.
 func parseObjectStream(c context.Context, osd *types.ObjectStreamDict, limits model.ResourceLimits) error {
 	if log.ReadEnabled() {
@@ -479,43 +526,9 @@ func parseObjectStream(c context.Context, osd *types.ObjectStreamDict, limits mo
 
 	// e.g., 10 0 11 25 = 2 Objects: #10 @ offset 0, #11 @ offset 25
 
-	var objArray types.Array
-
-	var offsetOld int
-
-	for i := 0; i < len(objs); i += 2 {
-
-		if err := c.Err(); err != nil {
-			return err
-		}
-
-		offset, err := strconv.Atoi(objs[i+1])
-		if err != nil {
-			return err
-		}
-
-		offset += osd.FirstObjOffset
-		if offset < osd.FirstObjOffset {
-			return errors.New("pdfcpu: parseObjectStream: corrupt object stream dict")
-		}
-		if fullContent && offset > len(decodedContent) {
-			return errors.New("pdfcpu: parseObjectStream: corrupt object stream dict")
-		}
-		if i > 0 && offset < offsetOld {
-			return errors.New("pdfcpu: parseObjectStream: corrupt object stream dict")
-		}
-
-		if i > 0 {
-			o := types.NewLazyObjectStreamObject(osd, offsetOld, offset, compressedObject)
-			objArray = append(objArray, o)
-		}
-
-		if i == len(objs)-2 {
-			o := types.NewLazyObjectStreamObject(osd, offset, -1, compressedObject)
-			objArray = append(objArray, o)
-		}
-
-		offsetOld = offset
+	objArray, err := buildObjectArrayForObjectStream(c, osd, objs, fullContent, decodedContent)
+	if err != nil {
+		return err
 	}
 
 	osd.ObjArray = objArray
