@@ -53,6 +53,7 @@ func testNUp(t *testing.T, msg string, inFiles []string, outFile string, selecte
 	}
 }
 
+// TestNUpCommand verifies n up command.
 func TestNUpCommand(t *testing.T) {
 	for _, tt := range []struct {
 		msg           string

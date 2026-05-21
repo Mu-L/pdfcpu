@@ -44,6 +44,7 @@ func compare(t *testing.T, a, b []byte) {
 
 }
 
+// TestRunLengthEncoding verifies run-length encoding.
 func TestRunLengthEncoding(t *testing.T) {
 
 	f := runLengthDecode{baseFilter{}}
@@ -81,6 +82,7 @@ func TestRunLengthEncoding(t *testing.T) {
 
 }
 
+// TestRunLengthDecodeTruncatedLiteralRun verifies truncated literal runs are rejected.
 func TestRunLengthDecodeTruncatedLiteralRun(t *testing.T) {
 	f := runLengthDecode{baseFilter{}}
 
@@ -90,6 +92,7 @@ func TestRunLengthDecodeTruncatedLiteralRun(t *testing.T) {
 	}
 }
 
+// TestRunLengthDecodeTruncatedRepeatRun verifies truncated repeat runs are rejected.
 func TestRunLengthDecodeTruncatedRepeatRun(t *testing.T) {
 	f := runLengthDecode{baseFilter{}}
 
@@ -99,6 +102,7 @@ func TestRunLengthDecodeTruncatedRepeatRun(t *testing.T) {
 	}
 }
 
+// TestRunLengthDecodeLengthStopsAtLimit verifies decoding stops at the configured limit.
 func TestRunLengthDecodeLengthStopsAtLimit(t *testing.T) {
 	f := runLengthDecode{baseFilter{}}
 

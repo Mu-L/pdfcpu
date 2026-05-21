@@ -25,6 +25,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
+// TestWritePagesDictRejectsRecursionDepth verifies page dictionary writing respects recursion limits.
 func TestWritePagesDictRejectsRecursionDepth(t *testing.T) {
 	ctx, err := model.NewContext(strings.NewReader(""), model.NewDefaultConfiguration())
 	if err != nil {

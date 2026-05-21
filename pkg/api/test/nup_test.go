@@ -50,6 +50,7 @@ func testNUp(t *testing.T, msg string, inFiles []string, outFile string, selecte
 	}
 }
 
+// TestNUp verifies n up.
 func TestNUp(t *testing.T) {
 
 	outDir := filepath.Join(samplesDir, "nup")

@@ -31,6 +31,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
+// TestReadFileContext verifies context-aware file reading.
 func TestReadFileContext(t *testing.T) {
 	inFile := filepath.Join("..", "testdata", "test.pdf")
 
@@ -44,6 +45,7 @@ func TestReadFileContext(t *testing.T) {
 	}
 }
 
+// TestReadContext verifies context-aware reading.
 func TestReadContext(t *testing.T) {
 	inFile := filepath.Join("..", "testdata", "test.pdf")
 
@@ -63,6 +65,7 @@ func TestReadContext(t *testing.T) {
 	}
 }
 
+// TestReadLargeDictObject verifies large dictionary objects are handled.
 func TestReadLargeDictObject(t *testing.T) {
 	// Test with "stream" and "endobj" inside the dictionary.
 	var fp bytes.Buffer
@@ -134,6 +137,7 @@ func TestReadLargeDictObject(t *testing.T) {
 	}
 }
 
+// TestReadStreamContentRejectsStreamLimit verifies stream limits are enforced.
 func TestReadStreamContentRejectsStreamLimit(t *testing.T) {
 	_, err := readStreamContent(bytes.NewReader([]byte("abc")), 3, 2)
 	if err == nil || !strings.Contains(err.Error(), "exceeds maximum") {
@@ -141,6 +145,7 @@ func TestReadStreamContentRejectsStreamLimit(t *testing.T) {
 	}
 }
 
+// TestReadLargeDictObjectStream verifies large object streams are handled.
 func TestReadLargeDictObjectStream(t *testing.T) {
 	// Test without "stream" and "endobj" inside the dictionary.
 	var fp bytes.Buffer

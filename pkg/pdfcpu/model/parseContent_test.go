@@ -21,6 +21,7 @@ import (
 	"testing"
 )
 
+// TestParseContent verifies parse content.
 func TestParseContent(t *testing.T) {
 	s := `/CS0 cs/DeviceGray CS/Span<</ActualText <FEFF000900090009>>>, Span<</ActualText<FEFF0009>>>, Span<</ActualText<FEFF0020>>>,
 	Span<</ActualText<FEFF0020002E>>>, Span<</ActualText<FEFF002E>>>, Span<</ActualText<FEFF00090009>>> BDC

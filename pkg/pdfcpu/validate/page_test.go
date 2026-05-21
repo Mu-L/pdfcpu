@@ -24,6 +24,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
+// TestValidatePagesDictRejectsRecursionDepth verifies page validation respects recursion limits.
 func TestValidatePagesDictRejectsRecursionDepth(t *testing.T) {
 	ctx, err := model.NewContext(strings.NewReader(""), model.NewDefaultConfiguration())
 	if err != nil {

@@ -598,6 +598,7 @@ func testEncryptDecryptFile(t *testing.T, fileName string, mode string, keyLengt
 	testPermissions(t, fileName, mode == "aes", keyLength)
 }
 
+// TestEncryptDecrypt verifies encrypt decrypt.
 func TestEncryptDecrypt(t *testing.T) {
 	for _, fileName := range []string{
 		"5116.DCT_Filter.pdf",

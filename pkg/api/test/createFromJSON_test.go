@@ -52,6 +52,7 @@ func createPDF(t *testing.T, msg, inFile, inFileJSON, outFile string, conf *mode
 
 }
 
+// TestCreateContentPrimitivesViaJson verifies create content primitives via json.
 func TestCreateContentPrimitivesViaJson(t *testing.T) {
 
 	t.Helper()
@@ -100,6 +101,7 @@ func TestCreateContentPrimitivesViaJson(t *testing.T) {
 
 }
 
+// TestCreateFormPrimitivesViaJson verifies create form primitives via json.
 func TestCreateFormPrimitivesViaJson(t *testing.T) {
 
 	inDirForm := filepath.Join(inDir, "json", "form")
@@ -152,6 +154,7 @@ func TestCreateFormPrimitivesViaJson(t *testing.T) {
 
 }
 
+// TestCreateSinglePageDemoFormsViaJson verifies create single page demo forms via json.
 func TestCreateSinglePageDemoFormsViaJson(t *testing.T) {
 
 	// Render single page demo forms for export, reset, lock, unlock and fill tests.
@@ -177,6 +180,7 @@ func TestCreateSinglePageDemoFormsViaJson(t *testing.T) {
 
 }
 
+// TestCreateDemoFormsViaJson verifies create demo forms via json.
 func TestCreateDemoFormsViaJson(t *testing.T) {
 
 	inDirFormDemo := filepath.Join(inDir, "json", "form", "demo")
@@ -247,6 +251,7 @@ func TestCreateDemoFormsViaJson(t *testing.T) {
 
 }
 
+// TestCreateAndUpdatePageViaJson verifies create and update page via json.
 func TestCreateAndUpdatePageViaJson(t *testing.T) {
 
 	// CREATE PDF, UPDATE/ADD PAGE
@@ -272,6 +277,7 @@ func TestCreateAndUpdatePageViaJson(t *testing.T) {
 	createPDF(t, "pass2", file, inFileJSON3, file, conf)
 }
 
+// TestReadAndUpdatePageViaJson verifies read and update page via json.
 func TestReadAndUpdatePageViaJson(t *testing.T) {
 
 	// READ PDF, UPDATE/ADD PAGE
@@ -294,6 +300,7 @@ func TestReadAndUpdatePageViaJson(t *testing.T) {
 	createPDF(t, "pass2", outFile, inFileJSON2, outFile, conf)
 }
 
+// TestCreateFormAndUpdatePageViaJson verifies create form and update page via json.
 func TestCreateFormAndUpdatePageViaJson(t *testing.T) {
 
 	// CREATE FORM, UPDATE/ADD PAGE
@@ -328,6 +335,7 @@ func TestCreateFormAndUpdatePageViaJson(t *testing.T) {
 	createPDF(t, "pass2", file, inFileJSON2, file, conf)
 }
 
+// TestReadFormAndUpdateFormViaJson verifies read form and update form via json.
 func TestReadFormAndUpdateFormViaJson(t *testing.T) {
 
 	// READ FORM, UPDATE FORM

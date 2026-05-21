@@ -23,7 +23,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/cli"
 )
 
-// Merge all PDFs in testdir into out/test.pdf.
+// TestMergeCreateCommand all PDFs in testdir into out/test.pdf.
 func TestMergeCreateCommand(t *testing.T) {
 	msg := "TestMergeCreateCommand"
 
@@ -44,6 +44,7 @@ func TestMergeCreateCommand(t *testing.T) {
 	}
 }
 
+// TestMergeCreateZippedCommand verifies merge create zipped command.
 func TestMergeCreateZippedCommand(t *testing.T) {
 	msg := "TestMergeCreateZippedCommand"
 
@@ -65,6 +66,7 @@ func TestMergeCreateZippedCommand(t *testing.T) {
 	}
 }
 
+// TestMergeAppendCommand verifies merge append command.
 func TestMergeAppendCommand(t *testing.T) {
 	msg := "TestMergeAppendCommand"
 

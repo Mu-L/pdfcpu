@@ -25,6 +25,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
+// TestZoomInByFactor verifies zoom in by factor.
 func TestZoomInByFactor(t *testing.T) {
 	msg := "TestZoomInByFactor"
 
@@ -51,6 +52,7 @@ func TestZoomInByFactor(t *testing.T) {
 	}
 }
 
+// TestZoomOutByFactor verifies zoom out by factor.
 func TestZoomOutByFactor(t *testing.T) {
 	msg := "TestZoomOutByFactor"
 
@@ -77,6 +79,7 @@ func TestZoomOutByFactor(t *testing.T) {
 	}
 }
 
+// TestZoomOutByHorizontalMargin verifies zoom out by horizontal margin.
 func TestZoomOutByHorizontalMargin(t *testing.T) {
 	// Zoom out of page content resulting in a preferred horizontal margin.
 	msg := "TestZoomOutByHMargin"
@@ -103,6 +106,7 @@ func TestZoomOutByHorizontalMargin(t *testing.T) {
 	}
 }
 
+// TestZoomOutByVerticalMargin verifies zoom out by vertical margin.
 func TestZoomOutByVerticalMargin(t *testing.T) {
 	// Zoom out of page content resulting in a preferred vertical margin.
 	msg := "TestZoomOutByVMargin"

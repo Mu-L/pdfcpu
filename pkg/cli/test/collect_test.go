@@ -23,7 +23,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/cli"
 )
 
-// Create a custom page sequence.
+// TestCollectCommand verifies collecting a custom page sequence.
 func TestCollectCommand(t *testing.T) {
 	msg := "TestCollectCommand"
 

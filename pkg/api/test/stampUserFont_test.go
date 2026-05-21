@@ -24,6 +24,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 )
 
+// TestStampUserFont verifies stamp user font.
 func TestStampUserFont(t *testing.T) {
 	msg := "TestStampUserFont"
 	inFile := filepath.Join(inDir, "mountain.pdf")

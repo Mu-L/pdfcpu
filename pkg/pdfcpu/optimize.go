@@ -19,6 +19,7 @@ package pdfcpu
 import (
 	"bytes"
 	"fmt"
+	"slices"
 	"sort"
 	"strings"
 
@@ -607,12 +608,7 @@ func optimizeFormResources(ctx *model.Context, o types.Object, pageNr, pageObjNu
 }
 
 func visited(o types.Object, visited []types.Object) bool {
-	for _, obj := range visited {
-		if obj == o {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(visited, o)
 }
 
 func optimizeForm(ctx *model.Context, osd *types.StreamDict, rNamePrefix, rName string, rDict types.Dict, objNr, pageNr, pageObjNumber int, vis []types.Object) error {
@@ -1531,6 +1527,7 @@ func fixReferencesToFreeObjects(ctx *model.Context) error {
 	return fixDirectObject(ctx, ctx.RootDict)
 }
 
+// CacheFormFonts caches form fonts referenced by ctx.
 func CacheFormFonts(ctx *model.Context) error {
 
 	d, err := primitives.FormFontResDict(ctx.XRefTable)

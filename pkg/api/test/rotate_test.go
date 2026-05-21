@@ -23,6 +23,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 )
 
+// TestRotate verifies rotate.
 func TestRotate(t *testing.T) {
 	msg := "TestRotate"
 	fileName := "Acroforms2.pdf"

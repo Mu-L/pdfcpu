@@ -195,7 +195,7 @@ func writePageSpansSplitAlongBookmarks(ctx *model.Context, outDir string) error 
 }
 
 func writePageSpansSplitAlongPages(ctx *model.Context, pageNrs []int, outDir, fileName string) error {
-	// pageNumbers is a a sorted sequence of page numbers.
+	// pageNumbers is a sorted sequence of page numbers.
 	forBookmark := false
 	from, thru := 1, 0
 
@@ -292,7 +292,7 @@ func SplitFile(inFile, outDir string, span int, conf *model.Configuration) error
 	return Split(f, outDir, filepath.Base(inFile), span, conf)
 }
 
-// SplitFile generates a sequence of PDF files in outDir for rs splitting along pageNrs.
+// SplitByPageNr splits rs at the specified page numbers and writes result files to outDir.
 func SplitByPageNr(rs io.ReadSeeker, outDir, fileName string, pageNrs []int, conf *model.Configuration) (err error) {
 	defer fault.Catch(&err)
 
@@ -308,7 +308,7 @@ func SplitByPageNr(rs io.ReadSeeker, outDir, fileName string, pageNrs []int, con
 	return writePageSpansSplitAlongPages(ctx, pageNrs, outDir, fileName)
 }
 
-// SplitFile generates a sequence of PDF files in outDir for inFile splitting it along pageNrs.
+// SplitByPageNrFile splits inFile at the specified page numbers and writes result files to outDir.
 func SplitByPageNrFile(inFile, outDir string, pageNrs []int, conf *model.Configuration) error {
 	f, err := os.Open(inFile)
 	if err != nil {

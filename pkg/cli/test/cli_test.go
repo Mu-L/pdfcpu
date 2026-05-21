@@ -53,6 +53,7 @@ func userFonts(dir string) ([]string, error) {
 	return ff, nil
 }
 
+// TestMain verifies main.
 func TestMain(m *testing.M) {
 	inDir = filepath.Join("..", "..", "testdata")
 	fontDir = filepath.Join(inDir, "fonts")
@@ -139,6 +140,7 @@ func validateFile(t *testing.T, fileName string, conf *model.Configuration) erro
 	return err
 }
 
+// TestValidate verifies validate.
 func TestValidate(t *testing.T) {
 	msg := "TestValidateCommand"
 	for _, f := range allPDFs(t, inDir) {
@@ -149,6 +151,7 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+// TestInfoCommand verifies info command.
 func TestInfoCommand(t *testing.T) {
 	msg := "TestInfoCommand"
 	inFile := filepath.Join(inDir, "5116.DCT_Filter.pdf")
@@ -159,6 +162,7 @@ func TestInfoCommand(t *testing.T) {
 	}
 }
 
+// TestUnknownCommand verifies unknown command.
 func TestUnknownCommand(t *testing.T) {
 	msg := "TestUnknownCommand"
 	inFile := filepath.Join(outDir, "go.pdf")
@@ -173,7 +177,7 @@ func TestUnknownCommand(t *testing.T) {
 	}
 }
 
-// Enable this test for debugging of a specific file.
+// XTestSomeCommand this test for debugging of a specific file.
 func XTestSomeCommand(t *testing.T) {
 	msg := "TestSomeCommand"
 

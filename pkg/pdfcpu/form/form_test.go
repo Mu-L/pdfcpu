@@ -25,6 +25,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
+// TestFormFieldHelpersRejectRecursionDepth verifies form field helpers respect recursion limits.
 func TestFormFieldHelpersRejectRecursionDepth(t *testing.T) {
 	ctx, err := model.NewContext(strings.NewReader(""), model.NewDefaultConfiguration())
 	if err != nil {
@@ -78,6 +79,7 @@ func cyclicFormContext(t *testing.T) (*model.XRefTable, types.Array) {
 	return ctx.XRefTable, types.Array{ir}
 }
 
+// TestFormFieldHelpersRejectCycle verifies form field helpers reject cycles.
 func TestFormFieldHelpersRejectCycle(t *testing.T) {
 	xRefTable, fields := cyclicFormContext(t)
 	ir := fields[0].(types.IndirectRef)

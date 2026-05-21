@@ -24,6 +24,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
 )
 
+// TestCollect verifies collect.
 func TestCollect(t *testing.T) {
 	msg := "TestCollect"
 
@@ -40,6 +41,7 @@ func TestCollect(t *testing.T) {
 	}
 }
 
+// TestCollectLowLevel verifies collect low level.
 func TestCollectLowLevel(t *testing.T) {
 	msg := "TestCollectLowLevel"
 	inFile := filepath.Join(inDir, "pike-stanford.pdf")

@@ -387,6 +387,7 @@ func nupPerfectBound(positionNumber int, inputPageCount int, pageNumbers []int, 
 	return getPageNumber(pageNumbers, p-1), rotate // p is one-indexed and we want zero-indexed
 }
 
+// GetBookletOrdering returns the booklet page ordering.
 func GetBookletOrdering(pages types.IntSet, nup *model.NUp) []model.BookletPage {
 	pageNumbers := sortSelectedPages(pages)
 	pageCount := len(pageNumbers)
@@ -444,7 +445,7 @@ func getBookletPageOrdering(nup *model.NUp, pageNumbers []int, pageCount int) []
 		pageNumberFn = nupPerfectBound
 	}
 
-	for i := 0; i < pageCount; i++ {
+	for i := range pageCount {
 		pageNr, rotate := pageNumberFn(i, pageCount, pageNumbers, nup)
 		bookletPages[i].Number = pageNr
 		bookletPages[i].Rotate = rotate

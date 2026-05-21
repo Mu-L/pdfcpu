@@ -24,6 +24,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
+// TestViewerPreferences verifies viewer preferences.
 func TestViewerPreferences(t *testing.T) {
 	msg := "testViewerPreferences"
 

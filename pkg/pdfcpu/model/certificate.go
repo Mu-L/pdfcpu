@@ -30,13 +30,13 @@ var TrustedCertDir string
 // UserCertPool contains all certificates loaded from CertDir.
 var UserCertPool *x509.CertPool
 
-// TODO Do we need locking?
-//var UserCertPoolLock = &sync.RWMutex{}
+// IsPEM Do we need locking?
 
 func IsPEM(fname string) bool {
 	return strings.HasSuffix(strings.ToLower(fname), ".pem")
 }
 
+// IsP7C reports whether fname is p7c.
 func IsP7C(fname string) bool {
 	return strings.HasSuffix(strings.ToLower(fname), ".p7c")
 }
@@ -86,6 +86,7 @@ func nameString(subj pkix.Name) string {
 	return sb.String()
 }
 
+// CertString returns a string representation for cert.
 func CertString(cert *x509.Certificate) string {
 	return fmt.Sprintf(
 		"    Subject:\n%s\n"+
@@ -103,6 +104,7 @@ func CertString(cert *x509.Certificate) string {
 	)
 }
 
+// ResetCertificates reset certificates.
 func ResetCertificates() error {
 	// remove certs/*.pem
 	path, err := os.UserConfigDir()

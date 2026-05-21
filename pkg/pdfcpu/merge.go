@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 )
 
+// EnsureOutlines ensures outlines.
 func EnsureOutlines(ctx *model.Context, fName string, append bool) error {
 
 	rootDict, err := ctx.Catalog()

@@ -40,6 +40,7 @@ func (f dctDecode) Decode(r io.Reader) (io.Reader, error) {
 	return f.DecodeLength(r, -1)
 }
 
+// DecodeLength implements decoding for a DCTDecode filter with a maximum output length.
 func (f dctDecode) DecodeLength(r io.Reader, maxLen int64) (io.Reader, error) {
 	bb, err := getReaderBytes(r)
 	if err != nil {

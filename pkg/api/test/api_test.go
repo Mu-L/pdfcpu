@@ -55,6 +55,7 @@ func userFonts(dir string) ([]string, error) {
 	return ff, nil
 }
 
+// TestMain verifies main.
 func TestMain(m *testing.M) {
 	inDir = filepath.Join("..", "..", "testdata")
 	resDir = filepath.Join(inDir, "resources")
@@ -120,6 +121,7 @@ func imageFileNames(t *testing.T, dir string) []string {
 	return fn
 }
 
+// BenchmarkValidate benchmarks validate.
 func BenchmarkValidate(b *testing.B) {
 	msg := "BenchmarkValidate"
 	b.ResetTimer()
@@ -141,6 +143,7 @@ func isPDF(filename string) bool {
 	return strings.HasSuffix(strings.ToLower(filename), ".pdf")
 }
 
+// AllPDFs all pd fs.
 func AllPDFs(t *testing.T, dir string) []string {
 	t.Helper()
 	files, err := os.ReadDir(dir)
@@ -156,6 +159,7 @@ func AllPDFs(t *testing.T, dir string) []string {
 	return ff
 }
 
+// TestPageCount verifies page count.
 func TestPageCount(t *testing.T) {
 	msg := "TestPageCount"
 
@@ -174,6 +178,7 @@ func TestPageCount(t *testing.T) {
 	}
 }
 
+// TestPageDimensions verifies page dimensions.
 func TestPageDimensions(t *testing.T) {
 	msg := "TestPageDimensions"
 	for _, fn := range AllPDFs(t, inDir) {
@@ -186,6 +191,7 @@ func TestPageDimensions(t *testing.T) {
 	}
 }
 
+// TestValidate verifies validate.
 func TestValidate(t *testing.T) {
 	msg := "TestValidate"
 	inFile := filepath.Join(inDir, "Acroforms2.pdf")
@@ -198,6 +204,7 @@ func TestValidate(t *testing.T) {
 	}
 }
 
+// TestManipulateContext verifies manipulate context.
 func TestManipulateContext(t *testing.T) {
 	msg := "TestManipulateContext"
 	inFile := filepath.Join(inDir, "5116.DCT_Filter.pdf")
@@ -226,6 +233,7 @@ func TestManipulateContext(t *testing.T) {
 	}
 }
 
+// TestInfo verifies info.
 func TestInfo(t *testing.T) {
 	msg := "TestInfo"
 	inFile := filepath.Join(inDir, "5116.DCT_Filter.pdf")

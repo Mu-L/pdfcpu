@@ -53,6 +53,7 @@ func testGrid(t *testing.T, msg string, inFiles []string, outFile string, select
 	}
 }
 
+// TestGridCommand verifies grid command.
 func TestGridCommand(t *testing.T) {
 	for _, tt := range []struct {
 		msg           string

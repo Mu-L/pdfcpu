@@ -39,6 +39,7 @@ func (f ccittDecode) Decode(r io.Reader) (io.Reader, error) {
 	return f.DecodeLength(r, -1)
 }
 
+// DecodeLength implements decoding for a CCITTFaxDecode filter with a maximum output length.
 func (f ccittDecode) DecodeLength(r io.Reader, maxLen int64) (io.Reader, error) {
 	if log.TraceEnabled() {
 		log.Trace.Println("DecodeCCITT begin")

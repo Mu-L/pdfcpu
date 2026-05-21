@@ -164,6 +164,7 @@ func loadCertsFromP7C(filename string) ([]*x509.Certificate, error) {
 	return p7.Certificates, nil
 }
 
+// LoadCertificatesFile loads certificates from filename.
 func LoadCertificatesFile(filename string) ([]*x509.Certificate, error) {
 	ext := strings.ToLower(filepath.Ext(filename))
 	switch ext {
@@ -236,6 +237,7 @@ func saveCertsAsP7C(certs []*x509.Certificate, filename string, overwrite bool) 
 	return Write(bytes.NewReader(bb), filename, overwrite)
 }
 
+// ImportCertificate imports certificates from inFile.
 func ImportCertificate(inFile string, overwrite bool) (int, bool, error) {
 	certs, err := LoadCertificatesFile(inFile)
 	if err != nil {
@@ -268,6 +270,7 @@ func ImportCertificate(inFile string, overwrite bool) (int, bool, error) {
 	return len(certs), ok, nil
 }
 
+// InspectCertificate inspect certificate.
 func InspectCertificate(cert *x509.Certificate) (string, error) {
 	return model.CertString(cert), nil
 }

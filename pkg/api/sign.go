@@ -182,7 +182,7 @@ func ValidateSignaturesFile(inFile string, all, full bool, conf *model.Configura
 	return digest(signValidResults, full), nil
 }
 
-// RemoveSignature removes all digital signatures from rs and writes to w.
+// RemoveSignatures removes all digital signatures from rs and writes to w.
 func RemoveSignatures(rs io.ReadSeeker, w io.Writer, conf *model.Configuration) (err error) {
 	defer fault.Catch(&err)
 

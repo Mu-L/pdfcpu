@@ -60,6 +60,7 @@ func listAttachments(t *testing.T, msg, fileName string, want int) {
 	}
 }
 
+// TestAttachments verifies attachment commands.
 func TestAttachments(t *testing.T) {
 	msg := "testAttachments"
 
@@ -196,6 +197,7 @@ func removeAttachment(t *testing.T, msg, outFile string, a model.Attachment, ctx
 	}
 }
 
+// TestAttachmentsLowLevel verifies low-level attachment APIs.
 func TestAttachmentsLowLevel(t *testing.T) {
 	msg := "TestAttachmentsLowLevel"
 

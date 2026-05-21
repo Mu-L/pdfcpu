@@ -23,7 +23,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/cli"
 )
 
-// Trim test PDF file so that only the first two pages are rendered.
+// TestTrimCommand test PDF file so that only the first two pages are rendered.
 func TestTrimCommand(t *testing.T) {
 	msg := "TestTrimCommand"
 	inFile := filepath.Join(inDir, "pike-stanford.pdf")

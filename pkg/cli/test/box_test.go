@@ -24,6 +24,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
+// TestListBoxesCommand verifies list boxes command.
 func TestListBoxesCommand(t *testing.T) {
 	msg := "TestListBoxesCommand"
 	inFile := filepath.Join(inDir, "5116.DCT_Filter.pdf")
@@ -45,6 +46,7 @@ func TestListBoxesCommand(t *testing.T) {
 	}
 }
 
+// TestCropCommand verifies crop command.
 func TestCropCommand(t *testing.T) {
 	msg := "TestCropCommand"
 	inFile := filepath.Join(inDir, "test.pdf")
@@ -78,6 +80,7 @@ func TestCropCommand(t *testing.T) {
 	}
 }
 
+// TestAddBoxesCommand verifies add boxes command.
 func TestAddBoxesCommand(t *testing.T) {
 	msg := "TestAddBoxesCommand"
 	inFile := filepath.Join(inDir, "test.pdf")
@@ -107,6 +110,7 @@ func TestAddBoxesCommand(t *testing.T) {
 	}
 }
 
+// TestAddRemoveBoxesCommand verifies add remove boxes command.
 func TestAddRemoveBoxesCommand(t *testing.T) {
 	msg := "TestAddRemoveBoxesCommand"
 	inFile := filepath.Join(inDir, "test.pdf")

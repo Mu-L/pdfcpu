@@ -24,6 +24,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/cli"
 )
 
+// TestPagesCommand verifies pages command.
 func TestPagesCommand(t *testing.T) {
 	msg := "TestPagesCommand"
 	inFile := filepath.Join(inDir, "Acroforms2.pdf")

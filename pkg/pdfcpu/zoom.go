@@ -39,9 +39,7 @@ func ParseZoomConfig(s string, u types.DisplayUnit) (*model.Zoom, error) {
 
 	zoom := &model.Zoom{Unit: u}
 
-	ss := strings.Split(s, ",")
-
-	for _, s := range ss {
+	for s := range strings.SplitSeq(s, ",") {
 
 		ss1 := strings.Split(s, ":")
 		if len(ss1) != 2 {
@@ -160,6 +158,7 @@ func zoomPage(ctx *model.Context, pageNr int, zoom *model.Zoom) error {
 	return nil
 }
 
+// Zoom zooms selected pages.
 func Zoom(ctx *model.Context, selectedPages types.IntSet, zoom *model.Zoom) error {
 	if log.DebugEnabled() {
 		log.Debug.Printf("Zoom:\n%s\n", zoom)

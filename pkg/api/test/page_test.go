@@ -25,6 +25,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
+// TestInsertRemovePages verifies insert remove pages.
 func TestInsertRemovePages(t *testing.T) {
 	msg := "TestInsertRemovePages"
 	inFile := filepath.Join(inDir, "Acroforms2.pdf")
@@ -66,6 +67,7 @@ func TestInsertRemovePages(t *testing.T) {
 	}
 }
 
+// TestInsertCustomBlankPage verifies insert custom blank page.
 func TestInsertCustomBlankPage(t *testing.T) {
 	msg := "TestInsertCustomBlankPage"
 	inFile := filepath.Join(inDir, "Acroforms2.pdf")

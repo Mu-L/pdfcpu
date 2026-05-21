@@ -42,8 +42,7 @@ func testPageSelectionSyntaxFail(t *testing.T, s string) {
 	}
 }
 
-// Test the pageSelection string.
-// This is used to select specific pages for extraction and trimming.
+// TestPageSelectionSyntax tests the pageSelection string.
 func TestPageSelectionSyntax(t *testing.T) {
 	psOk := []string{"1", "!1", "n1", "1-", "!1-", "n1-", "-5", "!-5", "n-5", "3-5", "!3-5", "n3-5",
 		"1,2,3", "!-5,10-15,30-", "1-,n4", "odd", "even", " 1"}
@@ -93,6 +92,7 @@ func testSelectedPages(s string, pageCount int, compareString string, t *testing
 	}
 }
 
+// TestSelectedPages verifies selected pages.
 func TestSelectedPages(t *testing.T) {
 	pageCount := 5
 
@@ -170,6 +170,7 @@ func testCollectedPages(s string, pageCount int, want string, t *testing.T) {
 	}
 }
 
+// TestCollectedPages verifies collected pages.
 func TestCollectedPages(t *testing.T) {
 	pageCount := 5
 

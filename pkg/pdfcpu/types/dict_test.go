@@ -20,6 +20,7 @@ import (
 	"testing"
 )
 
+// TestEncodeDict verifies encode dict.
 func TestEncodeDict(t *testing.T) {
 	dict := Dict{
 		"A()": Integer(1),

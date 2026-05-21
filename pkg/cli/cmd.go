@@ -249,7 +249,6 @@ func MergeAppendCommand(inFiles []string, outFile string, dividerPage bool, conf
 }
 
 // ExtractImagesCommand creates a new command to extract embedded images.
-// (experimental)
 func ExtractImagesCommand(inFile string, outDir string, pageSelection []string, conf *model.Configuration) *Command {
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()

@@ -91,6 +91,7 @@ func (sd StreamDict) HasSoleFilterNamed(filterName string) bool {
 	return fpl[0].Name == filterName
 }
 
+// Image returns the image stream dictionary data.
 func (sd StreamDict) Image() bool {
 	s := sd.Type()
 	if s == nil || *s != "XObject" {
@@ -115,6 +116,7 @@ type LazyObjectStreamObject struct {
 	decodedError  error
 }
 
+// NewLazyObjectStreamObject returns a lazy object stream object.
 func NewLazyObjectStreamObject(osd *ObjectStreamDict, startOffset, endOffset int, decodeFunc DecodeLazyObjectStreamObjectFunc) Object {
 	return LazyObjectStreamObject{
 		osd:         osd,
@@ -125,6 +127,7 @@ func NewLazyObjectStreamObject(osd *ObjectStreamDict, startOffset, endOffset int
 	}
 }
 
+// Clone returns a copy of sd.
 func (l LazyObjectStreamObject) Clone() Object {
 	return LazyObjectStreamObject{
 		osd:         l.osd,
@@ -137,6 +140,7 @@ func (l LazyObjectStreamObject) Clone() Object {
 	}
 }
 
+// PDFString returns a PDF string representation of sd.
 func (l LazyObjectStreamObject) PDFString() string {
 	data, err := l.GetData()
 	if err != nil {
@@ -146,10 +150,12 @@ func (l LazyObjectStreamObject) PDFString() string {
 	return string(data)
 }
 
+// String returns the string value of l.
 func (l LazyObjectStreamObject) String() string {
 	return l.PDFString()
 }
 
+// GetData returns the stream data.
 func (l *LazyObjectStreamObject) GetData() ([]byte, error) {
 	if err := l.osd.DecodeWithLimit(l.osd.MaxDecodeBytes); err != nil {
 		return nil, err
@@ -170,6 +176,7 @@ func (l *LazyObjectStreamObject) GetData() ([]byte, error) {
 	return data, nil
 }
 
+// DecodedObject returns the decoded object at index i.
 func (l *LazyObjectStreamObject) DecodedObject(c context.Context) (Object, error) {
 	if l.decodedObject == nil && l.decodedError == nil {
 		data, err := l.GetData()
@@ -332,6 +339,7 @@ func (sd *StreamDict) Decode() error {
 	return err
 }
 
+// DecodeWithLimit decodes sd with resource limits.
 func (sd *StreamDict) DecodeWithLimit(maxDecodeBytes int64) error {
 	_, err := sd.DecodeLengthWithLimit(-1, maxDecodeBytes)
 	return err
@@ -411,10 +419,12 @@ func (sd *StreamDict) decodeLength(maxLen, maxDecodeBytes int64) ([]byte, error)
 	return data[:maxLen], nil
 }
 
+// DecodeLength decodes sd with a maximum output length.
 func (sd *StreamDict) DecodeLength(maxLen int64) ([]byte, error) {
 	return sd.DecodeLengthWithLimit(maxLen, filter.DefaultMaxDecodeBytes)
 }
 
+// DecodeLengthWithLimit decodes sd with a maximum output length and resource limits.
 func (sd *StreamDict) DecodeLengthWithLimit(maxLen, maxDecodeBytes int64) ([]byte, error) {
 	if sd.Content != nil {
 		// This stream has already been decoded.

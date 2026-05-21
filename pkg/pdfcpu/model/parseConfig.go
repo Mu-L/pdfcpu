@@ -67,6 +67,7 @@ type configuration struct {
 
 type int64Value int64
 
+// UnmarshalYAML unmarshals a positive int64 value.
 func (i *int64Value) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	var n int64
 	if err := unmarshal(&n); err == nil {

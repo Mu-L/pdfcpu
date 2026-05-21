@@ -23,6 +23,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 )
 
+// TestPortfolio verifies portfolio.
 func TestPortfolio(t *testing.T) {
 	msg := "testPortfolio"
 

@@ -42,6 +42,7 @@ func zlibEncoded(t *testing.T, s string) *bytes.Buffer {
 	return &b
 }
 
+// TestFilterSupport verifies filter support detection.
 func TestFilterSupport(t *testing.T) {
 	var filtersTests = []struct {
 		filterName string
@@ -113,6 +114,7 @@ func encodeDecodeString(t *testing.T, filterName string) {
 	}
 }
 
+// TestEncodeDecodeString verifies string encode/decode round trips.
 func TestEncodeDecodeString(t *testing.T) {
 	for _, f := range filter.List() {
 		encodeDecodeString(t, f)
@@ -188,6 +190,7 @@ func encodeDecode(t *testing.T, fileName, filterName string) {
 
 }
 
+// TestEncodeDecode verifies encode/decode round trips.
 func TestEncodeDecode(t *testing.T) {
 	for _, filterName := range filter.List() {
 		for _, filename := range filenames {
@@ -282,6 +285,7 @@ func encodeDecodeFilterPipeline(t *testing.T, fileName string, fpl []string) {
 	}
 }
 
+// TestEncodeDecodeFilterPipeline verifies filter pipeline encode/decode round trips.
 func TestEncodeDecodeFilterPipeline(t *testing.T) {
 	for _, filename := range filenames {
 		encodeDecodeFilterPipeline(t, filename, []string{filter.ASCII85, filter.Flate})
@@ -344,6 +348,7 @@ func TestASCII85DecodeWithCRLF(t *testing.T) {
 	}
 }
 
+// TestDecodeLimitExceeded verifies decode limits are enforced.
 func TestDecodeLimitExceeded(t *testing.T) {
 	f, err := filter.NewFilter(filter.Flate, nil, 4)
 	if err != nil {
@@ -356,6 +361,7 @@ func TestDecodeLimitExceeded(t *testing.T) {
 	}
 }
 
+// TestASCIIHexDecodeLengthTooLongReturnsError verifies ASCII hex length errors.
 func TestASCIIHexDecodeLengthTooLongReturnsError(t *testing.T) {
 	f, err := filter.NewFilter(filter.ASCIIHex, nil)
 	if err != nil {
@@ -368,6 +374,7 @@ func TestASCIIHexDecodeLengthTooLongReturnsError(t *testing.T) {
 	}
 }
 
+// TestASCIIHexDecodeLimitExceeded verifies ASCII hex decode limits are enforced.
 func TestASCIIHexDecodeLimitExceeded(t *testing.T) {
 	f, err := filter.NewFilter(filter.ASCIIHex, nil, 1)
 	if err != nil {

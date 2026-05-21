@@ -37,6 +37,7 @@ func flateTestData(t *testing.T, s string) *bytes.Buffer {
 	return &b
 }
 
+// TestFlatePredictorRejectsInvalidColors verifies invalid color counts are rejected.
 func TestFlatePredictorRejectsInvalidColors(t *testing.T) {
 	f := flate{baseFilter{parms: map[string]int{
 		"Predictor": PredictorNone,
@@ -49,6 +50,7 @@ func TestFlatePredictorRejectsInvalidColors(t *testing.T) {
 	}
 }
 
+// TestFlatePredictorRejectsInvalidColumns verifies invalid column counts are rejected.
 func TestFlatePredictorRejectsInvalidColumns(t *testing.T) {
 	f := flate{baseFilter{parms: map[string]int{
 		"Predictor": PredictorNone,
@@ -61,6 +63,7 @@ func TestFlatePredictorRejectsInvalidColumns(t *testing.T) {
 	}
 }
 
+// TestFlatePredictorRejectsOverflowingRowSize verifies overflowing row sizes are rejected.
 func TestFlatePredictorRejectsOverflowingRowSize(t *testing.T) {
 	f := flate{baseFilter{parms: map[string]int{
 		"Predictor": PredictorNone,
@@ -74,6 +77,7 @@ func TestFlatePredictorRejectsOverflowingRowSize(t *testing.T) {
 	}
 }
 
+// TestFlatePredictorRejectsRowLargerThanDecodeLimit verifies row decode limits are enforced.
 func TestFlatePredictorRejectsRowLargerThanDecodeLimit(t *testing.T) {
 	f := flate{baseFilter{
 		parms: map[string]int{

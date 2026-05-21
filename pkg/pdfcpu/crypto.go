@@ -229,7 +229,7 @@ func encKey(userpw string, e *model.Enc) (key []byte) {
 
 	// 2h
 	if e.R >= 3 {
-		for i := 0; i < 50; i++ {
+		for range 50 {
 			h.Reset()
 			h.Write(key[:e.L/8])
 			key = h.Sum(nil)

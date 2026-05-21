@@ -547,6 +547,7 @@ func renderArticle(xRefTable *model.XRefTable, p model.Page, row, col, lang int)
 	model.WriteMultiLine(xRefTable, buf, mediaBox, region, td)
 }
 
+// TestUserFonts verifies user fonts.
 func TestUserFonts(t *testing.T) {
 	msg := "TestUserFonts"
 

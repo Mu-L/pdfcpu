@@ -24,6 +24,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/cli"
 )
 
+// TestPageLayout verifies page layout.
 func TestPageLayout(t *testing.T) {
 	msg := "testPageLayout"
 

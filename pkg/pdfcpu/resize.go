@@ -41,9 +41,7 @@ func ParseResizeConfig(s string, u types.DisplayUnit) (*model.Resize, error) {
 
 	res := &model.Resize{Unit: u}
 
-	ss := strings.Split(s, ",")
-
-	for _, s := range ss {
+	for s := range strings.SplitSeq(s, ",") {
 
 		ss1 := strings.Split(s, ":")
 		if len(ss1) != 2 {
@@ -227,6 +225,7 @@ func resizePage(ctx *model.Context, pageNr int, res *model.Resize) error {
 	return nil
 }
 
+// Resize resizes selectedPages using res.
 func Resize(ctx *model.Context, selectedPages types.IntSet, res *model.Resize) error {
 	if log.DebugEnabled() {
 		log.Debug.Printf("Resize:\n%s\n", res)

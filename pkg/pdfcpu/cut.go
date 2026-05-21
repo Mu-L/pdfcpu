@@ -41,9 +41,7 @@ func ParseCutConfigForPoster(s string, u types.DisplayUnit) (*model.Cut, error) 
 
 	cut := &model.Cut{Unit: u, Scale: 1.0}
 
-	ss := strings.Split(s, ",")
-
-	for _, s := range ss {
+	for s := range strings.SplitSeq(s, ",") {
 
 		ss1 := strings.Split(s, ":")
 		if len(ss1) != 2 {
@@ -75,9 +73,7 @@ func ParseCutConfigForN(n int, s string, u types.DisplayUnit) (*model.Cut, error
 		return cut, nil
 	}
 
-	ss := strings.Split(s, ",")
-
-	for _, s := range ss {
+	for s := range strings.SplitSeq(s, ",") {
 
 		ss1 := strings.Split(s, ":")
 		if len(ss1) != 2 {
@@ -105,9 +101,7 @@ func ParseCutConfig(s string, u types.DisplayUnit) (*model.Cut, error) {
 
 	cut := &model.Cut{Unit: u}
 
-	ss := strings.Split(s, ",")
-
-	for _, s := range ss {
+	for s := range strings.SplitSeq(s, ",") {
 
 		ss1 := strings.Split(s, ":")
 		if len(ss1) != 2 {
@@ -451,6 +445,7 @@ func createTiles(
 	return nil
 }
 
+// CutPage cuts pageNr into tiles.
 func CutPage(ctxSrc *model.Context, pageNr int, cut *model.Cut) (*model.Context, error) {
 
 	// required: at least one of horizontalCut, verticalCut
@@ -526,6 +521,7 @@ func createNDownCuts(n int, cropBox *types.Rectangle, cut *model.Cut) {
 	}
 }
 
+// NDownPage creates NDown tiles for pageNr and n.
 func NDownPage(ctxSrc *model.Context, pageNr, n int, cut *model.Cut) (*model.Context, error) {
 
 	// Optionally: border, margin, bgcolor
@@ -593,6 +589,7 @@ func createPosterCuts(cropBox *types.Rectangle, cut *model.Cut) {
 	}
 }
 
+// PosterPage creates poster tiles for pageNr.
 func PosterPage(ctxSrc *model.Context, pageNr int, cut *model.Cut) (*model.Context, error) {
 
 	// required: formsize(=papersize) or dimensions

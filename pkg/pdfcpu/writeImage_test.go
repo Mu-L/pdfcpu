@@ -23,6 +23,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
+// TestValidatePDFImageDimensionsRejectsPixelLimit verifies pixel limits are enforced.
 func TestValidatePDFImageDimensionsRejectsPixelLimit(t *testing.T) {
 	conf := model.NewDefaultConfiguration()
 	conf.Limits.MaxImagePixels = 9
@@ -35,6 +36,7 @@ func TestValidatePDFImageDimensionsRejectsPixelLimit(t *testing.T) {
 	}
 }
 
+// TestValidatePDFImageDimensionsRejectsByteLimit verifies byte limits are enforced.
 func TestValidatePDFImageDimensionsRejectsByteLimit(t *testing.T) {
 	conf := model.NewDefaultConfiguration()
 	conf.Limits.MaxImagePixels = 100

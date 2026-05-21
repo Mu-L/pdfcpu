@@ -62,6 +62,7 @@ func (f lzwDecode) Decode(r io.Reader) (io.Reader, error) {
 	return f.DecodeLength(r, -1)
 }
 
+// DecodeLength implements decoding for an LZWDecode filter with a maximum output length.
 func (f lzwDecode) DecodeLength(r io.Reader, maxLen int64) (io.Reader, error) {
 	if log.TraceEnabled() {
 		log.Trace.Println("DecodeLZW begin")

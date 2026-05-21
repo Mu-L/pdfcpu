@@ -444,13 +444,13 @@ func (xRefTable *XRefTable) InsertObject(obj types.Object) (objNr int, err error
 	return xRefTable.InsertNew(*xRefTableEntry), nil
 }
 
-// IndRefForNewObject inserts object at objNr into the xRefTable and returns an indirect reference to it.
+// IndRefForObject inserts object at objNr into the xRefTable and returns an indirect reference to it.
 func (xRefTable *XRefTable) IndRefForObject(objNr int, obj types.Object) (*types.IndirectRef, error) {
 	xRefTable.Table[objNr] = NewXRefTableEntryGen0(obj)
 	return types.NewIndirectRef(objNr, 0), nil
 }
 
-// IndRefForObject inserts object at objNr into the xRefTable and returns an indirect reference to it.
+// IndRefForNewObject inserts an object into the xRefTable and returns an indirect reference to it.
 func (xRefTable *XRefTable) IndRefForNewObject(obj types.Object) (*types.IndirectRef, error) {
 	xRefTableEntry := NewXRefTableEntryGen0(obj)
 	objNr, err := xRefTable.InsertAndUseRecycled(*xRefTableEntry)

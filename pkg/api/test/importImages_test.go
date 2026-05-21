@@ -49,6 +49,7 @@ func testImportImages(t *testing.T, msg string, imgFiles []string, outFile, impC
 	}
 }
 
+// TestImportImages verifies import images.
 func TestImportImages(t *testing.T) {
 
 	outDir := filepath.Join(samplesDir, "import")
@@ -99,6 +100,7 @@ func TestImportImages(t *testing.T) {
 	}
 }
 
+// TestMemBasedWriterPanic verifies mem based writer panic.
 func TestMemBasedWriterPanic(t *testing.T) {
 
 	imgFiles := []string{filepath.Join(resDir, "logoSmall.png")}

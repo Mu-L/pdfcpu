@@ -268,7 +268,7 @@ func (l *logger) Fatalf(format string, args ...interface{}) {
 	l.log.Fatalf(format, args...)
 }
 
-// Fatalf is equivalent to Println() followed by a program abort.
+// Fatalln is equivalent to Println() followed by a program abort.
 func (l *logger) Fatalln(args ...interface{}) {
 
 	if l.log == nil {

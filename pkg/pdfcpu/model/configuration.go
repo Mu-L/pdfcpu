@@ -163,10 +163,12 @@ const (
 	ADDSIGNATURE
 )
 
+// AllowRemoveEncryption enables removing encryption during validation.
 func (cmd CommandMode) AllowRemoveEncryption() bool {
 	return cmd == OPTIMIZE || cmd == REMOVESIGNATURES
 }
 
+// AllowRemoveSignatures enables removing signatures during validation.
 func (cmd CommandMode) AllowRemoveSignatures() bool {
 	return cmd == MERGEAPPEND || cmd == MERGECREATE || cmd == MERGECREATEZIP || cmd == OPTIMIZE
 }
@@ -554,6 +556,7 @@ func newDefaultConfiguration() *Configuration {
 	}
 }
 
+// ResetConfig resets the default configuration.
 func ResetConfig() error {
 	path, err := os.UserConfigDir()
 	if err != nil {

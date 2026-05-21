@@ -170,6 +170,7 @@ type Table struct {
 	Header          *TableHeader
 }
 
+// Height returns the height of t.
 func (t *Table) Height() float64 {
 	h := float64(t.Rows) * float64(t.LineHeight)
 	if t.Header != nil {

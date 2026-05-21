@@ -55,7 +55,7 @@ func ReadFile(inFile string, conf *model.Configuration) (*model.Context, error) 
 	return ReadFileWithContext(context.Background(), inFile, conf)
 }
 
-// ReadFileContext reads in a PDF file and builds an internal structure holding its cross reference table aka the PDF model context.
+// ReadFileWithContext reads in a PDF file and builds an internal structure holding its cross reference table aka the PDF model context.
 // If the passed Go context is cancelled, reading will be interrupted.
 func ReadFileWithContext(c context.Context, inFile string, conf *model.Configuration) (*model.Context, error) {
 	if log.InfoEnabled() {
@@ -80,7 +80,7 @@ func Read(rs io.ReadSeeker, conf *model.Configuration) (*model.Context, error) {
 	return ReadWithContext(context.Background(), rs, conf)
 }
 
-// Read takes a readSeeker and generates a PDF model context,
+// ReadWithContext takes a readSeeker and generates a PDF model context,
 // an in-memory representation containing a cross reference table.
 // If the passed Go context is cancelled, reading will be interrupted.
 func ReadWithContext(c context.Context, rs io.ReadSeeker, conf *model.Configuration) (*model.Context, error) {
@@ -1358,9 +1358,11 @@ func headerVersion(rs io.ReadSeeker) (v *model.Version, eolCount int, offset int
 	if j < 0 {
 		return nil, 0, 0, ErrCorruptHeader
 	}
-	if s[j] == 0x0A {
+
+	switch s[j] {
+	case 0x0A:
 		eolCount = 1
-	} else if s[j] == 0x0D {
+	case 0x0D:
 		eolCount = 1
 		if (len(s) > j+1) && (s[j+1] == 0x0A) {
 			eolCount = 2
@@ -2242,6 +2244,7 @@ func resolveObject(c context.Context, ctx *model.Context, obj types.Object, offs
 	}
 }
 
+// ParseObjectWithContext parses an object at offset using c for cancellation.
 func ParseObjectWithContext(c context.Context, ctx *model.Context, offset int64, objNr, genNr int) (types.Object, error) {
 	if log.ReadEnabled() {
 		log.Read.Printf("ParseObject: begin, obj#%d, offset:%d\n", objNr, offset)

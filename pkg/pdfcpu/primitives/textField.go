@@ -65,6 +65,7 @@ type TextField struct {
 	Hide            bool
 }
 
+// SetFontID sets font ID.
 func (tf *TextField) SetFontID(s string) {
 	tf.fontID = s
 }
@@ -471,7 +472,7 @@ func (tf *TextField) renderN(xRefTable *model.XRefTable) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// unused
+// RefreshN.
 func (tf *TextField) RefreshN(xRefTable *model.XRefTable, indRef *types.IndirectRef) error {
 	bb, err := tf.renderN(xRefTable)
 	if err != nil {
@@ -902,6 +903,7 @@ func hasUTF(s string) bool {
 	return false
 }
 
+// NewTextField returns a new text field.
 func NewTextField(
 	ctx *model.Context,
 	d types.Dict,
@@ -1031,6 +1033,7 @@ func fontAttrs(ctx *model.Context, fd types.Dict, fontID, text string, fonts map
 	return fontID, name, lang, script, fontIndRef, nil
 }
 
+// EnsureTextFieldAP ensures text field ap.
 func EnsureTextFieldAP(ctx *model.Context, d types.Dict, text string, multiLine, comb bool, maxLen int, da *string, fonts map[string]types.IndirectRef) error {
 	ap := d.DictEntry("AP")
 	if ap == nil {

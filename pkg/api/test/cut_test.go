@@ -41,6 +41,7 @@ func testCut(t *testing.T, msg, inFile, outDir, outFile string, unit types.Displ
 	}
 }
 
+// TestCut verifies cut.
 func TestCut(t *testing.T) {
 	for _, tt := range []struct {
 		msg             string
@@ -111,6 +112,7 @@ func testNDown(t *testing.T, msg, inFile, outDir, outFile string, n int, unit ty
 	}
 }
 
+// TestNDown verifies n down.
 func TestNDown(t *testing.T) {
 	for _, tt := range []struct {
 		msg             string
@@ -172,6 +174,7 @@ func testPoster(t *testing.T, msg, inFile, outDir, outFile string, unit types.Di
 	}
 }
 
+// TestPoster verifies poster.
 func TestPoster(t *testing.T) {
 	for _, tt := range []struct {
 		msg             string

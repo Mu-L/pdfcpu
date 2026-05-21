@@ -24,6 +24,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/cli"
 )
 
+// TestListBookmarks verifies list bookmarks.
 func TestListBookmarks(t *testing.T) {
 	msg := "TestListBookmarks"
 	inDir := filepath.Join("..", "..", "samples", "bookmarks")
@@ -35,6 +36,7 @@ func TestListBookmarks(t *testing.T) {
 	}
 }
 
+// TestExportBookmarks verifies export bookmarks.
 func TestExportBookmarks(t *testing.T) {
 	msg := "TestExportBookmarks"
 	inDir := filepath.Join("..", "..", "samples", "bookmarks")
@@ -47,6 +49,7 @@ func TestExportBookmarks(t *testing.T) {
 	}
 }
 
+// TestImportBookmarks verifies import bookmarks.
 func TestImportBookmarks(t *testing.T) {
 	msg := "TestImportBookmarks"
 	inDir := filepath.Join("..", "..", "samples", "bookmarks")
@@ -69,6 +72,7 @@ func TestImportBookmarks(t *testing.T) {
 	}
 }
 
+// TestRemoveBookmarks verifies remove bookmarks.
 func TestRemoveBookmarks(t *testing.T) {
 	msg := "TestRemoveBookmarks"
 	inDir := filepath.Join("..", "..", "samples", "bookmarks")

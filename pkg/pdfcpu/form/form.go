@@ -44,6 +44,7 @@ const (
 	FTRadioButtonGroup
 )
 
+// String returns the string value of ft.
 func (ft FieldType) String() string {
 	var s string
 	switch ft {
@@ -93,6 +94,7 @@ type FieldMeta struct {
 	pageMax, defMax, valMax, idMax, nameMax, altNameMax int
 }
 
+// Fields returns the form field array.
 func Fields(xRefTable *model.XRefTable) (types.Array, error) {
 
 	if xRefTable.Form == nil {
@@ -1976,7 +1978,7 @@ func unlockPageFields(
 	return nil
 }
 
-// UnlockFields turns all form fields contained in fieldIDsOrNames writeable.
+// UnlockFormFields turns all form fields contained in fieldIDsOrNames writeable.
 func UnlockFormFields(ctx *model.Context, fieldIDsOrNames []string) (bool, error) {
 
 	xRefTable := ctx.XRefTable

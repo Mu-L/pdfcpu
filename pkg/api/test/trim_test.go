@@ -23,6 +23,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 )
 
+// TestTrim verifies trim.
 func TestTrim(t *testing.T) {
 	msg := "TestTrim"
 	fileName := "adobe_errata.pdf"

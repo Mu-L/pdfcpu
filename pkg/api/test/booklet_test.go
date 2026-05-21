@@ -53,6 +53,7 @@ func testBooklet(t *testing.T, msg string, inFiles []string, outFile string, sel
 	}
 }
 
+// TestBooklet verifies booklet creation.
 func TestBooklet(t *testing.T) {
 	outDir := filepath.Join("..", "..", "samples", "booklet")
 
@@ -290,6 +291,7 @@ func TestBooklet(t *testing.T) {
 	}
 }
 
+// TestBookletResize verifies booklet resizing.
 func TestBookletResize(t *testing.T) {
 	ctx, err := api.ReadContextFile(filepath.Join(inDir, "zineTest.pdf"))
 	if err != nil {

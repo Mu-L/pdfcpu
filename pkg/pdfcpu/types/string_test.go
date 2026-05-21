@@ -21,6 +21,7 @@ import (
 	"testing"
 )
 
+// TestByteForOctalString verifies byte for octal string.
 func TestByteForOctalString(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -61,6 +62,7 @@ func TestByteForOctalString(t *testing.T) {
 	}
 }
 
+// TestUnescapeStringWithOctal verifies unescape string with octal.
 func TestUnescapeStringWithOctal(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -108,6 +110,7 @@ func TestUnescapeStringWithOctal(t *testing.T) {
 	}
 }
 
+// TestDecodeName verifies decode name.
 func TestDecodeName(t *testing.T) {
 	tests := []struct {
 		input    string
@@ -175,6 +178,7 @@ func TestDecodeName(t *testing.T) {
 	}
 }
 
+// TestEncodeName verifies encode name.
 func TestEncodeName(t *testing.T) {
 	testcases := []struct {
 		Input    string

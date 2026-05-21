@@ -708,7 +708,7 @@ func createXRefStream(ctx *model.Context, i1, i2, i3 int, objNrs []int) ([]byte,
 	start := objNrs[0]
 	size := 0
 
-	for i := 0; i < len(objNrs); i++ {
+	for i := range objNrs {
 
 		j := objNrs[i]
 		entry := xRefTable.Table[j]

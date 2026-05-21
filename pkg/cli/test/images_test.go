@@ -36,6 +36,7 @@ func testUpdateImages(t *testing.T, msg string, inFile, imgFile, outFile string,
 	}
 }
 
+// TestUpdateImages verifies update images.
 func TestUpdateImages(t *testing.T) {
 	inDir := filepath.Join(samplesDir, "images")
 

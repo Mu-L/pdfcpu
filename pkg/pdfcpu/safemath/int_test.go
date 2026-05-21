@@ -21,18 +21,21 @@ import (
 	"testing"
 )
 
+// TestAddIntRejectsOverflow verifies integer addition overflow is rejected.
 func TestAddIntRejectsOverflow(t *testing.T) {
 	if _, err := AddInt(math.MaxInt, 1); err == nil {
 		t.Fatal("expected overflow")
 	}
 }
 
+// TestMultiplyIntRejectsOverflow verifies integer multiplication overflow is rejected.
 func TestMultiplyIntRejectsOverflow(t *testing.T) {
 	if _, err := MultiplyInt(math.MaxInt, 2); err == nil {
 		t.Fatal("expected overflow")
 	}
 }
 
+// TestMultiplyInt64RejectsOverflow verifies int64 multiplication overflow is rejected.
 func TestMultiplyInt64RejectsOverflow(t *testing.T) {
 	if _, err := MultiplyInt64(math.MaxInt64, 2); err == nil {
 		t.Fatal("expected overflow")

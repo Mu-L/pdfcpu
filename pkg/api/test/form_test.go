@@ -54,6 +54,7 @@ func listFormFieldsFile(t *testing.T, inFile string, conf *model.Configuration) 
 	return form.ListFormFields(ctx)
 }
 
+// TestListFormFields verifies list form fields.
 func TestListFormFields(t *testing.T) {
 
 	msg := "TestListFormFields"
@@ -69,6 +70,7 @@ func TestListFormFields(t *testing.T) {
 	}
 }
 
+// TestRemoveFormFields verifies remove form fields.
 func TestRemoveFormFields(t *testing.T) {
 
 	msg := "TestRemoveFormFields"
@@ -96,6 +98,7 @@ func TestRemoveFormFields(t *testing.T) {
 	}
 }
 
+// TestResetFormFields verifies reset form fields.
 func TestResetFormFields(t *testing.T) {
 
 	for _, tt := range []struct {
@@ -118,6 +121,7 @@ func TestResetFormFields(t *testing.T) {
 
 }
 
+// TestLockFormFields verifies lock form fields.
 func TestLockFormFields(t *testing.T) {
 
 	for _, tt := range []struct {
@@ -139,6 +143,7 @@ func TestLockFormFields(t *testing.T) {
 	}
 }
 
+// TestUnlockFormFields verifies unlock form fields.
 func TestUnlockFormFields(t *testing.T) {
 
 	for _, tt := range []struct {
@@ -160,6 +165,7 @@ func TestUnlockFormFields(t *testing.T) {
 	}
 }
 
+// TestExportForm verifies export form.
 func TestExportForm(t *testing.T) {
 
 	inDir := filepath.Join(samplesDir, "form", "demoSinglePage")
@@ -184,6 +190,7 @@ func TestExportForm(t *testing.T) {
 	}
 }
 
+// TestFillForm verifies fill form.
 func TestFillForm(t *testing.T) {
 
 	inDir := filepath.Join(samplesDir, "form", "demoSinglePage")
@@ -211,6 +218,7 @@ func TestFillForm(t *testing.T) {
 	}
 }
 
+// TestMultiFillFormJSON verifies multi fill form JSON.
 func TestMultiFillFormJSON(t *testing.T) {
 
 	inDir := filepath.Join(samplesDir, "form", "demoSinglePage")
@@ -233,6 +241,7 @@ func TestMultiFillFormJSON(t *testing.T) {
 	}
 }
 
+// TestMultiFillFormJSONMerged verifies multi fill form JSON merged.
 func TestMultiFillFormJSONMerged(t *testing.T) {
 
 	inDir := filepath.Join(samplesDir, "form", "demoSinglePage")
@@ -255,6 +264,7 @@ func TestMultiFillFormJSONMerged(t *testing.T) {
 	}
 }
 
+// TestMultiFillFormCSV verifies multi fill form CSV.
 func TestMultiFillFormCSV(t *testing.T) {
 
 	inDir := filepath.Join(samplesDir, "form", "demoSinglePage")
@@ -278,6 +288,7 @@ func TestMultiFillFormCSV(t *testing.T) {
 	}
 }
 
+// TestMultiFillFormCSVMerged verifies multi fill form CSV merged.
 func TestMultiFillFormCSVMerged(t *testing.T) {
 
 	inDir := filepath.Join(samplesDir, "form", "demoSinglePage")

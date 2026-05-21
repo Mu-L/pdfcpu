@@ -29,6 +29,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
+// TestAlternatingPageNumbersViaWatermarkMap verifies alternating page numbers via watermark map.
 func TestAlternatingPageNumbersViaWatermarkMap(t *testing.T) {
 	msg := "TestAlternatingPageNumbersViaWatermarkMap"
 	inFile := filepath.Join(inDir, "WaldenFull.pdf")
@@ -83,6 +84,7 @@ func TestAlternatingPageNumbersViaWatermarkMap(t *testing.T) {
 	}
 }
 
+// TestAlternatingPageNumbersViaWatermarkMapLowLevel verifies alternating page numbers via watermark map low level.
 func TestAlternatingPageNumbersViaWatermarkMapLowLevel(t *testing.T) {
 	msg := "TestAlternatingPageNumbersViaWatermarkMapLowLevel"
 	inFile := filepath.Join(inDir, "WaldenFull.pdf")
@@ -149,6 +151,7 @@ func TestAlternatingPageNumbersViaWatermarkMapLowLevel(t *testing.T) {
 	}
 }
 
+// TestAlternatingPageNumbersViaWatermarkSliceMap verifies alternating page numbers via watermark slice map.
 func TestAlternatingPageNumbersViaWatermarkSliceMap(t *testing.T) {
 	msg := "TestAlternatingPageNumbersViaWatermarkSliceMap"
 	inFile := filepath.Join(inDir, "WaldenFull.pdf")
@@ -224,6 +227,7 @@ func TestAlternatingPageNumbersViaWatermarkSliceMap(t *testing.T) {
 	}
 }
 
+// TestImagesTextAndPDFWMViaWatermarkMap verifies images text and pdfwm via watermark map.
 func TestImagesTextAndPDFWMViaWatermarkMap(t *testing.T) {
 	msg := "TestImagesTextAndPDFWMViaWatermarkMap"
 	inFile := filepath.Join(inDir, "WaldenFull.pdf")
@@ -280,6 +284,7 @@ func TestImagesTextAndPDFWMViaWatermarkMap(t *testing.T) {
 	}
 }
 
+// TestPdfSingleStampVariations verifies pdf single stamp variations.
 func TestPdfSingleStampVariations(t *testing.T) {
 	msg := "TestPdfSingleStampVariations"
 	inFile := filepath.Join(inDir, "zineTest.pdf")
@@ -327,6 +332,7 @@ func TestPdfSingleStampVariations(t *testing.T) {
 	}
 }
 
+// TestPdfMultiStampVariations verifies pdf multi stamp variations.
 func TestPdfMultiStampVariations(t *testing.T) {
 	msg := "TestPdfMultiStampVariations"
 	inFile := filepath.Join(inDir, "zineTest.pdf")

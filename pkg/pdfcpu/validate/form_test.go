@@ -25,6 +25,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
+// TestValidateFormFieldDictRejectsCycle verifies form field validation rejects cycles.
 func TestValidateFormFieldDictRejectsCycle(t *testing.T) {
 	ctx, err := model.NewContext(strings.NewReader(""), model.NewDefaultConfiguration())
 	if err != nil {

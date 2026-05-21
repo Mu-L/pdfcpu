@@ -49,6 +49,7 @@ func doTestParseObjectFail(parseString string, t *testing.T) {
 	}
 }
 
+// TestParseObject verifies parse object.
 func TestParseObject(t *testing.T) {
 
 	doTestParseObjectOK("null      ", t)

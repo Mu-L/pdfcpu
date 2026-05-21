@@ -53,6 +53,7 @@ func createPDF(t *testing.T, msg, inFile, inFileJSON, outFile string, conf *mode
 
 }
 
+// TestCreateSinglePageDemoFormsViaJson verifies create single page demo forms via json.
 func TestCreateSinglePageDemoFormsViaJson(t *testing.T) {
 
 	// Render single page demo forms for export, reset, lock, unlock and fill tests.

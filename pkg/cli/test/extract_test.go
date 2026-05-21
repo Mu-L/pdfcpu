@@ -23,6 +23,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/cli"
 )
 
+// TestExtractImagesCommand verifies extract images command.
 func TestExtractImagesCommand(t *testing.T) {
 	msg := "TestExtractImagesCommand"
 
@@ -46,6 +47,7 @@ func TestExtractImagesCommand(t *testing.T) {
 	}
 }
 
+// TestExtractFontsCommand verifies extract fonts command.
 func TestExtractFontsCommand(t *testing.T) {
 	msg := "TestExtractFontsCommand"
 
@@ -67,6 +69,7 @@ func TestExtractFontsCommand(t *testing.T) {
 	}
 }
 
+// TestExtractPagesCommand verifies extract pages command.
 func TestExtractPagesCommand(t *testing.T) {
 	msg := "TestExtractPagesCommand"
 	// Extract page #1 into outDir.
@@ -77,6 +80,7 @@ func TestExtractPagesCommand(t *testing.T) {
 	}
 }
 
+// TestExtractContentCommand verifies extract content command.
 func TestExtractContentCommand(t *testing.T) {
 	msg := "TestExtractContentCommand"
 	// Extract content of all pages into outDir.
@@ -87,6 +91,7 @@ func TestExtractContentCommand(t *testing.T) {
 	}
 }
 
+// TestExtractMetadataCommand verifies extract metadata command.
 func TestExtractMetadataCommand(t *testing.T) {
 	msg := "TestExtractMetadataCommand"
 	// Extract metadata into outDir.

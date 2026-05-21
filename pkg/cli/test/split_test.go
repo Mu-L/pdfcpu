@@ -24,7 +24,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
-// Split a test PDF file up into single page PDFs (using a split span of 1).
+// TestSplitCommand a test PDF file up into single page PDFs (using a split span of 1).
 func TestSplitCommand(t *testing.T) {
 	msg := "TestSplitCommand"
 	fileName := "Acroforms2.pdf"
@@ -39,7 +39,7 @@ func TestSplitCommand(t *testing.T) {
 	}
 }
 
-// Split a test PDF file up into PDFs with 2 pages each (using a split span of 2).
+// TestSplitBySpanCommand a test PDF file up into PDFs with 2 pages each (using a split span of 2).
 func TestSplitBySpanCommand(t *testing.T) {
 	msg := "TestSplitBySpanCommand"
 	fileName := "CenterOfWhy.pdf"
@@ -52,7 +52,7 @@ func TestSplitBySpanCommand(t *testing.T) {
 	}
 }
 
-// Split a PDF along its defined bookmarks on level 1 or 2
+// TestSplitByBookmarkCommand a PDF along its defined bookmarks on level 1 or 2.
 func TestSplitByBookmarkCommand(t *testing.T) {
 	msg := "TestSplitByBookmarkCommand"
 	fileName := "5116.DCT_Filter.pdf"
@@ -66,6 +66,7 @@ func TestSplitByBookmarkCommand(t *testing.T) {
 	}
 }
 
+// TestSplitByPageNrCommand verifies split by page nr command.
 func TestSplitByPageNrCommand(t *testing.T) {
 	msg := "TestSplitByPageNrCommand"
 	fileName := "5116.DCT_Filter.pdf"

@@ -53,6 +53,7 @@ func testOptimizeFile(t *testing.T, inFile, outFile string) {
 	}
 }
 
+// TestOptimizeCommand verifies optimize command.
 func TestOptimizeCommand(t *testing.T) {
 	for _, f := range allPDFs(t, inDir) {
 		inFile := filepath.Join(inDir, f)

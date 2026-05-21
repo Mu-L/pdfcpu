@@ -18,6 +18,7 @@ package log
 
 import "testing"
 
+// TestLog verifies log.
 func TestLog(t *testing.T) {
 
 	Debug.Printf("Test%s\n", "log")

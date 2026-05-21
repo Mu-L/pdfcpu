@@ -58,15 +58,17 @@ var cjkParms = map[string]cjk{
 	//"KORE": {"UniKS-UTF16-H", "KR", 9},
 }
 
+// SupportedScript returns true if s is a supported script.
 func SupportedScript(s string) bool {
 	return types.MemberOf(s, []string{"HANS", "HANT", "HIRA", "KANA", "JPAN", "HANG", "KORE"})
 }
 
-// CJKEncodings returns true for supported encodings.
+// CJKEncoding returns true for supported encodings.
 func CJKEncoding(s string) bool {
 	return types.MemberOf(s, []string{"UniGB-UTF16-H", "UniCNS-UTF16-H", "UniJIS-UTF16-H", "UniKS-UTF16-H"})
 }
 
+// ScriptForEncoding returns the script for encoding.
 func ScriptForEncoding(enc string) string {
 	for k, v := range cjkParms {
 		if v.encoding == enc {
@@ -184,6 +186,7 @@ func ttfSubFontFile(xRefTable *model.XRefTable, fontName string, indRef *types.I
 	return indRef, nil
 }
 
+// PDFDocEncoding returns an indirect reference to a new PDF doc encoding dict.
 func PDFDocEncoding(xRefTable *model.XRefTable) (*types.IndirectRef, error) {
 	arr := types.Array{
 		types.Integer(24),
@@ -361,7 +364,7 @@ func CIDFontDescriptor(xRefTable *model.XRefTable, ttf font.TTFLight, fontName, 
 	return xRefTable.IndRefForNewObject(d)
 }
 
-// FontDescriptor returns a TrueType font descriptor describing font’s default metrics other than its glyph widths.
+// NewFontDescriptor returns a TrueType font descriptor describing font’s default metrics other than its glyph widths.
 func NewFontDescriptor(xRefTable *model.XRefTable, ttf font.TTFLight, fontName, fontLang string) (*types.IndirectRef, error) {
 	fontFile, err := ttfFontFile(xRefTable, fontName)
 	if err != nil {
@@ -1232,6 +1235,7 @@ func FontDescriptor(xRefTable *model.XRefTable, fontDict types.Dict, objNr int) 
 	return d, nil
 }
 
+// Embedded returns true if the font represented by fontDict is embedded.
 func Embedded(xRefTable *model.XRefTable, fontDict types.Dict, objNr int) (bool, error) {
 	fd, err := FontDescriptor(xRefTable, fontDict, objNr)
 	if err != nil {

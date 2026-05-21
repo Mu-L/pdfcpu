@@ -176,6 +176,7 @@ func testEncryption(t *testing.T, fileName string, alg string, keyLength int) {
 	}
 }
 
+// TestEncryption verifies encryption.
 func TestEncryption(t *testing.T) {
 	for _, fileName := range []string{
 		"5116.DCT_Filter.pdf",
@@ -189,6 +190,7 @@ func TestEncryption(t *testing.T) {
 	}
 }
 
+// TestPDF20Encryption verifies pdf20 encryption.
 func TestPDF20Encryption(t *testing.T) {
 	// PDF 2.0 encryption assumes aes/256.
 	for _, fileName := range []string{
@@ -205,6 +207,7 @@ func TestPDF20Encryption(t *testing.T) {
 	}
 }
 
+// TestSetPermissions verifies set permissions.
 func TestSetPermissions(t *testing.T) {
 	msg := "TestSetPermissions"
 	inFile := filepath.Join(inDir, "5116.DCT_Filter.pdf")

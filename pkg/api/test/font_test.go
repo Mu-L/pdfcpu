@@ -95,6 +95,8 @@ func createCoreFontDemoPage(xRefTable *model.XRefTable, w, h int, fontName strin
 	writeCoreFontDemoContent(xRefTable, p, fontName)
 	return p
 }
+
+// TestCoreFontDemoPDF verifies core font demo PDF.
 func TestCoreFontDemoPDF(t *testing.T) {
 	msg := "TestCoreFontDemoPDF"
 	w, h := 600, 600
@@ -116,6 +118,7 @@ func TestCoreFontDemoPDF(t *testing.T) {
 	}
 }
 
+// TestUserFontDemoPDF verifies user font demo PDF.
 func TestUserFontDemoPDF(t *testing.T) {
 	msg := "TestUserFontDemoPDF"
 

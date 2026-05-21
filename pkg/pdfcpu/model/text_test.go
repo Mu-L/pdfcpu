@@ -18,6 +18,7 @@ package model
 
 import "testing"
 
+// TestWordWrap verifies word wrap.
 func TestWordWrap(t *testing.T) {
 	testcases := []struct {
 		FontName       string

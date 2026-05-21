@@ -52,6 +52,7 @@ var rootCmd = &cobra.Command{
 	SilenceErrors: true,
 }
 
+// Execute runs the root command.
 func Execute() error {
 	return rootCmd.Execute()
 }

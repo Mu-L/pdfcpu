@@ -129,6 +129,7 @@ func (n *Node) AppendToNames(k string, v types.Object) {
 
 type NameMap map[string][]types.Dict
 
+// Add adds key k and value v to n.
 func (m NameMap) Add(k string, d types.Dict) {
 	dd, ok := m[k]
 	if !ok {
@@ -615,6 +616,7 @@ func (n Node) KeyList() ([]string, error) {
 
 }
 
+// String returns the string value of n.
 func (n Node) String() string {
 	a := []string{}
 

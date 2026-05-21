@@ -66,6 +66,7 @@ type ttf struct {
 	FontFile           []byte
 }
 
+// String returns the string value of fd.
 func (fd ttf) String() string {
 	return fmt.Sprintf(`
  PostscriptName = %s
@@ -105,18 +106,22 @@ func (fd ttf) toPDFGlyphSpace(i int) int {
 
 type myUint32 []uint32
 
+// Len returns the number of uint32 values.
 func (f myUint32) Len() int {
 	return len(f)
 }
 
+// Less reports whether value i sorts before value j.
 func (f myUint32) Less(i, j int) bool {
 	return f[i] < f[j]
 }
 
+// Swap swaps values i and j.
 func (f myUint32) Swap(i, j int) {
 	f[i], f[j] = f[j], f[i]
 }
 
+// PrintChars prints the font characters.
 func (fd ttf) PrintChars() string {
 	var min = uint16(0xFFFF)
 	var max uint16
@@ -212,7 +217,7 @@ func uint32ToBigEndianBytes(i uint32) []byte {
 
 func utf16BEToString(bb []byte) string {
 	buf := make([]uint16, len(bb)/2)
-	for i := 0; i < len(buf); i++ {
+	for i := range buf {
 		buf[i] = binary.BigEndian.Uint16(bb[2*i:])
 	}
 	return string(utf16.Decode(buf))
@@ -303,7 +308,7 @@ func (t table) parseNamingTable(fd *ttf) error {
 	stringOffset := t.uint16(4)
 	var nameID uint16
 	baseOff := 6
-	for i := 0; i < count; i++ {
+	for i := range count {
 		recOff := baseOff + i*12
 		pf := t.uint16(recOff)
 		enc := t.uint16(recOff + 2)
@@ -395,7 +400,7 @@ func (t table) parseCMapFormat4(fd *ttf) error {
 	rangeOff := deltaOff + 2*segCount
 
 	count := 0
-	for i := 0; i < segCount; i++ {
+	for i := range segCount {
 		sc := t.uint16(startOff + i*2)
 		startCode := uint32(sc)
 		if fd.FirstChar == 0 {
@@ -434,7 +439,7 @@ func (t table) parseCMapFormat12(fd *ttf) error {
 		lowestStartCode uint32
 		prevCode        uint32
 	)
-	for i := 0; i < numGroups; i++ {
+	for i := range numGroups {
 		base := off + i*12
 		startCode := t.uint32(base)
 		if lowestStartCode == 0 {
@@ -514,7 +519,7 @@ func (t table) parseCharToGlyphMappingTable(fd *ttf) error {
 func calcTableChecksum(tag string, b []byte) uint32 {
 	sum := uint32(0)
 	c := (len(b) + 3) / 4
-	for i := 0; i < c; i++ {
+	for i := range c {
 		if tag == "head" && i == 2 {
 			continue
 		}
@@ -564,7 +569,7 @@ func headerAndTables(fn string, r io.ReaderAt, baseOff int64) ([]byte, map[strin
 	byteCount := uint32(12)
 	tables := map[string]*table{}
 
-	for j := 0; j < c; j++ {
+	for j := range c {
 		off := j * 16
 		b1 := b[off : off+16]
 		tag := string(b1[:4])
@@ -726,7 +731,7 @@ func InstallTrueTypeCollection(fontDir, fn string) error {
 	}
 
 	// Process contained fonts.
-	for i := 0; i < c; i++ {
+	for i := range c {
 		off := int64(binary.BigEndian.Uint32(b[i*4:]))
 		header, tables, err := headerAndTables(fn, f, off)
 		if err != nil {
@@ -768,7 +773,7 @@ func InstallFontFromBytes(fontDir, fontName string, bb []byte) error {
 func ttfTables(tableCount int, bb []byte) (map[string]*table, error) {
 	tables := map[string]*table{}
 	b := bb[12:]
-	for j := 0; j < tableCount; j++ {
+	for j := range tableCount {
 		off := j * 16
 		b1 := b[off : off+16]
 		tag := string(b1[:4])

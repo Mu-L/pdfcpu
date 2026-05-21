@@ -51,6 +51,7 @@ func (f ascii85Decode) Decode(r io.Reader) (io.Reader, error) {
 	return f.DecodeLength(r, -1)
 }
 
+// DecodeLength implements decoding for an ASCII85Decode filter with a maximum output length.
 func (f ascii85Decode) DecodeLength(r io.Reader, maxLen int64) (io.Reader, error) {
 
 	bb, err := getReaderBytes(r)

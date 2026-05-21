@@ -98,6 +98,7 @@ func DefaultImportConfig() *Import {
 	}
 }
 
+// String returns the string value of imp.
 func (imp Import) String() string {
 
 	sc := "relative"
@@ -118,6 +119,7 @@ func parsePageFormatImp(s string, imp *Import) (err error) {
 	return err
 }
 
+// ParsePageDim parses page dim.
 func ParsePageDim(v string, u types.DisplayUnit) (*types.Dim, string, error) {
 
 	ss := strings.Split(v, " ")

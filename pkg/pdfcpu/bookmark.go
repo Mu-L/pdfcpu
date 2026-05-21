@@ -339,6 +339,7 @@ func bookmarkList(bms []Bookmark, level, maxDepth int) ([]string, error) {
 	return ss, nil
 }
 
+// BookmarkList returns a formatted bookmark list for ctx.
 func BookmarkList(ctx *model.Context) ([]string, error) {
 
 	bms, err := Bookmarks(ctx)
@@ -353,6 +354,7 @@ func BookmarkList(ctx *model.Context) ([]string, error) {
 	return bookmarkList(bms, 0, ctx.XRefTable.MaxRecursionDepth())
 }
 
+// ExportBookmarks returns the bookmark tree for ctx.
 func ExportBookmarks(ctx *model.Context, source string) (*BookmarkTree, error) {
 	bms, err := Bookmarks(ctx)
 	if err != nil {
@@ -369,6 +371,7 @@ func ExportBookmarks(ctx *model.Context, source string) (*BookmarkTree, error) {
 	return &bmTree, nil
 }
 
+// ExportBookmarksJSON writes the bookmark tree for ctx as JSON.
 func ExportBookmarksJSON(ctx *model.Context, source string, w io.Writer) (bool, error) {
 	bookmarkTree, err := ExportBookmarks(ctx, source)
 	if err != nil || bookmarkTree == nil {

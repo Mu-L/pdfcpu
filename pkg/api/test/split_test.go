@@ -24,6 +24,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
 )
 
+// TestSplitSpan1 verifies split span1.
 func TestSplitSpan1(t *testing.T) {
 	msg := "TestSplitSpan1"
 	fileName := "Acroforms2.pdf"
@@ -36,6 +37,7 @@ func TestSplitSpan1(t *testing.T) {
 	}
 }
 
+// TestSplitSpan2 verifies split span2.
 func TestSplitSpan2(t *testing.T) {
 	msg := "TestSplitSpan2"
 	fileName := "Acroforms2.pdf"
@@ -48,6 +50,7 @@ func TestSplitSpan2(t *testing.T) {
 	}
 }
 
+// TestSplitByBookmark verifies split by bookmark.
 func TestSplitByBookmark(t *testing.T) {
 	msg := "TestSplitByBookmark"
 	fileName := "5116.DCT_Filter.pdf"
@@ -60,6 +63,7 @@ func TestSplitByBookmark(t *testing.T) {
 	}
 }
 
+// TestSplitByPageNr verifies split by page nr.
 func TestSplitByPageNr(t *testing.T) {
 	msg := "TestSplitByPageNr"
 	fileName := "5116.DCT_Filter.pdf"
@@ -75,6 +79,7 @@ func TestSplitByPageNr(t *testing.T) {
 	}
 }
 
+// TestSplitLowLevel verifies split low level.
 func TestSplitLowLevel(t *testing.T) {
 	msg := "TestSplitLowLevel"
 	inFile := filepath.Join(inDir, "TheGoProgrammingLanguageCh1.pdf")

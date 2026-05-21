@@ -33,6 +33,7 @@ func nestedBookmarks(depth int) []Bookmark {
 	return bms
 }
 
+// TestBookmarkListRejectsRecursionDepth verifies bookmark listing respects recursion limits.
 func TestBookmarkListRejectsRecursionDepth(t *testing.T) {
 	_, err := bookmarkList(nestedBookmarks(2), 0, 1)
 	if !errors.Is(err, model.ErrMaxRecursionDepthExceeded) {
@@ -40,6 +41,7 @@ func TestBookmarkListRejectsRecursionDepth(t *testing.T) {
 	}
 }
 
+// TestCreateOutlineItemDictRejectsRecursionDepth verifies outline creation respects recursion limits.
 func TestCreateOutlineItemDictRejectsRecursionDepth(t *testing.T) {
 	_, _, _, _, err := createOutlineItemDictDepth(nil, nestedBookmarks(0), nil, nil, model.DefaultResourceLimits().MaxRecursionDepth+1)
 	if !errors.Is(err, model.ErrMaxRecursionDepthExceeded) {
@@ -67,6 +69,7 @@ func cyclicBookmarkContext(t *testing.T) *model.Context {
 	return ctx
 }
 
+// TestBookmarksForOutlineItemRejectsCycle verifies outline traversal rejects cycles.
 func TestBookmarksForOutlineItemRejectsCycle(t *testing.T) {
 	ctx := cyclicBookmarkContext(t)
 
@@ -76,6 +79,7 @@ func TestBookmarksForOutlineItemRejectsCycle(t *testing.T) {
 	}
 }
 
+// TestRemoveNamedDestsRejectsCycle verifies named destination removal rejects cycles.
 func TestRemoveNamedDestsRejectsCycle(t *testing.T) {
 	ctx := cyclicBookmarkContext(t)
 

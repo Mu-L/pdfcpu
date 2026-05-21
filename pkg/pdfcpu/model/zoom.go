@@ -34,6 +34,7 @@ type Zoom struct {
 	BgColor *color.SimpleColor // background color when zooming out
 }
 
+// EnsureFactorAndMargins ensures factor and margins.
 func (z *Zoom) EnsureFactorAndMargins(w, h float64) error {
 	if z.Factor > 0 {
 		z.HMargin = (w - (w * z.Factor)) / 2

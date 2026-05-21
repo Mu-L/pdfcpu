@@ -343,6 +343,7 @@ var bookletTestCases = []pageOrderResults{
 	},
 }
 
+// TestBookletPageOrder verifies booklet page order.
 func TestBookletPageOrder(t *testing.T) {
 	for _, test := range bookletTestCases {
 		t.Run(test.id, func(tt *testing.T) {

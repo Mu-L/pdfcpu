@@ -23,6 +23,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/cli"
 )
 
+// TestPortfolioCommand verifies portfolio command.
 func TestPortfolioCommand(t *testing.T) {
 	msg := "TestPortfolioCommand"
 

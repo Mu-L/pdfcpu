@@ -34,6 +34,7 @@ func doTestParseArrayFail(parseString string, t *testing.T) {
 	}
 }
 
+// TestParseArray verifies parse array.
 func TestParseArray(t *testing.T) {
 
 	// 10000 x null

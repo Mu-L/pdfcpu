@@ -84,6 +84,7 @@ func (rc *ReadContext) logReadContext(logStr *[]string) {
 	}
 }
 
+// String returns the string value of ctx.
 func (ctx *Context) String() string {
 
 	var logStr []string
@@ -159,6 +160,7 @@ func (ctx *Context) String() string {
 	return strings.Join(logStr, "")
 }
 
+// UnitString returns a string representation for ctx.Unit.
 func (ctx *Context) UnitString() string {
 	u := "points"
 	switch ctx.Unit {

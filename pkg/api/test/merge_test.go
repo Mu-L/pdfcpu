@@ -26,6 +26,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 )
 
+// TestMergeCreateNew verifies merge create new.
 func TestMergeCreateNew(t *testing.T) {
 	msg := "TestMergeCreate"
 	inFiles := []string{
@@ -59,6 +60,7 @@ func TestMergeCreateNew(t *testing.T) {
 	}
 }
 
+// TestMergeCreateZipped verifies merge create zipped.
 func TestMergeCreateZipped(t *testing.T) {
 	msg := "TestMergeCreateZipped"
 
@@ -77,6 +79,7 @@ func TestMergeCreateZipped(t *testing.T) {
 	}
 }
 
+// TestMergeAppendNew verifies merge append new.
 func TestMergeAppendNew(t *testing.T) {
 	msg := "TestMergeAppend"
 	inFiles := []string{
@@ -110,6 +113,7 @@ func TestMergeAppendNew(t *testing.T) {
 	}
 }
 
+// TestMergeToBufNew verifies merge to buf new.
 func TestMergeToBufNew(t *testing.T) {
 	msg := "TestMergeToBuf"
 	inFiles := []string{
@@ -135,6 +139,7 @@ func TestMergeToBufNew(t *testing.T) {
 	}
 }
 
+// TestMergeRaw verifies merge raw.
 func TestMergeRaw(t *testing.T) {
 	msg := "TestMergeRaw"
 	inFiles := []string{

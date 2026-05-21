@@ -30,6 +30,7 @@ func logResults(ss []string) {
 	}
 }
 
+// TestValidateSignature_X509_RSA_SHA1 verifies validate signature x509 RSA sha1.
 func TestValidateSignature_X509_RSA_SHA1(t *testing.T) {
 	msg := "ValidateSignature_X509_RSA_SHA1"
 
@@ -48,6 +49,7 @@ func TestValidateSignature_X509_RSA_SHA1(t *testing.T) {
 	}
 }
 
+// TestValidateSignature_PKCS7_SHA1 verifies validate signature pkcs7 sha1.
 func TestValidateSignature_PKCS7_SHA1(t *testing.T) {
 	msg := "ValidateSignature_PKCS7_SHA1"
 
@@ -66,6 +68,7 @@ func TestValidateSignature_PKCS7_SHA1(t *testing.T) {
 	}
 }
 
+// TestValidateSignature_PKCS7_Detached verifies validate signature pkcs7 detached.
 func TestValidateSignature_PKCS7_Detached(t *testing.T) {
 	msg := "ValidateSignature_PKCS7_Detached"
 
@@ -84,6 +87,7 @@ func TestValidateSignature_PKCS7_Detached(t *testing.T) {
 	}
 }
 
+// TestValidateSignature_ETSI_CAdES_Detached verifies validate signature ETSI c ad es detached.
 func TestValidateSignature_ETSI_CAdES_Detached(t *testing.T) {
 	msg := "ValidateSignature_ETSI_CAdES_Detached"
 
@@ -102,6 +106,7 @@ func TestValidateSignature_ETSI_CAdES_Detached(t *testing.T) {
 	}
 }
 
+// TestRemoveSignatures verifies remove signatures.
 func TestRemoveSignatures(t *testing.T) {
 	msg := "TestRemoveSignatures"
 

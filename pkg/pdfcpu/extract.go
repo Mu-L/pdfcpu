@@ -591,7 +591,7 @@ func ExtractPageFonts(ctx *model.Context, pageNr int, objNrs, skipped types.IntS
 	return ff, nil
 }
 
-// ExtractPageFonts extracts all form fonts.
+// ExtractFormFonts extracts all form fonts.
 func ExtractFormFonts(ctx *model.Context) ([]Font, error) {
 	ff := []Font{}
 	for i, fontObject := range ctx.Optimize.FormFontObjects {

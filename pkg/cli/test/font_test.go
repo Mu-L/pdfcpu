@@ -23,6 +23,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/cli"
 )
 
+// TestInstallFontsCommand verifies install fonts command.
 func TestInstallFontsCommand(t *testing.T) {
 	msg := "TestInstallFontsCommand"
 	userFontName := filepath.Join(fontDir, "Roboto-Regular.ttf")
@@ -32,6 +33,7 @@ func TestInstallFontsCommand(t *testing.T) {
 	}
 }
 
+// TestInstallTTCFontsCommand verifies install ttc fonts command.
 func TestInstallTTCFontsCommand(t *testing.T) {
 	msg := "TestInstallTTCFontsCommand"
 	userFontName := filepath.Join(fontDir, "Songti.ttc")
@@ -41,6 +43,7 @@ func TestInstallTTCFontsCommand(t *testing.T) {
 	}
 }
 
+// TestListFontsCommand verifies list fonts command.
 func TestListFontsCommand(t *testing.T) {
 	msg := "TestListFontsCommand"
 	cmd := cli.ListFontsCommand(conf)
@@ -49,6 +52,7 @@ func TestListFontsCommand(t *testing.T) {
 	}
 }
 
+// TestCreateCheatSheetsFontsCommand verifies create cheat sheets fonts command.
 func TestCreateCheatSheetsFontsCommand(t *testing.T) {
 	msg := "TestCreateCheatSheetsFontsCommand"
 	userFontName := filepath.Join(fontDir, "Songti.ttc")

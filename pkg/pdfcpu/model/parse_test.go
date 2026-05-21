@@ -24,6 +24,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
+// TestDecodeNameHexInvalid verifies invalid name hex escapes are rejected.
 func TestDecodeNameHexInvalid(t *testing.T) {
 	testcases := []string{
 		"#",
@@ -40,6 +41,7 @@ func TestDecodeNameHexInvalid(t *testing.T) {
 	}
 }
 
+// TestParseObjectContextRejectsRecursionDepth verifies object parsing respects recursion limits.
 func TestParseObjectContextRejectsRecursionDepth(t *testing.T) {
 	s := "[[[1]]]"
 
@@ -49,6 +51,7 @@ func TestParseObjectContextRejectsRecursionDepth(t *testing.T) {
 	}
 }
 
+// TestProcessRefCountsRejectsRecursionDepth verifies ref count processing respects recursion limits.
 func TestProcessRefCountsRejectsRecursionDepth(t *testing.T) {
 	conf := NewDefaultConfiguration()
 	conf.Limits.MaxRecursionDepth = 1
@@ -62,6 +65,7 @@ func TestProcessRefCountsRejectsRecursionDepth(t *testing.T) {
 	}
 }
 
+// TestPageTreeLookupRejectsRecursionDepth verifies page tree lookup respects recursion limits.
 func TestPageTreeLookupRejectsRecursionDepth(t *testing.T) {
 	xRefTable := newXRefTable(NewDefaultConfiguration())
 	maxDepth := xRefTable.MaxRecursionDepth()
@@ -80,6 +84,7 @@ func TestPageTreeLookupRejectsRecursionDepth(t *testing.T) {
 	}
 }
 
+// TestPageTreeMutationRejectsRecursionDepth verifies page tree mutation respects recursion limits.
 func TestPageTreeMutationRejectsRecursionDepth(t *testing.T) {
 	xRefTable := newXRefTable(NewDefaultConfiguration())
 	maxDepth := xRefTable.MaxRecursionDepth()
@@ -98,6 +103,7 @@ func TestPageTreeMutationRejectsRecursionDepth(t *testing.T) {
 	}
 }
 
+// TestPageTreeRejectsCycle verifies page tree traversal rejects cycles.
 func TestPageTreeRejectsCycle(t *testing.T) {
 	xRefTable := newXRefTable(NewDefaultConfiguration())
 	ir := types.NewIndirectRef(1, 0)
@@ -117,6 +123,7 @@ func TestPageTreeRejectsCycle(t *testing.T) {
 	}
 }
 
+// TestPageTreeRejectsDuplicateNode verifies page tree traversal rejects duplicate nodes.
 func TestPageTreeRejectsDuplicateNode(t *testing.T) {
 	xRefTable := newXRefTable(NewDefaultConfiguration())
 	root := types.NewIndirectRef(1, 0)
@@ -142,6 +149,7 @@ func TestPageTreeRejectsDuplicateNode(t *testing.T) {
 	}
 }
 
+// TestParseXRefStreamDictRejectsSizeLimit verifies xref stream parsing enforces size limits.
 func TestParseXRefStreamDictRejectsSizeLimit(t *testing.T) {
 	sd := types.StreamDict{
 		Dict: types.Dict{
@@ -161,6 +169,7 @@ func TestParseXRefStreamDictRejectsSizeLimit(t *testing.T) {
 	}
 }
 
+// TestObjectStreamDictRejectsLimits verifies object stream parsing enforces resource limits.
 func TestObjectStreamDictRejectsLimits(t *testing.T) {
 	sd := types.StreamDict{
 		Dict: types.Dict{
@@ -188,6 +197,7 @@ func TestObjectStreamDictRejectsLimits(t *testing.T) {
 	}
 }
 
+// TestDecodeNameHexValid verifies valid name hex escapes are decoded.
 func TestDecodeNameHexValid(t *testing.T) {
 	testcases := []struct {
 		Input    string
@@ -219,6 +229,7 @@ func TestDecodeNameHexValid(t *testing.T) {
 	}
 }
 
+// TestDetectNonEscaped verifies detection of non-escaped delimiters.
 func TestDetectNonEscaped(t *testing.T) {
 	testcases := []struct {
 		input string
@@ -240,6 +251,7 @@ func TestDetectNonEscaped(t *testing.T) {
 	}
 }
 
+// TestDetectKeywords verifies keyword detection.
 func TestDetectKeywords(t *testing.T) {
 	msg := "detectKeywords"
 

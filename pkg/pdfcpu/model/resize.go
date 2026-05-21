@@ -36,6 +36,7 @@ type Resize struct {
 	BgColor       *color.SimpleColor // background color
 }
 
+// EnforceOrientation enforce orientation.
 func (r Resize) EnforceOrientation() bool {
 	return r.EnforceOrient || strings.HasSuffix(r.PageSize, "P") || strings.HasSuffix(r.PageSize, "L")
 }

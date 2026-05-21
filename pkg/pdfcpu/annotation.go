@@ -238,6 +238,7 @@ func Annotation(xRefTable *model.XRefTable, d types.Dict) (model.AnnotationRende
 	return ann, nil
 }
 
+// AnnotationsForSelectedPages annotations for selected pages.
 func AnnotationsForSelectedPages(ctx *model.Context, selectedPages types.IntSet) map[int]model.PgAnnots {
 
 	var pageNrs []int
@@ -517,6 +518,7 @@ func AddAnnotation(
 	return annotIndRef, d, nil
 }
 
+// AddAnnotationToPage adds annotation to page.
 func AddAnnotationToPage(ctx *model.Context, pageNr int, ar model.AnnotationRenderer, incr bool) (*types.IndirectRef, types.Dict, error) {
 	pageDictIndRef, err := ctx.PageDictIndRef(pageNr)
 	if err != nil {

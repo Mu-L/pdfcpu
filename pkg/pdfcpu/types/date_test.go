@@ -53,6 +53,7 @@ func doParseDateTimeFail(s string, t *testing.T) {
 
 }
 
+// TestParseDateTime verifies parse date time.
 func TestParseDateTime(t *testing.T) {
 
 	// (D:YYYYMMDDHHmmSSOHH'mm)
@@ -162,6 +163,7 @@ func TestParseDateTime(t *testing.T) {
 	doParseDateTimeRelaxedOK(s, t)
 }
 
+// TestWriteDateTime verifies write date time.
 func TestWriteDateTime(t *testing.T) {
 
 	now := DateString(time.Now())

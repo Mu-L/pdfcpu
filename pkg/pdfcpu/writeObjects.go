@@ -33,7 +33,7 @@ const (
 )
 
 func writeCommentLine(w *model.WriteContext, comment string) (int, error) {
-	return w.WriteString(fmt.Sprintf("%%%s%s", comment, w.Eol))
+	return fmt.Fprintf(w, "%%%s%s", comment, w.Eol)
 }
 
 func writeHeader(w *model.WriteContext, v model.Version) error {
@@ -66,7 +66,7 @@ func writeObjectHeader(w *model.WriteContext, objNr, genNr int) (int, error) {
 }
 
 func writeObjectTrailer(w *model.WriteContext) (int, error) {
-	return w.WriteString(fmt.Sprintf("%sendobj%s", w.Eol, w.Eol))
+	return fmt.Fprintf(w, "%sendobj%s", w.Eol, w.Eol)
 }
 
 func startObjectStream(ctx *model.Context) error {
@@ -457,7 +457,7 @@ func writeArrayObject(ctx *model.Context, objNumber, genNumber int, a types.Arra
 }
 
 func writeStream(w *model.WriteContext, sd types.StreamDict) (int64, error) {
-	b, err := w.WriteString(fmt.Sprintf("%sstream%s", w.Eol, w.Eol))
+	b, err := fmt.Fprintf(w, "%sstream%s", w.Eol, w.Eol)
 	if err != nil {
 		return 0, errors.Wrapf(err, "writeStream: failed to write raw content")
 	}
@@ -470,7 +470,7 @@ func writeStream(w *model.WriteContext, sd types.StreamDict) (int64, error) {
 		return 0, errors.Errorf("writeStream: failed to write raw content: %d bytes written - streamlength:%d", c, *sd.StreamLength)
 	}
 
-	e, err := w.WriteString(fmt.Sprintf("%sendstream", w.Eol))
+	e, err := fmt.Fprintf(w, "%sendstream", w.Eol)
 	if err != nil {
 		return 0, errors.Wrapf(err, "writeStream: failed to write raw content")
 	}

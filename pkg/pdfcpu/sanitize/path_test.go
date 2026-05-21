@@ -18,6 +18,7 @@ package sanitize
 
 import "testing"
 
+// TestPath verifies path sanitization.
 func TestPath(t *testing.T) {
 	for _, tt := range []struct {
 		in   string
@@ -54,6 +55,7 @@ func TestPath(t *testing.T) {
 	}
 }
 
+// TestPathRejectsNoUsableFilename verifies unusable filenames are rejected.
 func TestPathRejectsNoUsableFilename(t *testing.T) {
 	for _, s := range []string{"", ".", "..", "../.."} {
 		if _, err := Path(s); err == nil {
@@ -62,12 +64,14 @@ func TestPathRejectsNoUsableFilename(t *testing.T) {
 	}
 }
 
+// TestPathRejectsNUL verifies NUL bytes are rejected.
 func TestPathRejectsNUL(t *testing.T) {
 	if _, err := Path("bad\x00name"); err == nil {
 		t.Fatal("expected NUL byte error")
 	}
 }
 
+// TestPathOrUsesFallback verifies fallback path behavior.
 func TestPathOrUsesFallback(t *testing.T) {
 	if got := PathOr("", "attachment"); got != "attachment" {
 		t.Fatalf("PathOr returned %q, want attachment", got)

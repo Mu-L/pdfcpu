@@ -56,7 +56,7 @@ func ViewerPreferences(rs io.ReadSeeker, conf *model.Configuration) (vp *model.V
 	return ctx.ViewerPref, &version, nil
 }
 
-// ViewerPreferences returns inFile's viewer preferences.
+// ViewerPreferencesFile returns inFile's viewer preferences.
 func ViewerPreferencesFile(inFile string, all bool, conf *model.Configuration) (*model.ViewerPreferences, error) {
 	f, err := os.Open(inFile)
 	if err != nil {
@@ -111,7 +111,7 @@ func ListViewerPreferences(rs io.ReadSeeker, all bool, conf *model.Configuration
 	return vp1.List(), nil
 }
 
-// ListViewerPreferencesFile lists inFile's viewer preferences in JSON.
+// ListViewerPreferencesFileJSON lists inFile's viewer preferences in JSON.
 func ListViewerPreferencesFileJSON(inFile string, all bool, conf *model.Configuration) ([]string, error) {
 	f, err := os.Open(inFile)
 	if err != nil {

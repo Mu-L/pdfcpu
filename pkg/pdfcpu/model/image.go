@@ -934,6 +934,7 @@ func CreateImageResources(xRefTable *XRefTable, r io.Reader, gray, sepia bool) (
 	return createImageResources(xRefTable, c, bb, gray, sepia)
 }
 
+// CreateImageStreamDict creates an image stream dictionary.
 func CreateImageStreamDict(xRefTable *XRefTable, r io.Reader) (*types.StreamDict, int, int, error) {
 	var bb bytes.Buffer
 	if _, err := io.Copy(&bb, r); err != nil {

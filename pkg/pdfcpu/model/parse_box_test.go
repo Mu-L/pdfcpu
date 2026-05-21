@@ -40,6 +40,7 @@ func doTestParseBoxListFail(s string, t *testing.T) {
 	}
 }
 
+// TestParseBoxList verifies parse box list.
 func TestParseBoxList(t *testing.T) {
 	doTestParseBoxListOK("", t)
 	doTestParseBoxListOK("m ", t)
@@ -72,6 +73,7 @@ func doTestParseBoxFail(s string, t *testing.T) {
 	}
 }
 
+// TestParseBox verifies parse box.
 func TestParseBox(t *testing.T) {
 
 	// Box by rectangle.
@@ -158,6 +160,7 @@ func doTestParsePageBoundariesFail(s string, t *testing.T) {
 	}
 }
 
+// TestParsePageBoundaries verifies parse page boundaries.
 func TestParsePageBoundaries(t *testing.T) {
 	doTestParsePageBoundariesOK("trim:10", t)
 	doTestParsePageBoundariesOK("media:[0 0 200 200], crop:10 20, trim:crop, art:bleed, bleed:art", t)

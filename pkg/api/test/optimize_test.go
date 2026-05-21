@@ -23,6 +23,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 )
 
+// TestOptimize verifies optimize.
 func TestOptimize(t *testing.T) {
 	msg := "TestOptimize"
 	fileName := "Acroforms2.pdf"

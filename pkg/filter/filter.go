@@ -33,9 +33,9 @@ const (
 	LZW       = "LZWDecode"
 	Flate     = "FlateDecode"
 	CCITTFax  = "CCITTFaxDecode"
-	JBIG2     = "JBIG2Decode"
+	JBIG2     = "JBIG2Decode" // TODO
 	DCT       = "DCTDecode"
-	JPX       = "JPXDecode"
+	JPX       = "JPXDecode" // TODO
 )
 
 // ErrUnsupportedFilter signals unsupported filter encountered.
@@ -117,6 +117,7 @@ type baseFilter struct {
 	maxDecodeBytes int64
 }
 
+// SupportsDecodeParms returns true if filterName supports decode parameters.
 func SupportsDecodeParms(f string) bool {
 	return f == CCITTFax || f == LZW || f == Flate
 }

@@ -49,6 +49,7 @@ func testImportImages(t *testing.T, msg string, imgFiles []string, outFile, impC
 	}
 }
 
+// TestImportCommand verifies import command.
 func TestImportCommand(t *testing.T) {
 	for _, tt := range []struct {
 		msg      string

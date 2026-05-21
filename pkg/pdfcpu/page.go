@@ -74,6 +74,7 @@ func DefaultPageConfiguration() *PageConfiguration {
 	}
 }
 
+// String returns the string value of p.
 func (p PageConfiguration) String() string {
 	return fmt.Sprintf("Page config: %s %s\n", p.PageSize, p.PageDim)
 }
@@ -106,9 +107,7 @@ func ParsePageConfiguration(s string, u types.DisplayUnit) (*PageConfiguration, 
 	pageConf := DefaultPageConfiguration()
 	pageConf.InpUnit = u
 
-	ss := strings.Split(s, ",")
-
-	for _, s := range ss {
+	for s := range strings.SplitSeq(s, ",") {
 
 		ss1 := strings.Split(s, ":")
 		if len(ss1) != 2 {

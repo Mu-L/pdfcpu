@@ -22,6 +22,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/cli"
 )
 
+// TestListCertificates verifies list certificates.
 func TestListCertificates(t *testing.T) {
 	msg := "TestListCertificates"
 

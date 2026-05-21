@@ -56,6 +56,7 @@ func listBookmarksFile(t *testing.T, fileName string, conf *model.Configuration)
 	return pdfcpu.BookmarkList(ctx)
 }
 
+// TestListBookmarks verifies list bookmarks.
 func TestListBookmarks(t *testing.T) {
 	msg := "TestListBookmarks"
 	inDir := filepath.Join("..", "..", "samples", "bookmarks")
@@ -66,6 +67,7 @@ func TestListBookmarks(t *testing.T) {
 	}
 }
 
+// TestAddDuplicateBookmarks verifies add duplicate bookmarks.
 func TestAddDuplicateBookmarks(t *testing.T) {
 	msg := "TestAddDuplicateBookmarks"
 	inFile := filepath.Join(inDir, "CenterOfWhy.pdf")
@@ -95,6 +97,7 @@ func TestAddDuplicateBookmarks(t *testing.T) {
 	}
 }
 
+// TestAddSimpleBookmarks verifies add simple bookmarks.
 func TestAddSimpleBookmarks(t *testing.T) {
 	msg := "TestAddSimpleBookmarks"
 	inFile := filepath.Join(inDir, "CenterOfWhy.pdf")
@@ -124,6 +127,7 @@ func TestAddSimpleBookmarks(t *testing.T) {
 	}
 }
 
+// TestAddBookmarkTree2Levels verifies add bookmark tree2 levels.
 func TestAddBookmarkTree2Levels(t *testing.T) {
 	msg := "TestAddBookmarkTree2Levels"
 	inFile := filepath.Join(inDir, "CenterOfWhy.pdf")
@@ -154,6 +158,7 @@ func TestAddBookmarkTree2Levels(t *testing.T) {
 	}
 }
 
+// TestRemoveBookmarks verifies remove bookmarks.
 func TestRemoveBookmarks(t *testing.T) {
 	msg := "TestRemoveBookmarks"
 	inDir := filepath.Join("..", "..", "samples", "bookmarks")
@@ -168,6 +173,7 @@ func TestRemoveBookmarks(t *testing.T) {
 	}
 }
 
+// TestExportBookmarks verifies export bookmarks.
 func TestExportBookmarks(t *testing.T) {
 	msg := "TestExportBookmarks"
 	inDir := filepath.Join("..", "..", "samples", "bookmarks")
@@ -179,6 +185,7 @@ func TestExportBookmarks(t *testing.T) {
 	}
 }
 
+// TestImportBookmarks verifies import bookmarks.
 func TestImportBookmarks(t *testing.T) {
 	msg := "TestImportBookmarks"
 	inDir := filepath.Join("..", "..", "samples", "bookmarks")

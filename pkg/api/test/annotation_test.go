@@ -264,6 +264,7 @@ func add2Annotations(t *testing.T, msg, inFile string, incr bool) {
 	}
 }
 
+// TestAddRemoveAnnotationsByAnnotType verifies add remove annotations by annot type.
 func TestAddRemoveAnnotationsByAnnotType(t *testing.T) {
 	msg := "TestAddRemoveAnnotationsByAnnotType"
 
@@ -286,6 +287,7 @@ func TestAddRemoveAnnotationsByAnnotType(t *testing.T) {
 	}
 }
 
+// TestAddRemoveAnnotationsById verifies add remove annotations by id.
 func TestAddRemoveAnnotationsById(t *testing.T) {
 	msg := "TestAddRemoveAnnotationsById"
 
@@ -308,6 +310,7 @@ func TestAddRemoveAnnotationsById(t *testing.T) {
 	}
 }
 
+// TestAddRemoveAnnotationsByIdAndAnnotType verifies add remove annotations by id and annot type.
 func TestAddRemoveAnnotationsByIdAndAnnotType(t *testing.T) {
 	msg := "TestAddRemoveAnnotationsByIdAndAnnotType"
 
@@ -330,6 +333,7 @@ func TestAddRemoveAnnotationsByIdAndAnnotType(t *testing.T) {
 	}
 }
 
+// TestAddRemoveAnnotationsByObjNr verifies add remove annotations by obj nr.
 func TestAddRemoveAnnotationsByObjNr(t *testing.T) {
 	msg := "TestAddRemoveAnnotationsByObjNr"
 
@@ -400,6 +404,7 @@ func TestAddRemoveAnnotationsByObjNr(t *testing.T) {
 	}
 }
 
+// TestAddRemoveAnnotationsByObjNrAndAnnotType verifies add remove annotations by obj nr and annot type.
 func TestAddRemoveAnnotationsByObjNrAndAnnotType(t *testing.T) {
 	msg := "TestAddRemoveAnnotationsByObjNrAndAnnotType"
 
@@ -423,6 +428,7 @@ func TestAddRemoveAnnotationsByObjNrAndAnnotType(t *testing.T) {
 	}
 }
 
+// TestAddRemoveAnnotationsByIdAndObjNrAndAnnotType verifies add remove annotations by id and obj nr and annot type.
 func TestAddRemoveAnnotationsByIdAndObjNrAndAnnotType(t *testing.T) {
 	msg := "TestAddRemoveAnnotationsByObjNrAndAnnotType"
 
@@ -445,6 +451,7 @@ func TestAddRemoveAnnotationsByIdAndObjNrAndAnnotType(t *testing.T) {
 	}
 }
 
+// TestRemoveAllAnnotations verifies remove all annotations.
 func TestRemoveAllAnnotations(t *testing.T) {
 	msg := "TestRemoveAllAnnotations"
 
@@ -482,6 +489,7 @@ func TestRemoveAllAnnotations(t *testing.T) {
 	}
 }
 
+// TestAddRemoveAllAnnotationsAsIncrements verifies add remove all annotations as increments.
 func TestAddRemoveAllAnnotationsAsIncrements(t *testing.T) {
 	msg := "TestAddRemoveAnnotationsAsIncrements"
 
@@ -504,6 +512,7 @@ func TestAddRemoveAllAnnotationsAsIncrements(t *testing.T) {
 	}
 }
 
+// TestAddAnnotationsLowLevel verifies add annotations low level.
 func TestAddAnnotationsLowLevel(t *testing.T) {
 	msg := "TestAddAnnotationsLowLevel"
 
@@ -568,6 +577,7 @@ func TestAddAnnotationsLowLevel(t *testing.T) {
 	}
 }
 
+// TestAddLinkAnnotationWithDest verifies add link annotation with dest.
 func TestAddLinkAnnotationWithDest(t *testing.T) {
 	msg := "TestAddLinkAnnotationWithDest"
 
@@ -603,6 +613,7 @@ func TestAddLinkAnnotationWithDest(t *testing.T) {
 	}
 }
 
+// TestAddAnnotationsFile verifies add annotations file.
 func TestAddAnnotationsFile(t *testing.T) {
 	msg := "TestAddAnnotationsFile"
 
@@ -648,6 +659,7 @@ func TestAddAnnotationsFile(t *testing.T) {
 
 }
 
+// TestAddAnnotations verifies add annotations.
 func TestAddAnnotations(t *testing.T) {
 	msg := "TestAddAnnotations"
 
@@ -686,6 +698,7 @@ func TestAddAnnotations(t *testing.T) {
 
 }
 
+// TestPopupAnnotation verifies popup annotation.
 func TestPopupAnnotation(t *testing.T) {
 	msg := "TestPopupAnnotation"
 
@@ -741,6 +754,7 @@ func TestPopupAnnotation(t *testing.T) {
 	}
 }
 
+// TestInkAnnotation verifies ink annotation.
 func TestInkAnnotation(t *testing.T) {
 	msg := "TestInkAnnotation"
 
@@ -776,6 +790,7 @@ func TestInkAnnotation(t *testing.T) {
 	}
 }
 
+// TestHighlightAnnotation verifies highlight annotation.
 func TestHighlightAnnotation(t *testing.T) {
 	msg := "TestHighlightAnnotation"
 
@@ -813,6 +828,7 @@ func TestHighlightAnnotation(t *testing.T) {
 	}
 }
 
+// TestUnderlineAnnotation verifies underline annotation.
 func TestUnderlineAnnotation(t *testing.T) {
 	msg := "TestUnderlineAnnotation"
 
@@ -850,6 +866,7 @@ func TestUnderlineAnnotation(t *testing.T) {
 	}
 }
 
+// TestSquigglyAnnotation verifies squiggly annotation.
 func TestSquigglyAnnotation(t *testing.T) {
 	msg := "TestSquigglyAnnotation"
 
@@ -887,6 +904,7 @@ func TestSquigglyAnnotation(t *testing.T) {
 	}
 }
 
+// TestStrikeOutAnnotation verifies strike out annotation.
 func TestStrikeOutAnnotation(t *testing.T) {
 	msg := "TestStrikeOutAnnotation"
 
@@ -924,6 +942,7 @@ func TestStrikeOutAnnotation(t *testing.T) {
 	}
 }
 
+// TestFreeTextAnnotation verifies free text annotation.
 func TestFreeTextAnnotation(t *testing.T) {
 	msg := "TestFreeTextAnnotation"
 
@@ -938,6 +957,7 @@ func TestFreeTextAnnotation(t *testing.T) {
 	}
 }
 
+// TestPolyLineAnnotation verifies poly line annotation.
 func TestPolyLineAnnotation(t *testing.T) {
 	msg := "TestPolyLineAnnotation"
 
@@ -979,6 +999,7 @@ func TestPolyLineAnnotation(t *testing.T) {
 	}
 }
 
+// TestPolygonAnnotation verifies polygon annotation.
 func TestPolygonAnnotation(t *testing.T) {
 	msg := "TestPolygonAnnotation"
 
@@ -1016,6 +1037,7 @@ func TestPolygonAnnotation(t *testing.T) {
 	}
 }
 
+// TestLineAnnotation verifies line annotation.
 func TestLineAnnotation(t *testing.T) {
 	msg := "TestLineAnnotation"
 
@@ -1062,6 +1084,7 @@ func TestLineAnnotation(t *testing.T) {
 	}
 }
 
+// TestCaretAnnotation verifies caret annotation.
 func TestCaretAnnotation(t *testing.T) {
 	msg := "TestCaretAnnotation"
 

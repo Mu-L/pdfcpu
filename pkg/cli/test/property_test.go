@@ -41,6 +41,7 @@ func listProperties(t *testing.T, msg, fileName string, want []string) []string 
 	return got
 }
 
+// TestPropertiesCommand verifies properties command.
 func TestPropertiesCommand(t *testing.T) {
 	msg := "TestPropertiesCommand"
 

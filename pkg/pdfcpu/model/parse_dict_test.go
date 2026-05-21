@@ -160,6 +160,7 @@ func doTestLargeDicts(t *testing.T) {
 	doTestParseDictOK(sb.String(), t)
 }
 
+// TestParseDict verifies parse dict.
 func TestParseDict(t *testing.T) {
 	doTestParseDictGeneral(t)
 	doTestParseDictNameObjects(t)

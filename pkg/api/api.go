@@ -248,6 +248,7 @@ func logWritingTo(s string) {
 	}
 }
 
+// Write writes ctx using w.
 func Write(ctx *model.Context, w io.Writer, conf *model.Configuration) error {
 	if log.StatsEnabled() {
 		log.Stats.Printf("XRefTable:\n%s\n", ctx)
@@ -256,6 +257,7 @@ func Write(ctx *model.Context, w io.Writer, conf *model.Configuration) error {
 	return WriteContext(ctx, w)
 }
 
+// WriteIncr writes ctx as increment using rws.
 func WriteIncr(ctx *model.Context, rws io.ReadWriteSeeker, conf *model.Configuration) error {
 	if log.StatsEnabled() {
 		log.Stats.Printf("XRefTable:\n%s\n", ctx)

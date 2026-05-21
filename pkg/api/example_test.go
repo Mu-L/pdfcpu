@@ -21,12 +21,14 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
+// ExampleValidateFile demonstrates validate file.
 func ExampleValidateFile() {
 
 	// Use the default configuration to validate in.pdf.
 	ValidateFile("in.pdf", nil)
 }
 
+// ExampleOptimizeFile demonstrates optimize file.
 func ExampleOptimizeFile() {
 
 	conf := model.NewDefaultConfiguration()
@@ -47,6 +49,7 @@ func ExampleOptimizeFile() {
 	OptimizeFile("in.pdf", "", nil)
 }
 
+// ExampleTrimFile demonstrates trim file.
 func ExampleTrimFile() {
 
 	// Create a trimmed version of in.pdf containing odd page numbers only.
@@ -57,6 +60,7 @@ func ExampleTrimFile() {
 	TrimFile("in.pdf", "", []string{"1-2"}, nil)
 }
 
+// ExampleSplitFile demonstrates split file.
 func ExampleSplitFile() {
 
 	// Create single page PDFs for in.pdf in outDir using the default configuration.
@@ -69,6 +73,7 @@ func ExampleSplitFile() {
 	SplitFile("in.pdf", "outDir", 0, nil)
 }
 
+// ExampleRotateFile demonstrates rotate file.
 func ExampleRotateFile() {
 
 	// Rotate all pages of in.pdf, clockwise by 90 degrees and write the result to out.pdf.
@@ -79,6 +84,7 @@ func ExampleRotateFile() {
 	RotateFile("in.pdf", "", 180, []string{"1"}, nil)
 }
 
+// ExampleMergeCreateFile demonstrates merge create file.
 func ExampleMergeCreateFile() {
 
 	// Merge inFiles by concatenation in the order specified and write the result to out.pdf.
@@ -87,6 +93,7 @@ func ExampleMergeCreateFile() {
 	MergeCreateFile(inFiles, "out.pdf", false, nil)
 }
 
+// ExampleMergeAppendFile demonstrates merge append file.
 func ExampleMergeAppendFile() {
 
 	// Merge inFiles by concatenation in the order specified and write the result to out.pdf.
@@ -95,6 +102,7 @@ func ExampleMergeAppendFile() {
 	MergeAppendFile(inFiles, "out.pdf", false, nil)
 }
 
+// ExampleInsertPagesFile demonstrates insert pages file.
 func ExampleInsertPagesFile() {
 
 	// Insert a blank page into in.pdf before page #3.
@@ -104,6 +112,7 @@ func ExampleInsertPagesFile() {
 	InsertPagesFile("in.pdf", "", nil, false, nil, nil)
 }
 
+// ExampleRemovePagesFile demonstrates remove pages file.
 func ExampleRemovePagesFile() {
 
 	// Remove pages 2 and 8 of in.pdf.
@@ -116,6 +125,7 @@ func ExampleRemovePagesFile() {
 	RemovePagesFile("in.pdf", "", []string{"10-"}, nil)
 }
 
+// ExampleAddWatermarksFile demonstrates add watermarks file.
 func ExampleAddWatermarksFile() {
 
 	// Unique abbreviations are accepted for all watermark descriptor parameters.
@@ -143,6 +153,7 @@ func ExampleAddWatermarksFile() {
 	AddWatermarksFile("in.pdf", "", nil, wm, nil)
 }
 
+// ExampleRemoveWatermarksFile demonstrates remove watermarks file.
 func ExampleRemoveWatermarksFile() {
 
 	// Add a "Demo" stamp to all pages of in.pdf along the diagonal running from lower left to upper right.
@@ -167,6 +178,7 @@ func ExampleRemoveWatermarksFile() {
 	RemoveWatermarksFile("in.pdf", "", nil, nil)
 }
 
+// ExampleImportImagesFile demonstrates import images file.
 func ExampleImportImagesFile() {
 
 	// Convert an image into a single page of out.pdf which will be created if necessary.
@@ -182,6 +194,7 @@ func ExampleImportImagesFile() {
 	ImportImagesFile([]string{"a1.png", "a2.jpg", "a3.tiff"}, "out.pdf", imp, nil)
 }
 
+// ExampleNUpFile demonstrates n up file.
 func ExampleNUpFile() {
 
 	// 4-Up in.pdf and write result to out.pdf.
@@ -205,6 +218,7 @@ func ExampleNUpFile() {
 	NUpFile(inFiles, "out.pdf", nil, nup, nil)
 }
 
+// ExampleSetPermissionsFile demonstrates set permissions file.
 func ExampleSetPermissionsFile() {
 
 	// Setting all permissions for the AES-256 encrypted in.pdf.
@@ -218,6 +232,7 @@ func ExampleSetPermissionsFile() {
 	SetPermissionsFile("in.pdf", "", conf)
 }
 
+// ExampleEncryptFile demonstrates encrypt file.
 func ExampleEncryptFile() {
 
 	// Encrypting a file using AES-256.
@@ -225,6 +240,7 @@ func ExampleEncryptFile() {
 	EncryptFile("in.pdf", "", conf)
 }
 
+// ExampleDecryptFile demonstrates decrypt file.
 func ExampleDecryptFile() {
 
 	// Decrypting an AES-256 encrypted file.
@@ -232,6 +248,7 @@ func ExampleDecryptFile() {
 	DecryptFile("in.pdf", "", conf)
 }
 
+// ExampleChangeUserPasswordFile demonstrates change user password file.
 func ExampleChangeUserPasswordFile() {
 
 	// Changing the user password for an AES-256 encrypted file.
@@ -239,6 +256,7 @@ func ExampleChangeUserPasswordFile() {
 	ChangeUserPasswordFile("in.pdf", "", "upw", "upwNew", conf)
 }
 
+// ExampleChangeOwnerPasswordFile demonstrates change owner password file.
 func ExampleChangeOwnerPasswordFile() {
 
 	// Changing the owner password for an AES-256 encrypted file.
@@ -246,12 +264,14 @@ func ExampleChangeOwnerPasswordFile() {
 	ChangeOwnerPasswordFile("in.pdf", "", "opw", "opwNew", conf)
 }
 
+// ExampleAddAttachmentsFile demonstrates add attachments file.
 func ExampleAddAttachmentsFile() {
 
 	// Attach 3 files to in.pdf.
 	AddAttachmentsFile("in.pdf", "", []string{"img.jpg", "attach.pdf", "test.zip"}, false, nil)
 }
 
+// ExampleRemoveAttachmentsFile demonstrates remove attachments file.
 func ExampleRemoveAttachmentsFile() {
 
 	// Remove 1 attachment from in.pdf.
@@ -261,6 +281,7 @@ func ExampleRemoveAttachmentsFile() {
 	RemoveAttachmentsFile("in.pdf", "", nil, nil)
 }
 
+// ExampleExtractAttachmentsFile demonstrates extract attachments file.
 func ExampleExtractAttachmentsFile() {
 
 	// Extract 1 attachment from in.pdf into outDir.
@@ -270,30 +291,35 @@ func ExampleExtractAttachmentsFile() {
 	ExtractAttachmentsFile("in.pdf", "outDir", nil, nil)
 }
 
+// ExampleExtractImagesFile demonstrates extract images file.
 func ExampleExtractImagesFile() {
 
 	// Extract embedded images from in.pdf into outDir.
 	ExtractImagesFile("in.pdf", "outDir", nil, nil)
 }
 
+// ExampleExtractFontsFile demonstrates extract fonts file.
 func ExampleExtractFontsFile() {
 
 	// Extract embedded fonts for pages 1-3 from in.pdf into outDir.
 	ExtractFontsFile("in.pdf", "outDir", []string{"1-3"}, nil)
 }
 
+// ExampleExtractContentFile demonstrates extract content file.
 func ExampleExtractContentFile() {
 
 	// Extract content for all pages in PDF syntax from in.pdf into outDir.
 	ExtractContentFile("in.pdf", "outDir", nil, nil)
 }
 
+// ExampleExtractPagesFile demonstrates extract pages file.
 func ExampleExtractPagesFile() {
 
 	// Extract all even numbered pages from in.pdf into outDir.
 	ExtractPagesFile("in.pdf", "outDir", []string{"even"}, nil)
 }
 
+// ExampleExtractMetadataFile demonstrates extract metadata file.
 func ExampleExtractMetadataFile() {
 
 	// Extract all metadata from in.pdf into outDir.

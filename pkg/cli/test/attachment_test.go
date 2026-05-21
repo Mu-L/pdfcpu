@@ -49,6 +49,7 @@ func listAttachments(t *testing.T, msg, fileName string, want int) []string {
 	return list
 }
 
+// TestAttachments verifies attachments.
 func TestAttachments(t *testing.T) {
 	msg := "testAttachments"
 

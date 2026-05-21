@@ -23,6 +23,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/cli"
 )
 
+// TestListAndRemoveAnnotations verifies list and remove annotations.
 func TestListAndRemoveAnnotations(t *testing.T) {
 	msg := "TestListAndRemoveAnnotations"
 

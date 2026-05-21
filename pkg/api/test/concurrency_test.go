@@ -24,6 +24,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
+// TestDisableConfigDir verifies disable config dir.
 func TestDisableConfigDir(t *testing.T) {
 	t.Parallel()
 	api.DisableConfigDir()
@@ -33,6 +34,7 @@ func TestDisableConfigDir(t *testing.T) {
 	}
 }
 
+// TestDisableConfigDir_Parallel verifies disable config dir parallel.
 func TestDisableConfigDir_Parallel(t *testing.T) {
 	t.Parallel()
 

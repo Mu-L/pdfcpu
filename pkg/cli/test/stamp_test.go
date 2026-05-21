@@ -57,6 +57,7 @@ func testAddWatermarks(t *testing.T, msg, inFile, outFile string, selectedPages 
 	}
 }
 
+// TestAddWatermarks verifies add watermarks.
 func TestAddWatermarks(t *testing.T) {
 	for _, tt := range []struct {
 		msg             string
@@ -144,6 +145,7 @@ func TestAddWatermarks(t *testing.T) {
 	}
 }
 
+// TestStampingLifecycle verifies stamping lifecycle.
 func TestStampingLifecycle(t *testing.T) {
 	msg := "TestStampingLifecycle"
 	inFile := filepath.Join(inDir, "Acroforms2.pdf")

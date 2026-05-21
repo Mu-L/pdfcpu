@@ -36,6 +36,7 @@ import (
 var inDir, outDir string
 var xRefTable *model.XRefTable
 
+// TestMain verifies main.
 func TestMain(m *testing.M) {
 
 	inDir = filepath.Join("..", "testdata", "resources")
@@ -163,6 +164,8 @@ func printOptionalSMask(t *testing.T, sd *types.StreamDict) {
 		fmt.Printf("SMask %s: %s\n", o, sm)
 	}
 }
+
+// TestReadWriteImages verifies read write images.
 func TestReadWriteImages(t *testing.T) {
 
 	for _, filename := range []string{
@@ -251,7 +254,7 @@ func read1BPCDeviceGrayFlateStreamDump(fileName string) (*types.StreamDict, erro
 	return sd, sd.Decode()
 }
 
-// Starting out with a DeviceGray color space based image object, write a PNG file then read and write again.
+// TestReadDeviceGrayWritePNG out with a DeviceGray color space based image object, write a PNG file then read and write again.
 func TestReadDeviceGrayWritePNG(t *testing.T) {
 
 	// Create an image for a flate encoded stream dump file.
@@ -347,7 +350,7 @@ func read8BPCDeviceCMYKFlateStreamDump(fileName string) (*types.StreamDict, erro
 	return sd, sd.Decode()
 }
 
-// Starting out with a CMYK color space based image object, write a TIFF file then read and write again.
+// TestReadCMYKWriteTIFF out with a CMYK color space based image object, write a TIFF file then read and write again.
 func TestReadCMYKWriteTIFF(t *testing.T) {
 
 	filename := "DeviceCMYK"
@@ -393,6 +396,7 @@ func TestReadCMYKWriteTIFF(t *testing.T) {
 
 }
 
+// TestReadTIFFWritePNG verifies read TIFF write PNG.
 func TestReadTIFFWritePNG(t *testing.T) {
 
 	// TIFF images get read into a Flate encoded image stream like PNGs.
@@ -444,6 +448,7 @@ func TestReadTIFFWritePNG(t *testing.T) {
 	compare(t, fn1, fn2)
 }
 
+// TestReadWriteJPEG verifies read write JPEG.
 func TestReadWriteJPEG(t *testing.T) {
 
 	fileName := "mountain.jpg"

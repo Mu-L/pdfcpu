@@ -50,6 +50,7 @@ func listBoxes(t *testing.T, fileName string, pb *model.PageBoundaries) ([]strin
 	return ctx.ListPageBoundaries(nil, pb)
 }
 
+// TestListBoxes verifies list boxes.
 func TestListBoxes(t *testing.T) {
 	msg := "TestListBoxes"
 	inFile := filepath.Join(inDir, "5116.DCT_Filter.pdf")
@@ -68,6 +69,7 @@ func TestListBoxes(t *testing.T) {
 	}
 }
 
+// TestCrop verifies crop.
 func TestCrop(t *testing.T) {
 	msg := "TestCrop"
 	inFile := filepath.Join(inDir, "test.pdf")
@@ -99,6 +101,7 @@ func TestCrop(t *testing.T) {
 	}
 }
 
+// TestAddBoxes verifies add boxes.
 func TestAddBoxes(t *testing.T) {
 	msg := "TestAddBoxes"
 	inFile := filepath.Join(inDir, "test.pdf")
@@ -129,6 +132,7 @@ func TestAddBoxes(t *testing.T) {
 	}
 }
 
+// TestAddRemoveBoxes verifies add remove boxes.
 func TestAddRemoveBoxes(t *testing.T) {
 	msg := "TestAddRemoveBoxes"
 	inFile := filepath.Join(inDir, "test.pdf")

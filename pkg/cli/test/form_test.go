@@ -17,6 +17,7 @@ limitations under the License.
 package test
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -38,6 +39,7 @@ func TestListFormFields(t *testing.T) {
 	}
 }
 
+// TestRemoveFormFields verifies remove form fields.
 func TestRemoveFormFields(t *testing.T) {
 
 	msg := "TestRemoveFormFields"
@@ -50,6 +52,7 @@ func TestRemoveFormFields(t *testing.T) {
 	}
 }
 
+// TestResetFormFields verifies reset form fields.
 func TestResetFormFields(t *testing.T) {
 
 	for _, tt := range []struct {
@@ -74,6 +77,7 @@ func TestResetFormFields(t *testing.T) {
 
 }
 
+// TestLockFormFields verifies lock form fields.
 func TestLockFormFields(t *testing.T) {
 
 	for _, tt := range []struct {
@@ -97,6 +101,7 @@ func TestLockFormFields(t *testing.T) {
 	}
 }
 
+// TestUnlockFormFields verifies unlock form fields.
 func TestUnlockFormFields(t *testing.T) {
 
 	for _, tt := range []struct {
@@ -120,6 +125,7 @@ func TestUnlockFormFields(t *testing.T) {
 	}
 }
 
+// TestExportForm verifies export form.
 func TestExportForm(t *testing.T) {
 
 	inDir := filepath.Join(samplesDir, "form", "demoSinglePage")
@@ -145,6 +151,7 @@ func TestExportForm(t *testing.T) {
 	}
 }
 
+// TestFillForm verifies fill form.
 func TestFillForm(t *testing.T) {
 
 	inDir := filepath.Join(samplesDir, "form", "demoSinglePage")
@@ -173,6 +180,7 @@ func TestFillForm(t *testing.T) {
 	}
 }
 
+// TestMultiFillFormJSON verifies multi fill form JSON.
 func TestMultiFillFormJSON(t *testing.T) {
 
 	inDir := filepath.Join(samplesDir, "form", "demoSinglePage")
@@ -196,6 +204,7 @@ func TestMultiFillFormJSON(t *testing.T) {
 	}
 }
 
+// TestMultiFillFormJSONMerged verifies multi fill form JSON merged.
 func TestMultiFillFormJSONMerged(t *testing.T) {
 
 	inDir := filepath.Join(samplesDir, "form", "demoSinglePage")
@@ -219,6 +228,47 @@ func TestMultiFillFormJSONMerged(t *testing.T) {
 	}
 }
 
+// TestMultiFillFormJSONMergedStdinStdout verifies multifill supports stdin and stdout together.
+func TestMultiFillFormJSONMergedStdinStdout(t *testing.T) {
+	inFile := filepath.Join(samplesDir, "form", "demoSinglePage", "english.pdf")
+	inFileJSON := filepath.Join(samplesDir, "form", "multifill", "json", "english.json")
+
+	stdin, err := os.Open(inFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stdin.Close()
+
+	stdout, err := os.CreateTemp(t.TempDir(), "multifill-*.pdf")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer stdout.Close()
+
+	oldStdin := os.Stdin
+	oldStdout := os.Stdout
+	os.Stdin = stdin
+	os.Stdout = stdout
+	t.Cleanup(func() {
+		os.Stdin = oldStdin
+		os.Stdout = oldStdout
+	})
+
+	cmd := cli.MultiFillFormCommand("-", inFileJSON, "", "-", true, conf)
+	if _, err := cli.Process(cmd); err != nil {
+		t.Fatalf("multifill stdin/stdout: %v", err)
+	}
+
+	info, err := stdout.Stat()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Size() == 0 {
+		t.Fatal("expected PDF output on stdout")
+	}
+}
+
+// TestMultiFillFormCSV verifies multi fill form CSV.
 func TestMultiFillFormCSV(t *testing.T) {
 
 	inDir := filepath.Join(samplesDir, "form", "demoSinglePage")
@@ -243,6 +293,7 @@ func TestMultiFillFormCSV(t *testing.T) {
 	}
 }
 
+// TestMultiFillFormCSVMerged verifies multi fill form CSV merged.
 func TestMultiFillFormCSVMerged(t *testing.T) {
 
 	inDir := filepath.Join(samplesDir, "form", "demoSinglePage")

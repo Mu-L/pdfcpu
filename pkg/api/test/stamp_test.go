@@ -52,6 +52,7 @@ func testAddWatermarks(t *testing.T, msg, inFile, outFile string, selectedPages 
 	}
 }
 
+// TestAddWatermarks verifies add watermarks.
 func TestAddWatermarks(t *testing.T) {
 	for _, tt := range []struct {
 		msg             string
@@ -468,6 +469,7 @@ func TestAddWatermarks(t *testing.T) {
 	}
 }
 
+// TestAddStampWithLink verifies add stamp with link.
 func TestAddStampWithLink(t *testing.T) {
 	for _, tt := range []struct {
 		msg             string
@@ -499,6 +501,7 @@ func TestAddStampWithLink(t *testing.T) {
 
 }
 
+// TestCropBox verifies crop box.
 func TestCropBox(t *testing.T) {
 	msg := "TestCropBox"
 	inFile := filepath.Join(inDir, "empty.pdf")
@@ -540,6 +543,7 @@ func hasWatermarks(inFile string, t *testing.T) bool {
 	return ok
 }
 
+// TestStampingLifecycle verifies stamping lifecycle.
 func TestStampingLifecycle(t *testing.T) {
 	msg := "TestStampingLifecycle"
 	inFile := filepath.Join(inDir, "Acroforms2.pdf")
@@ -612,6 +616,7 @@ func TestStampingLifecycle(t *testing.T) {
 	}
 }
 
+// TestRecycleWM verifies recycle wm.
 func TestRecycleWM(t *testing.T) {
 	msg := "TestRecycleWM"
 	inFile := filepath.Join(inDir, "test.pdf")

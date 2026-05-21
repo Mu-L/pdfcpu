@@ -78,10 +78,12 @@ func processRefCounts(xRefTable *XRefTable, o types.Object, depth int) error {
 	return nil
 }
 
+// ProcessRefCountsWithError processes reference counts and returns an error.
 func ProcessRefCountsWithError(xRefTable *XRefTable, o types.Object) error {
 	return processRefCounts(xRefTable, o, 0)
 }
 
+// ProcessRefCounts processes reference counts.
 func ProcessRefCounts(xRefTable *XRefTable, o types.Object) {
 	_ = ProcessRefCountsWithError(xRefTable, o)
 }
@@ -129,9 +131,7 @@ func (xRefTable *XRefTable) Dereference(o types.Object) (types.Object, error) {
 	return obj, err
 }
 
-// Dereference resolves an indirect object and returns the resulting PDF object.
-// It also returns the number of the written PDF Increment this object is part of.
-// The higher the increment number the older the object.
+// DereferenceWithIncr dereferences obj and increments reference counts.
 func (xRefTable *XRefTable) DereferenceWithIncr(o types.Object) (types.Object, int, error) {
 	ir, ok := o.(types.IndirectRef)
 	if !ok {
@@ -142,6 +142,7 @@ func (xRefTable *XRefTable) DereferenceWithIncr(o types.Object) (types.Object, i
 	return xRefTable.indRefToObject(&ir, true)
 }
 
+// DereferenceForWrite dereferences obj for writing.
 func (xRefTable *XRefTable) DereferenceForWrite(o types.Object) (types.Object, error) {
 	ir, ok := o.(types.IndirectRef)
 	if !ok {
@@ -335,6 +336,7 @@ func (xRefTable *XRefTable) DereferenceText(o types.Object) (string, error) {
 	return Text(o)
 }
 
+// CSVSafeString returns obj as a CSV-safe string.
 func CSVSafeString(s string) string {
 	return strings.Replace(s, ";", ",", -1)
 }
@@ -517,6 +519,7 @@ func (xRefTable *XRefTable) DereferenceStringEntryBytes(d types.Dict, key string
 	return nil, errors.Errorf("pdfcpu: DereferenceStringEntryBytes dict=%s entry=%s, wrong type %T <%v>", d, key, o, o)
 }
 
+// DestName returns the destination name for o.
 func (xRefTable *XRefTable) DestName(obj types.Object) (string, error) {
 	dest, err := xRefTable.Dereference(obj)
 	if err != nil {

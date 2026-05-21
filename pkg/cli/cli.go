@@ -362,7 +362,7 @@ func Split(cmd *Command) ([]string, error) {
 	return nil, api.SplitFile(*cmd.InFile, *cmd.OutDir, cmd.IntVal, cmd.Conf)
 }
 
-// Split inFile along pages and write result files to outDir.
+// SplitByPageNr splits inFile along pages and writes result files to outDir.
 func SplitByPageNr(cmd *Command) ([]string, error) {
 	if *cmd.InFile == "-" {
 		rs, err := readSeekerFromStdin()
@@ -1474,75 +1474,6 @@ func formPDFWithData(cmd *Command, fileFn func() error, readerFn func(io.ReadSee
 	return nil, readerFn(rs, rd, w)
 }
 
-func multiFillFormFieldsFromStdin(cmd *Command) ([]string, error) {
-	inFile, cleanup, err := formTemplateFileFromStdin()
-	if err != nil {
-		return nil, err
-	}
-	defer cleanup()
-
-	outFile := *cmd.OutFile
-	if outFile == "" {
-		outFile = "stdin.pdf"
-	}
-
-	if outFile != "-" {
-		return nil, api.MultiFillFormFile(inFile, *cmd.InFileJSON, *cmd.OutDir, outFile, cmd.BoolVal1, cmd.Conf)
-	}
-
-	if !cmd.BoolVal1 {
-		return nil, fmt.Errorf("pdfcpu: form multifill stdout requires -m merge")
-	}
-
-	outDir, err := os.MkdirTemp("", "pdfcpu-form-multifill-")
-	if err != nil {
-		return nil, err
-	}
-	defer os.RemoveAll(outDir)
-
-	outFile = "stdout.pdf"
-	if err := api.MultiFillFormFile(inFile, *cmd.InFileJSON, outDir, outFile, true, cmd.Conf); err != nil {
-		return nil, err
-	}
-
-	log.SetCLILogger(nil)
-	f, err := os.Open(filepath.Join(outDir, outFile))
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	_, err = io.Copy(os.Stdout, f)
-	return nil, err
-}
-
-func multiFillFormFieldsToStdout(cmd *Command) ([]string, error) {
-	if !cmd.BoolVal1 {
-		return nil, fmt.Errorf("pdfcpu: form multifill stdout requires -m merge")
-	}
-
-	outDir, err := os.MkdirTemp("", "pdfcpu-form-multifill-")
-	if err != nil {
-		return nil, err
-	}
-	defer os.RemoveAll(outDir)
-
-	outFile := "stdout.pdf"
-	if err := api.MultiFillFormFile(*cmd.InFile, *cmd.InFileJSON, outDir, outFile, true, cmd.Conf); err != nil {
-		return nil, err
-	}
-
-	log.SetCLILogger(nil)
-	f, err := os.Open(filepath.Join(outDir, outFile))
-	if err != nil {
-		return nil, err
-	}
-	defer f.Close()
-
-	_, err = io.Copy(os.Stdout, f)
-	return nil, err
-}
-
 // RemoveFormFields removes some form fields from inFile.
 func RemoveFormFields(cmd *Command) ([]string, error) {
 	return formPDFFileCommand(
@@ -1630,16 +1561,62 @@ func FillFormFields(cmd *Command) ([]string, error) {
 	)
 }
 
-// MultiFillFormFields fills out multiple instances of inFile's form using JSON or CSV data.
-func MultiFillFormFields(cmd *Command) ([]string, error) {
-	if *cmd.InFile == "-" {
-		return multiFillFormFieldsFromStdin(cmd)
+func multiFillFormInputFile(cmd *Command) (string, func(), error) {
+	if *cmd.InFile != "-" {
+		return *cmd.InFile, nil, nil
 	}
-	if *cmd.OutFile == "-" {
-		return multiFillFormFieldsToStdout(cmd)
+	return formTemplateFileFromStdin()
+}
+
+func multiFillFormOutputFile(cmd *Command) string {
+	if *cmd.OutFile == "" && *cmd.InFile == "-" {
+		return "stdin.pdf"
+	}
+	return *cmd.OutFile
+}
+
+func multiFillFormFieldsToStdout(cmd *Command, inFile string) ([]string, error) {
+	if !cmd.BoolVal1 {
+		return nil, fmt.Errorf("pdfcpu: form multifill stdout requires -m merge")
 	}
 
-	return nil, api.MultiFillFormFile(*cmd.InFile, *cmd.InFileJSON, *cmd.OutDir, *cmd.OutFile, cmd.BoolVal1, cmd.Conf)
+	outDir, err := os.MkdirTemp("", "pdfcpu-form-multifill-")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(outDir)
+
+	outFile := "stdout.pdf"
+	if err := api.MultiFillFormFile(inFile, *cmd.InFileJSON, outDir, outFile, true, cmd.Conf); err != nil {
+		return nil, err
+	}
+
+	log.SetCLILogger(nil)
+	f, err := os.Open(filepath.Join(outDir, outFile))
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	_, err = io.Copy(os.Stdout, f)
+	return nil, err
+}
+
+// MultiFillFormFields fills out multiple instances of inFile's form using JSON or CSV data.
+func MultiFillFormFields(cmd *Command) ([]string, error) {
+	inFile, cleanup, err := multiFillFormInputFile(cmd)
+	if err != nil {
+		return nil, err
+	}
+	if cleanup != nil {
+		defer cleanup()
+	}
+
+	if *cmd.OutFile == "-" {
+		return multiFillFormFieldsToStdout(cmd, inFile)
+	}
+
+	return nil, api.MultiFillFormFile(inFile, *cmd.InFileJSON, *cmd.OutDir, multiFillFormOutputFile(cmd), cmd.BoolVal1, cmd.Conf)
 }
 
 // Resize selected pages and write result to outFile.
@@ -1659,7 +1636,7 @@ func Resize(cmd *Command) ([]string, error) {
 	return nil, api.Resize(rs, w, cmd.PageSelection, cmd.Resize, cmd.Conf)
 }
 
-// Create poster for selected pages and write result PDFs into outDir.
+// Poster creates a poster for selected pages and writes result PDFs into outDir.
 func Poster(cmd *Command) ([]string, error) {
 	if *cmd.InFile == "-" {
 		rs, err := readSeekerFromStdin()
@@ -1990,7 +1967,7 @@ func ListCertificates(cmd *Command) ([]string, error) {
 	return ListCertificatesAll(cmd.BoolVal1, cmd.Conf)
 }
 
-// ListCertificates returns installed certificates.
+// ImportCertificates imports certificates.
 func ImportCertificates(cmd *Command) ([]string, error) {
 	return api.ImportCertificates(cmd.InFiles)
 }

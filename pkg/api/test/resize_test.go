@@ -25,6 +25,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
+// TestResizeByScaleFactor verifies resize by scale factor.
 func TestResizeByScaleFactor(t *testing.T) {
 	msg := "TestResizeByScaleFactor"
 
@@ -53,6 +54,7 @@ func TestResizeByScaleFactor(t *testing.T) {
 	}
 }
 
+// TestResizeByWidthOrHeight verifies resize by width or height.
 func TestResizeByWidthOrHeight(t *testing.T) {
 	msg := "TestResizeByWidthOrHeight"
 
@@ -81,6 +83,7 @@ func TestResizeByWidthOrHeight(t *testing.T) {
 	}
 }
 
+// TestResizeToFormSize verifies resize to form size.
 func TestResizeToFormSize(t *testing.T) {
 	msg := "TestResizeToPaperSize"
 
@@ -109,6 +112,7 @@ func TestResizeToFormSize(t *testing.T) {
 	}
 }
 
+// TestResizeToDimensions verifies resize to dimensions.
 func TestResizeToDimensions(t *testing.T) {
 	msg := "TestResizeToDimensions"
 

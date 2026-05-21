@@ -25,7 +25,8 @@ import (
 	"testing"
 )
 
-func TestOptimizeEnsureOutputFileAvailable(t *testing.T) {
+// TestForceEnsureOutputFileAvailable verifies output-file overwrite protection.
+func TestForceEnsureOutputFileAvailable(t *testing.T) {
 	dir := t.TempDir()
 
 	t.Run("output file does not exist", func(t *testing.T) {
@@ -73,9 +74,10 @@ func TestOptimizeEnsureOutputFileAvailable(t *testing.T) {
 	})
 }
 
-func TestOptimizeForceFlag(t *testing.T) {
-	if os.Getenv("PDFCPU_TEST_OPTIMIZE_FORCE") == "1" {
-		runOptimizeForceFlagSubprocess()
+// TestForceFlagAllowsExplicitOverwrite verifies --force allows an existing explicit output file.
+func TestForceFlagAllowsExplicitOverwrite(t *testing.T) {
+	if os.Getenv("PDFCPU_TEST_FORCE_ALLOW_OVERWRITE") == "1" {
+		runForceFlagSubprocess()
 		return
 	}
 
@@ -121,8 +123,8 @@ func TestOptimizeForceFlag(t *testing.T) {
 				args = append(args, "--force")
 			}
 
-			cmd := exec.Command(os.Args[0], append([]string{"-test.run=TestOptimizeForceFlag", "--"}, args...)...)
-			cmd.Env = append(os.Environ(), "PDFCPU_TEST_OPTIMIZE_FORCE=1")
+			cmd := exec.Command(os.Args[0], append([]string{"-test.run=TestForceFlagAllowsExplicitOverwrite", "--"}, args...)...)
+			cmd.Env = append(os.Environ(), "PDFCPU_TEST_FORCE_ALLOW_OVERWRITE=1")
 
 			out, err := cmd.CombinedOutput()
 			if tt.wantErr {
@@ -145,9 +147,10 @@ func TestOptimizeForceFlag(t *testing.T) {
 	}
 }
 
+// TestForceFlagProtectsExplicitOutputFiles verifies explicit output files are protected without force.
 func TestForceFlagProtectsExplicitOutputFiles(t *testing.T) {
 	if os.Getenv("PDFCPU_TEST_FORCE_OUTPUT") == "1" {
-		runOptimizeForceFlagSubprocess()
+		runForceFlagSubprocess()
 		return
 	}
 
@@ -518,9 +521,10 @@ func TestForceFlagProtectsExplicitOutputFiles(t *testing.T) {
 	}
 }
 
+// TestForceFlagProtectsDefaultOutputFiles verifies default output files are protected without force.
 func TestForceFlagProtectsDefaultOutputFiles(t *testing.T) {
 	if os.Getenv("PDFCPU_TEST_FORCE_DEFAULT_OUTPUT") == "1" {
-		runOptimizeForceFlagSubprocess()
+		runForceFlagSubprocess()
 		return
 	}
 
@@ -569,9 +573,10 @@ func TestForceFlagProtectsDefaultOutputFiles(t *testing.T) {
 	}
 }
 
+// TestForceFlagProtectsNonEmptyOutputDirs verifies non-empty output directories are protected without force.
 func TestForceFlagProtectsNonEmptyOutputDirs(t *testing.T) {
 	if os.Getenv("PDFCPU_TEST_FORCE_OUTPUT_DIR") == "1" {
-		runOptimizeForceFlagSubprocess()
+		runForceFlagSubprocess()
 		return
 	}
 
@@ -665,7 +670,10 @@ func TestForceFlagProtectsNonEmptyOutputDirs(t *testing.T) {
 	}
 }
 
-func runOptimizeForceFlagSubprocess() {
+// runForceFlagSubprocess executes the command args after "--" inside the test
+// binary. The PDFCPU_TEST_FORCE_* env vars tell the selected test invocation to
+// take this subprocess path instead of spawning another copy of itself forever.
+func runForceFlagSubprocess() {
 	for i, arg := range os.Args {
 		if arg == "--" {
 			rootCmd.SetArgs(os.Args[i+1:])

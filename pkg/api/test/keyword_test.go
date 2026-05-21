@@ -61,6 +61,7 @@ func listKeywords(t *testing.T, msg, fileName string, want []string) []string {
 	return got
 }
 
+// TestKeywords verifies keywords.
 func TestKeywords(t *testing.T) {
 	msg := "TestKeywords"
 

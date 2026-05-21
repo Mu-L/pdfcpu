@@ -194,6 +194,7 @@ func destroyNameTree(t *testing.T, r *Node) {
 	}
 }
 
+// TestNameTree verifies name tree.
 func TestNameTree(t *testing.T) {
 
 	r := &Node{}

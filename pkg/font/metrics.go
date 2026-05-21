@@ -58,6 +58,7 @@ type TTFLight struct {
 	Planes             map[int]bool      // used Unicode planes
 }
 
+// String returns the string value of fd.
 func (fd TTFLight) String() string {
 	return fmt.Sprintf(`
  PostscriptName = %s
@@ -456,6 +457,7 @@ func SupportedFont(fontName string) bool {
 	return IsCoreFont(fontName) || IsUserFont(fontName)
 }
 
+// Gids returns glyph ids for s using fontName.
 func (fd TTFLight) Gids() []int {
 	gids := make([]int, 0, len(fd.Chars))
 	for _, g := range fd.Chars {

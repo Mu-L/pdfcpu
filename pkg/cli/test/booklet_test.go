@@ -53,6 +53,7 @@ func testBooklet(t *testing.T, msg string, inFiles []string, outFile string, sel
 	}
 }
 
+// TestBookletCommand verifies booklet command.
 func TestBookletCommand(t *testing.T) {
 	for _, tt := range []struct {
 		msg           string

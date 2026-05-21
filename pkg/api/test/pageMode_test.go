@@ -24,6 +24,7 @@ import (
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
+// TestPageMode verifies page mode.
 func TestPageMode(t *testing.T) {
 	msg := "testPageMode"
 

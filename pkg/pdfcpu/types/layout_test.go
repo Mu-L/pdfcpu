@@ -17,6 +17,7 @@ package types
 
 import "testing"
 
+// TestParsePageFormat verifies parse page format.
 func TestParsePageFormat(t *testing.T) {
 	dim, _, err := ParsePageFormat("A3L")
 	if err != nil {

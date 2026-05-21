@@ -50,6 +50,7 @@ func testGrid(t *testing.T, msg string, inFiles []string, outFile string, select
 	}
 }
 
+// TestGrid verifies grid.
 func TestGrid(t *testing.T) {
 
 	outDir := filepath.Join(samplesDir, "grid")

@@ -29,7 +29,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ValidatePKCS7Signature validates contained signatures using subFilter adbe.pkcs7.sha1, adbe.pkcs7.detached and ETSI.CAdES.detached.
+// ValidatePKCS7Signatures validates contained signatures using subFilter adbe.pkcs7.sha1, adbe.pkcs7.detached and ETSI.CAdES.detached.
 func ValidatePKCS7Signatures(
 	ra io.ReaderAt,
 	sigDict types.Dict,
