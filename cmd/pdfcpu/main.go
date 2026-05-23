@@ -53,7 +53,11 @@ func init() {
 
 func main() {
 	if err := Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		if needStackTrace {
+			fmt.Fprintf(os.Stderr, "Fatal: %+v\n", err)
+		} else {
+			fmt.Fprintf(os.Stderr, "%v\n", err)
+		}
 		os.Exit(1)
 	}
 }

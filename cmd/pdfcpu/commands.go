@@ -98,64 +98,73 @@ type certificatesListOptions struct {
 }
 
 func init() {
-	rootCmd.AddCommand(annotationsCmd())
-	rootCmd.AddCommand(attachmentsCmd())
-	rootCmd.AddCommand(bookmarksCmd())
-	rootCmd.AddCommand(bookletCmd())
-	rootCmd.AddCommand(boxesCmd())
-	rootCmd.AddCommand(certificatesCmd())
-	rootCmd.AddCommand(changeopwCmd())
-	rootCmd.AddCommand(changeupwCmd())
-	rootCmd.AddCommand(collectCmd())
-	rootCmd.AddCommand(configCmd())
-	rootCmd.AddCommand(createCmd())
-	rootCmd.AddCommand(cropCmd())
-	rootCmd.AddCommand(cutCmd())
-	rootCmd.AddCommand(decryptCmd())
-	rootCmd.AddCommand(dumpCmd())
-	rootCmd.AddCommand(encryptCmd())
-	rootCmd.AddCommand(extractCmd())
-	rootCmd.AddCommand(fontsCmd())
-	rootCmd.AddCommand(formCmd())
-	rootCmd.AddCommand(gridCmd())
-	rootCmd.AddCommand(imagesCmd())
-	rootCmd.AddCommand(importCmd())
-	rootCmd.AddCommand(infoCmd())
-	rootCmd.AddCommand(keywordsCmd())
-	rootCmd.AddCommand(mergeCmd())
-	rootCmd.AddCommand(ndownCmd())
-	rootCmd.AddCommand(nupCmd())
-	rootCmd.AddCommand(optimizeCmd())
-	rootCmd.AddCommand(pagelayoutCmd())
-	rootCmd.AddCommand(pagemodeCmd())
-	rootCmd.AddCommand(pagesCmd())
-	rootCmd.AddCommand(paperCmd())
-	rootCmd.AddCommand(permissionsCmd())
-	rootCmd.AddCommand(portfolioCmd())
-	rootCmd.AddCommand(posterCmd())
-	rootCmd.AddCommand(propertiesCmd())
-	rootCmd.AddCommand(resizeCmd())
-	rootCmd.AddCommand(rotateCmd())
-	rootCmd.AddCommand(selectedpagesCmd())
-	rootCmd.AddCommand(signaturesCmd())
-	rootCmd.AddCommand(splitCmd())
-	rootCmd.AddCommand(stampCmd())
-	rootCmd.AddCommand(trimCmd())
-	rootCmd.AddCommand(validateCmd())
-	rootCmd.AddCommand(versionCmd())
-	rootCmd.AddCommand(viewerprefCmd())
-	rootCmd.AddCommand(watermarkCmd())
-	rootCmd.AddCommand(zoomCmd())
-	rootCmd.AddCommand(completionCmd())
+	rootCmd.AddCommand(commands()...)
 }
 
-func wrapHandler(handler func(*model.Configuration, []string)) func(*cobra.Command, []string) {
-	return func(cmd *cobra.Command, args []string) {
-		conf := getConfig()
+func commands() []*cobra.Command {
+	return []*cobra.Command{
+		annotationsCmd(),
+		attachmentsCmd(),
+		bookmarksCmd(),
+		bookletCmd(),
+		boxesCmd(),
+		certificatesCmd(),
+		changeopwCmd(),
+		changeupwCmd(),
+		collectCmd(),
+		configCmd(),
+		createCmd(),
+		cropCmd(),
+		cutCmd(),
+		decryptCmd(),
+		dumpCmd(),
+		encryptCmd(),
+		extractCmd(),
+		fontsCmd(),
+		formCmd(),
+		gridCmd(),
+		imagesCmd(),
+		importCmd(),
+		infoCmd(),
+		keywordsCmd(),
+		mergeCmd(),
+		ndownCmd(),
+		nupCmd(),
+		optimizeCmd(),
+		pagelayoutCmd(),
+		pagemodeCmd(),
+		pagesCmd(),
+		paperCmd(),
+		permissionsCmd(),
+		portfolioCmd(),
+		posterCmd(),
+		propertiesCmd(),
+		resizeCmd(),
+		rotateCmd(),
+		selectedpagesCmd(),
+		signaturesCmd(),
+		splitCmd(),
+		stampCmd(),
+		trimCmd(),
+		validateCmd(),
+		versionCmd(),
+		viewerprefCmd(),
+		watermarkCmd(),
+		zoomCmd(),
+		completionCmd(),
+	}
+}
+
+func wrapHandler(handler func(*model.Configuration, []string) error) func(*cobra.Command, []string) error {
+	return func(cmd *cobra.Command, args []string) error {
+		conf, err := getConfig()
+		if err != nil {
+			return err
+		}
 		if conf.Version != model.VersionStr {
 			model.CheckConfigVersion(conf.Version)
 		}
-		handler(conf, args)
+		return handler(conf, args)
 	}
 }
 
@@ -172,7 +181,7 @@ func annotationsCmd() *cobra.Command {
 		Use:   "list inFile",
 		Short: "List annotations",
 		Args:  cobra.MinimumNArgs(1),
-		Run:   wrapHandler(processListAnnotationsCommand),
+		RunE:  wrapHandler(processListAnnotationsCommand),
 	}
 	listCmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
 
@@ -180,7 +189,7 @@ func annotationsCmd() *cobra.Command {
 		Use:   "remove inFile [ outFile ] [ objNr | annotId | annotType]...",
 		Short: "Remove annotations",
 		Args:  cobra.MinimumNArgs(1),
-		Run:   wrapHandler(processRemoveAnnotationsCommand),
+		RunE:  wrapHandler(processRemoveAnnotationsCommand),
 	}
 	removeCmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
 
@@ -203,25 +212,25 @@ func attachmentsCmd() *cobra.Command {
 			Use:   "list inFile",
 			Short: "List attachments",
 			Args:  cobra.ExactArgs(1),
-			Run:   wrapHandler(processListAttachmentsCommand),
+			RunE:  wrapHandler(processListAttachmentsCommand),
 		},
 		&cobra.Command{
 			Use:   "add inFile file [ , desc ]...",
 			Short: "Add attachments",
 			Args:  cobra.MinimumNArgs(2),
-			Run:   wrapHandler(processAddAttachmentsCommand),
+			RunE:  wrapHandler(processAddAttachmentsCommand),
 		},
 		&cobra.Command{
 			Use:   "remove inFile [ file... ]",
 			Short: "Remove attachments",
 			Args:  cobra.MinimumNArgs(1),
-			Run:   wrapHandler(processRemoveAttachmentsCommand),
+			RunE:  wrapHandler(processRemoveAttachmentsCommand),
 		},
 		&cobra.Command{
 			Use:   "extract inFile outDir [ file... ]",
 			Short: "Extract attachments",
 			Args:  cobra.MinimumNArgs(2),
-			Run:   wrapHandler(processExtractAttachmentsCommand),
+			RunE:  wrapHandler(processExtractAttachmentsCommand),
 		},
 	)
 
@@ -242,13 +251,9 @@ func bookmarksCmd() *cobra.Command {
 		Use:   "import inFile inFileJSON [ outFile ]",
 		Short: "Import bookmarks",
 		Args:  cobra.RangeArgs(2, 3),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processImportBookmarksCommand(conf, args, importOpts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processImportBookmarksCommand(conf, args, importOpts)
+		}),
 	}
 	importCmd.Flags().BoolVarP(&importOpts.replaceBookmarks, "replace", "r", importOpts.replaceBookmarks, "replace existing bookmarks")
 
@@ -257,20 +262,20 @@ func bookmarksCmd() *cobra.Command {
 			Use:   "list inFile",
 			Short: "List bookmarks",
 			Args:  cobra.ExactArgs(1),
-			Run:   wrapHandler(processListBookmarksCommand),
+			RunE:  wrapHandler(processListBookmarksCommand),
 		},
 		&cobra.Command{
 			Use:   "export inFile [ outFileJSON ]",
 			Short: "Export bookmarks",
 			Args:  cobra.RangeArgs(1, 2),
-			Run:   wrapHandler(processExportBookmarksCommand),
+			RunE:  wrapHandler(processExportBookmarksCommand),
 		},
 		importCmd,
 		&cobra.Command{
 			Use:   "remove inFile [ outFile ]",
 			Short: "Remove bookmarks",
 			Args:  cobra.RangeArgs(1, 2),
-			Run:   wrapHandler(processRemoveBookmarksCommand),
+			RunE:  wrapHandler(processRemoveBookmarksCommand),
 		},
 	)
 
@@ -283,7 +288,7 @@ func bookletCmd() *cobra.Command {
 		Short: "Arrange pages onto larger sheets of paper to make a booklet or zine",
 		Long:  usageLongBooklet,
 		Args:  cobra.MinimumNArgs(3),
-		Run:   wrapHandler(processBookletCommand),
+		RunE:  wrapHandler(processBookletCommand),
 	}
 
 	cmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
@@ -308,7 +313,7 @@ func boxesCmd() *cobra.Command {
 		Use:   "list [ boxTypes ] inFile",
 		Short: "List boxes",
 		Args:  cobra.RangeArgs(1, 2),
-		Run:   wrapHandler(processListBoxesCommand),
+		RunE:  wrapHandler(processListBoxesCommand),
 	}
 	listCmd.Flags().StringVarP(&unit, "unit", "u", "", "display unit: po(ints) | in(ches) | cm | mm")
 
@@ -316,7 +321,7 @@ func boxesCmd() *cobra.Command {
 		Use:   "add description inFile [ outFile ]",
 		Short: "Add boxes",
 		Args:  cobra.RangeArgs(2, 3),
-		Run:   wrapHandler(processAddBoxesCommand),
+		RunE:  wrapHandler(processAddBoxesCommand),
 	}
 	addCmd.Flags().StringVarP(&unit, "unit", "u", "", "display unit: po(ints) | in(ches) | cm | mm")
 
@@ -324,7 +329,7 @@ func boxesCmd() *cobra.Command {
 		Use:   "remove boxTypes inFile [ outFile ]",
 		Short: "Remove boxes",
 		Args:  cobra.RangeArgs(2, 3),
-		Run:   wrapHandler(processRemoveBoxesCommand),
+		RunE:  wrapHandler(processRemoveBoxesCommand),
 	}
 
 	cmd.AddCommand(listCmd, addCmd, removeCmd)
@@ -343,13 +348,9 @@ func certificatesCmd() *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List certificates",
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processListCertificatesCommand(conf, args, listOpts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processListCertificatesCommand(conf, args, listOpts)
+		}),
 	}
 	listCmd.Flags().BoolVarP(&listOpts.json, "json", "j", listOpts.json, "output JSON")
 
@@ -359,18 +360,18 @@ func certificatesCmd() *cobra.Command {
 			Use:   "inspect inFile",
 			Short: "Inspect certificates",
 			Args:  cobra.ExactArgs(1),
-			Run:   wrapHandler(processInspectCertificatesCommand),
+			RunE:  wrapHandler(processInspectCertificatesCommand),
 		},
 		&cobra.Command{
 			Use:   "import inFile...",
 			Short: "Import certificates",
 			Args:  cobra.MinimumNArgs(1),
-			Run:   wrapHandler(processImportCertificatesCommand),
+			RunE:  wrapHandler(processImportCertificatesCommand),
 		},
 		&cobra.Command{
 			Use:   "reset",
 			Short: "Reset certificates",
-			Run:   wrapHandler(resetCertificates),
+			RunE:  wrapHandler(resetCertificates),
 		},
 	)
 
@@ -383,7 +384,7 @@ func changeopwCmd() *cobra.Command {
 		Short: "Change owner password",
 		Long:  usageLongChangeOwnerPW,
 		Args:  cobra.RangeArgs(3, 4),
-		Run:   wrapHandler(processChangeOwnerPasswordCommand),
+		RunE:  wrapHandler(processChangeOwnerPasswordCommand),
 	}
 
 	cmd.Flags().StringVar(&upw, "upw", "", "user password")
@@ -397,7 +398,7 @@ func changeupwCmd() *cobra.Command {
 		Short: "Change user password",
 		Long:  usageLongChangeUserPW,
 		Args:  cobra.RangeArgs(3, 4),
-		Run:   wrapHandler(processChangeUserPasswordCommand),
+		RunE:  wrapHandler(processChangeUserPasswordCommand),
 	}
 
 	cmd.Flags().StringVar(&opw, "opw", "", "owner password")
@@ -453,17 +454,18 @@ PowerShell:
 		DisableFlagsInUseLine: true,
 		ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
 		Args:                  cobra.MatchAll(cobra.ExactArgs(1), cobra.OnlyValidArgs),
-		Run: func(cmd *cobra.Command, args []string) {
+		RunE: func(cmd *cobra.Command, args []string) error {
 			switch args[0] {
 			case "bash":
-				cmd.Root().GenBashCompletion(os.Stdout)
+				return cmd.Root().GenBashCompletion(os.Stdout)
 			case "zsh":
-				cmd.Root().GenZshCompletion(os.Stdout)
+				return cmd.Root().GenZshCompletion(os.Stdout)
 			case "fish":
-				cmd.Root().GenFishCompletion(os.Stdout, true)
+				return cmd.Root().GenFishCompletion(os.Stdout, true)
 			case "powershell":
-				cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
+				return cmd.Root().GenPowerShellCompletionWithDesc(os.Stdout)
 			}
+			return nil
 		},
 	}
 	return cmd
@@ -475,7 +477,7 @@ func collectCmd() *cobra.Command {
 		Short: "Create custom sequence of selected pages",
 		Long:  usageLongCollect,
 		Args:  cobra.RangeArgs(1, 2),
-		Run:   wrapHandler(processCollectCommand),
+		RunE:  wrapHandler(processCollectCommand),
 	}
 
 	cmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process (required)")
@@ -497,14 +499,12 @@ func configCmd() *cobra.Command {
 		&cobra.Command{
 			Use:   "list",
 			Short: "List configuration",
-			Run:   wrapHandler(printConfiguration),
+			RunE:  wrapHandler(printConfiguration),
 		},
 		&cobra.Command{
 			Use:   "reset",
 			Short: "Reset configuration",
-			Run: func(cmd *cobra.Command, args []string) {
-				resetConfiguration(getConfig(), args)
-			},
+			RunE:  wrapHandler(resetConfiguration),
 		},
 	)
 
@@ -517,7 +517,7 @@ func createCmd() *cobra.Command {
 		Short: "Create PDF content including forms via JSON",
 		Long:  usageLongCreate,
 		Args:  cobra.RangeArgs(2, 3),
-		Run:   wrapHandler(processCreateCommand),
+		RunE:  wrapHandler(processCreateCommand),
 	}
 }
 
@@ -527,7 +527,7 @@ func cropCmd() *cobra.Command {
 		Short: "Set cropbox for selected pages",
 		Long:  usageLongCrop,
 		Args:  cobra.RangeArgs(2, 3),
-		Run:   wrapHandler(processCropCommand),
+		RunE:  wrapHandler(processCropCommand),
 	}
 
 	cmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
@@ -544,7 +544,7 @@ func cutCmd() *cobra.Command {
 		Short: "Custom cut pages horizontally or vertically",
 		Long:  usageLongCut,
 		Args:  cobra.RangeArgs(3, 4),
-		Run:   wrapHandler(processCutCommand),
+		RunE:  wrapHandler(processCutCommand),
 	}
 
 	cmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
@@ -561,7 +561,7 @@ func decryptCmd() *cobra.Command {
 		Short: "Remove password protection",
 		Long:  usageLongDecrypt,
 		Args:  cobra.RangeArgs(1, 2),
-		Run:   wrapHandler(processDecryptCommand),
+		RunE:  wrapHandler(processDecryptCommand),
 	}
 
 	cmd.Flags().StringVar(&upw, "upw", "", "user password")
@@ -576,7 +576,7 @@ func dumpCmd() *cobra.Command {
 		Short:  "Dump object",
 		Args:   cobra.ExactArgs(3),
 		Hidden: true,
-		Run:    wrapHandler(processDumpCommand),
+		RunE:   wrapHandler(processDumpCommand),
 	}
 }
 
@@ -592,13 +592,9 @@ func encryptCmd() *cobra.Command {
 		Short: "Set password protection",
 		Long:  usageLongEncrypt,
 		Args:  cobra.RangeArgs(1, 2),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processEncryptCommand(conf, args, opts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processEncryptCommand(conf, args, opts)
+		}),
 	}
 
 	cmd.Flags().StringVar(&upw, "upw", "", "user password")
@@ -621,13 +617,9 @@ func extractCmd() *cobra.Command {
 		Short: "Extract images, fonts, content, pages or metadata",
 		Long:  usageLongExtract,
 		Args:  cobra.ExactArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processExtractCommand(conf, args, opts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processExtractCommand(conf, args, opts)
+		}),
 	}
 
 	cmd.Flags().StringVarP(&opts.mode, "mode", "m", opts.mode, "extraction mode: i(mage)|f(ont)|c(ontent)|p(age)|m(eta)")
@@ -650,19 +642,19 @@ func fontsCmd() *cobra.Command {
 		&cobra.Command{
 			Use:   "list",
 			Short: "List supported fonts",
-			Run:   wrapHandler(processListFontsCommand),
+			RunE:  wrapHandler(processListFontsCommand),
 		},
 		&cobra.Command{
 			Use:   "install fontFiles...",
 			Short: "Install fonts",
 			Args:  cobra.MinimumNArgs(1),
-			Run:   wrapHandler(processInstallFontsCommand),
+			RunE:  wrapHandler(processInstallFontsCommand),
 		},
 		&cobra.Command{
 			Use:   "cheatsheet fontFiles...",
 			Short: "Create font cheat sheets",
 			Args:  cobra.MinimumNArgs(1),
-			Run:   wrapHandler(processCreateCheatSheetFontsCommand),
+			RunE:  wrapHandler(processCreateCheatSheetFontsCommand),
 		},
 	)
 
@@ -680,7 +672,7 @@ func formCmd() *cobra.Command {
 		Use:   "fill inFile inFileJSON [ outFile ]",
 		Short: "Fill form with data via JSON",
 		Args:  cobra.RangeArgs(2, 3),
-		Run:   wrapHandler(processFillFormCommand),
+		RunE:  wrapHandler(processFillFormCommand),
 	}
 
 	multifillOpts := &formMultifillOptions{mode: "single"}
@@ -688,13 +680,9 @@ func formCmd() *cobra.Command {
 		Use:   "multifill inFile inFileData outDir [ outFile ]",
 		Short: "Fill multiple form instances",
 		Args:  cobra.RangeArgs(3, 4),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processMultiFillFormCommand(conf, args, multifillOpts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processMultiFillFormCommand(conf, args, multifillOpts)
+		}),
 	}
 	multifill.Flags().StringVarP(&multifillOpts.mode, "mode", "m", multifillOpts.mode, "output mode: single|merge")
 
@@ -703,37 +691,37 @@ func formCmd() *cobra.Command {
 			Use:   "list inFile...",
 			Short: "List form fields",
 			Args:  cobra.MinimumNArgs(1),
-			Run:   wrapHandler(processListFormFieldsCommand),
+			RunE:  wrapHandler(processListFormFieldsCommand),
 		},
 		&cobra.Command{
 			Use:   "remove inFile [ outFile ] < fieldID | fieldName >...",
 			Short: "Remove form fields",
 			Args:  cobra.MinimumNArgs(2),
-			Run:   wrapHandler(processRemoveFormFieldsCommand),
+			RunE:  wrapHandler(processRemoveFormFieldsCommand),
 		},
 		&cobra.Command{
 			Use:   "lock inFile [ outFile ] [ fieldID | fieldName ]...",
 			Short: "Lock form fields",
 			Args:  cobra.MinimumNArgs(1),
-			Run:   wrapHandler(processLockFormCommand),
+			RunE:  wrapHandler(processLockFormCommand),
 		},
 		&cobra.Command{
 			Use:   "unlock inFile [ outFile ] [ fieldID | fieldName ]...",
 			Short: "Unlock form fields",
 			Args:  cobra.MinimumNArgs(1),
-			Run:   wrapHandler(processUnlockFormCommand),
+			RunE:  wrapHandler(processUnlockFormCommand),
 		},
 		&cobra.Command{
 			Use:   "reset inFile [ outFile ] [ fieldID | fieldName ]...",
 			Short: "Reset form fields",
 			Args:  cobra.MinimumNArgs(1),
-			Run:   wrapHandler(processResetFormCommand),
+			RunE:  wrapHandler(processResetFormCommand),
 		},
 		&cobra.Command{
 			Use:   "export inFile [ outFileJSON ]",
 			Short: "Export form data",
 			Args:  cobra.RangeArgs(1, 2),
-			Run:   wrapHandler(processExportFormCommand),
+			RunE:  wrapHandler(processExportFormCommand),
 		},
 		fill,
 		multifill,
@@ -748,7 +736,7 @@ func gridCmd() *cobra.Command {
 		Short: "Rearrange pages or images for enhanced browsing experience",
 		Long:  usageLongGrid,
 		Args:  cobra.MinimumNArgs(4),
-		Run:   wrapHandler(processGridCommand),
+		RunE:  wrapHandler(processGridCommand),
 	}
 	cmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
 	cmd.Flags().StringVarP(&unit, "unit", "u", "", "display unit: po(ints) | in(ches) | cm | mm")
@@ -771,7 +759,7 @@ func imagesCmd() *cobra.Command {
 		Use:   "list inFile...",
 		Short: "List images",
 		Args:  cobra.MinimumNArgs(1),
-		Run:   wrapHandler(processListImagesCommand),
+		RunE:  wrapHandler(processListImagesCommand),
 	}
 	list.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
 
@@ -779,7 +767,7 @@ func imagesCmd() *cobra.Command {
 		Use:   "extract inFile outDir",
 		Short: "Extract images",
 		Args:  cobra.ExactArgs(2),
-		Run:   wrapHandler(processExtractImagesCommand),
+		RunE:  wrapHandler(processExtractImagesCommand),
 	}
 	extract.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
 
@@ -787,7 +775,7 @@ func imagesCmd() *cobra.Command {
 		Use:   "update inFile imageFile [ outFile ] [ objNr | (pageNr Id) ]",
 		Short: "Update images",
 		Args:  cobra.RangeArgs(2, 5),
-		Run:   wrapHandler(processUpdateImagesCommand),
+		RunE:  wrapHandler(processUpdateImagesCommand),
 	}
 
 	cmd.AddCommand(list, extract, update)
@@ -801,7 +789,7 @@ func importCmd() *cobra.Command {
 		Short: "Import/convert images to PDF",
 		Long:  usageLongImportImages,
 		Args:  cobra.MinimumNArgs(2),
-		Run:   wrapHandler(processImportImagesCommand),
+		RunE:  wrapHandler(processImportImagesCommand),
 	}
 	cmd.Flags().StringVarP(&unit, "unit", "u", "", "display unit: po(ints) | in(ches) | cm | mm")
 
@@ -815,13 +803,9 @@ func infoCmd() *cobra.Command {
 		Short: "Print file info",
 		Long:  usageLongInfo,
 		Args:  cobra.MinimumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processInfoCommand(conf, args, opts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processInfoCommand(conf, args, opts)
+		}),
 	}
 
 	cmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
@@ -848,19 +832,19 @@ func keywordsCmd() *cobra.Command {
 			Use:   "list inFile",
 			Short: "List keywords",
 			Args:  cobra.ExactArgs(1),
-			Run:   wrapHandler(processListKeywordsCommand),
+			RunE:  wrapHandler(processListKeywordsCommand),
 		},
 		&cobra.Command{
 			Use:   "add inFile [ outFile ] keyword...",
 			Short: "Add keywords",
 			Args:  cobra.MinimumNArgs(2),
-			Run:   wrapHandler(processAddKeywordsCommand),
+			RunE:  wrapHandler(processAddKeywordsCommand),
 		},
 		&cobra.Command{
 			Use:   "remove inFile [ outFile ] [ keyword... ]",
 			Short: "Remove keywords",
 			Args:  cobra.MinimumNArgs(1),
-			Run:   wrapHandler(processRemoveKeywordsCommand),
+			RunE:  wrapHandler(processRemoveKeywordsCommand),
 		},
 	)
 
@@ -881,15 +865,13 @@ func mergeCmd() *cobra.Command {
 		Short: "Concatenate PDFs",
 		Long:  usageLongMerge,
 		Args:  cobra.MinimumNArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
+		RunE: func(cmd *cobra.Command, args []string) error {
 			// Check if flags were explicitly set
 			opts.bookmarksSet = cmd.Flags().Changed("bookmarks")
 			opts.optimizeSet = cmd.Flags().Changed("optimize")
-			processMergeCommand(conf, args, opts)
+			return wrapHandler(func(conf *model.Configuration, args []string) error {
+				return processMergeCommand(conf, args, opts)
+			})(cmd, args)
 		},
 	}
 
@@ -910,7 +892,7 @@ func ndownCmd() *cobra.Command {
 		Short: "Cut selected page into n pages symmetrically",
 		Long:  usageLongNDown,
 		Args:  cobra.RangeArgs(3, 5),
-		Run:   wrapHandler(processNDownCommand),
+		RunE:  wrapHandler(processNDownCommand),
 	}
 
 	cmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
@@ -927,7 +909,7 @@ func nupCmd() *cobra.Command {
 		Short: "Rearrange pages or images for reduced number of pages",
 		Long:  usageLongNUp,
 		Args:  cobra.MinimumNArgs(3),
-		Run:   wrapHandler(processNUpCommand),
+		RunE:  wrapHandler(processNUpCommand),
 	}
 
 	cmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
@@ -942,16 +924,12 @@ func optimizeCmd() *cobra.Command {
 	opts := &optimizeCommandOptions{fileStats: ""}
 	cmd := &cobra.Command{
 		Use:   "optimize inFile [ outFile ]",
-		Short: "Optimize PDF by getting rid of redundant page resources",
+		Short: "Optimize a PDF by getting rid of redundant page resources",
 		Long:  usageLongOptimize,
 		Args:  cobra.RangeArgs(1, 2),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processOptimizeCommand(conf, args, opts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processOptimizeCommand(conf, args, opts)
+		}),
 	}
 
 	cmd.Flags().StringVar(&upw, "upw", "", "user password")
@@ -977,19 +955,19 @@ func pagelayoutCmd() *cobra.Command {
 			Use:   "list inFile",
 			Short: "List page layout",
 			Args:  cobra.ExactArgs(1),
-			Run:   wrapHandler(processListPageLayoutCommand),
+			RunE:  wrapHandler(processListPageLayoutCommand),
 		},
 		&cobra.Command{
 			Use:   "set inFile value [ outFile ]",
 			Short: "Set page layout",
 			Args:  cobra.RangeArgs(2, 3),
-			Run:   wrapHandler(processSetPageLayoutCommand),
+			RunE:  wrapHandler(processSetPageLayoutCommand),
 		},
 		&cobra.Command{
 			Use:   "reset inFile [ outFile ]",
 			Short: "Reset page layout",
 			Args:  cobra.RangeArgs(1, 2),
-			Run:   wrapHandler(processResetPageLayoutCommand),
+			RunE:  wrapHandler(processResetPageLayoutCommand),
 		},
 	)
 
@@ -1010,19 +988,19 @@ func pagemodeCmd() *cobra.Command {
 			Use:   "list inFile",
 			Short: "List page mode",
 			Args:  cobra.ExactArgs(1),
-			Run:   wrapHandler(processListPageModeCommand),
+			RunE:  wrapHandler(processListPageModeCommand),
 		},
 		&cobra.Command{
 			Use:   "set inFile value [ outFile ]",
 			Short: "Set page mode",
 			Args:  cobra.RangeArgs(2, 3),
-			Run:   wrapHandler(processSetPageModeCommand),
+			RunE:  wrapHandler(processSetPageModeCommand),
 		},
 		&cobra.Command{
 			Use:   "reset inFile [ outFile ]",
 			Short: "Reset page mode",
 			Args:  cobra.RangeArgs(1, 2),
-			Run:   wrapHandler(processResetPageModeCommand),
+			RunE:  wrapHandler(processResetPageModeCommand),
 		},
 	)
 
@@ -1043,13 +1021,9 @@ func pagesCmd() *cobra.Command {
 		Use:   "insert [ description ] inFile [ outFile ]",
 		Short: "Insert pages",
 		Args:  cobra.RangeArgs(1, 3),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processInsertPagesCommand(conf, args, insertOpts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processInsertPagesCommand(conf, args, insertOpts)
+		}),
 	}
 	insertCmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
 	insertCmd.MarkFlagRequired("pages")
@@ -1060,7 +1034,7 @@ func pagesCmd() *cobra.Command {
 		Use:   "remove inFile [ outFile ]",
 		Short: "Remove pages",
 		Args:  cobra.RangeArgs(1, 2),
-		Run:   wrapHandler(processRemovePagesCommand),
+		RunE:  wrapHandler(processRemovePagesCommand),
 	}
 	removeCmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process (required)")
 	removeCmd.MarkFlagRequired("pages")
@@ -1075,7 +1049,7 @@ func paperCmd() *cobra.Command {
 		Use:   "paper",
 		Short: "Print list of supported paper sizes",
 		Long:  usageLongPaper,
-		Run:   wrapHandler(printPaperSizes),
+		RunE:  wrapHandler(printPaperSizes),
 	}
 }
 
@@ -1092,7 +1066,7 @@ func permissionsCmd() *cobra.Command {
 		Use:   "set inFile [ outFile ]",
 		Short: "Set permissions",
 		Args:  cobra.RangeArgs(1, 2),
-		Run:   wrapHandler(processSetPermissionsCommand),
+		RunE:  wrapHandler(processSetPermissionsCommand),
 	}
 	setCmd.Flags().StringVar(&perm, "perm", "none", "user access permissions")
 
@@ -1101,7 +1075,7 @@ func permissionsCmd() *cobra.Command {
 			Use:   "list inFile...",
 			Short: "List permissions",
 			Args:  cobra.MinimumNArgs(1),
-			Run:   wrapHandler(processListPermissionsCommand),
+			RunE:  wrapHandler(processListPermissionsCommand),
 		},
 		setCmd,
 	)
@@ -1123,25 +1097,25 @@ func portfolioCmd() *cobra.Command {
 			Use:   "list inFile",
 			Short: "List portfolio entries",
 			Args:  cobra.ExactArgs(1),
-			Run:   wrapHandler(processListAttachmentsCommand),
+			RunE:  wrapHandler(processListAttachmentsCommand),
 		},
 		&cobra.Command{
 			Use:   "add inFile file [ , desc ]...",
 			Short: "Add portfolio entries",
 			Args:  cobra.MinimumNArgs(2),
-			Run:   wrapHandler(processAddAttachmentsPortfolioCommand),
+			RunE:  wrapHandler(processAddAttachmentsPortfolioCommand),
 		},
 		&cobra.Command{
 			Use:   "remove inFile [ file... ]",
 			Short: "Remove portfolio entries",
 			Args:  cobra.MinimumNArgs(1),
-			Run:   wrapHandler(processRemoveAttachmentsCommand),
+			RunE:  wrapHandler(processRemoveAttachmentsCommand),
 		},
 		&cobra.Command{
 			Use:   "extract inFile outDir [ file... ]",
 			Short: "Extract portfolio entries",
 			Args:  cobra.MinimumNArgs(2),
-			Run:   wrapHandler(processExtractAttachmentsCommand),
+			RunE:  wrapHandler(processExtractAttachmentsCommand),
 		},
 	)
 
@@ -1154,7 +1128,7 @@ func posterCmd() *cobra.Command {
 		Short: "Create poster using paper size",
 		Long:  usageLongPoster,
 		Args:  cobra.RangeArgs(3, 4),
-		Run:   wrapHandler(processPosterCommand),
+		RunE:  wrapHandler(processPosterCommand),
 	}
 
 	cmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
@@ -1179,19 +1153,19 @@ func propertiesCmd() *cobra.Command {
 			Use:   "list inFile",
 			Short: "List properties",
 			Args:  cobra.ExactArgs(1),
-			Run:   wrapHandler(processListPropertiesCommand),
+			RunE:  wrapHandler(processListPropertiesCommand),
 		},
 		&cobra.Command{
 			Use:   "add inFile [ outFile ] nameValuePair...",
 			Short: "Add properties",
 			Args:  cobra.MinimumNArgs(2),
-			Run:   wrapHandler(processAddPropertiesCommand),
+			RunE:  wrapHandler(processAddPropertiesCommand),
 		},
 		&cobra.Command{
 			Use:   "remove inFile [ outFile ] [ name... ]",
 			Short: "Remove properties",
 			Args:  cobra.MinimumNArgs(1),
-			Run:   wrapHandler(processRemovePropertiesCommand),
+			RunE:  wrapHandler(processRemovePropertiesCommand),
 		},
 	)
 
@@ -1204,7 +1178,7 @@ func resizeCmd() *cobra.Command {
 		Short: "Scale selected pages",
 		Long:  usageLongResize,
 		Args:  cobra.RangeArgs(2, 3),
-		Run:   wrapHandler(processResizeCommand),
+		RunE:  wrapHandler(processResizeCommand),
 	}
 
 	cmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
@@ -1221,7 +1195,7 @@ func rotateCmd() *cobra.Command {
 		Short: "Rotate selected pages",
 		Long:  usageLongRotate,
 		Args:  cobra.RangeArgs(2, 3),
-		Run:   wrapHandler(processRotateCommand),
+		RunE:  wrapHandler(processRotateCommand),
 	}
 	cmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")
 	cmd.Flags().StringVar(&upw, "upw", "", "user password")
@@ -1234,7 +1208,7 @@ func selectedpagesCmd() *cobra.Command {
 		Use:   "selectedpages",
 		Short: "Print definition of the -pages flag",
 		Long:  usageLongSelectedPages,
-		Run:   wrapHandler(printSelectedPages),
+		RunE:  wrapHandler(printSelectedPages),
 	}
 }
 
@@ -1243,7 +1217,7 @@ func signaturesRemoveCmd() *cobra.Command {
 		Use:   "remove inFile [ outFile ]",
 		Short: "Remove signatures",
 		Args:  cobra.MinimumNArgs(1),
-		Run:   wrapHandler(processRemoveSignaturesCommand),
+		RunE:  wrapHandler(processRemoveSignaturesCommand),
 	}
 	cmd.Flags().BoolVar(&removeEncryption, "rmenc", false, "remove encryption")
 	return cmd
@@ -1255,13 +1229,9 @@ func signaturesValidateCmd() *cobra.Command {
 		Use:   "validate inFile",
 		Short: "Validate signatures",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processValidateSignaturesCommand(conf, args, opts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processValidateSignaturesCommand(conf, args, opts)
+		}),
 	}
 	cmd.Flags().BoolVarP(&opts.all, "all", "a", opts.all, "validate all signatures")
 	cmd.Flags().BoolVarP(&opts.full, "full", "f", opts.full, "comprehensive output")
@@ -1289,13 +1259,9 @@ func splitCmd() *cobra.Command {
 		Short: "Split up inFile by span or bookmark",
 		Long:  usageLongSplit,
 		Args:  cobra.MinimumNArgs(2),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processSplitCommand(conf, args, opts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processSplitCommand(conf, args, opts)
+		}),
 	}
 	cmd.Flags().StringVarP(&opts.mode, "mode", "m", opts.mode, "split mode: span | bookmark | page")
 	cmd.Flags().StringVar(&upw, "upw", "", "user password")
@@ -1316,13 +1282,9 @@ func stampCmd() *cobra.Command {
 		Use:   "add string | file description inFile [ outFile ]",
 		Short: "Add stamps",
 		Args:  cobra.MinimumNArgs(3),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processAddStampsCommand(conf, args, addOpts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processAddStampsCommand(conf, args, addOpts)
+		}),
 	}
 	addCmd.Flags().StringVarP(&addOpts.mode, "mode", "m", addOpts.mode, "stamp mode: text | image | pdf")
 	addCmd.Flags().StringVarP(&unit, "unit", "u", "", "display unit: po(ints) | in(ches) | cm | mm")
@@ -1332,13 +1294,9 @@ func stampCmd() *cobra.Command {
 		Use:   "update string | file description inFile [ outFile ]",
 		Short: "Update stamps",
 		Args:  cobra.RangeArgs(3, 4),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processUpdateStampsCommand(conf, args, updateOpts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processUpdateStampsCommand(conf, args, updateOpts)
+		}),
 	}
 	updateCmd.Flags().StringVarP(&updateOpts.mode, "mode", "m", updateOpts.mode, "stamp mode: text | image | pdf")
 	updateCmd.Flags().StringVarP(&unit, "unit", "u", "", "display unit: po(ints) | in(ches) | cm | mm")
@@ -1347,7 +1305,7 @@ func stampCmd() *cobra.Command {
 		Use:   "remove inFile [ outFile ]",
 		Short: "Remove stamps",
 		Args:  cobra.RangeArgs(1, 2),
-		Run:   wrapHandler(processRemoveStampsCommand),
+		RunE:  wrapHandler(processRemoveStampsCommand),
 	}
 
 	cmd.AddCommand(addCmd, updateCmd, removeCmd)
@@ -1361,7 +1319,7 @@ func trimCmd() *cobra.Command {
 		Short: "Create trimmed version of selected pages",
 		Long:  usageLongTrim,
 		Args:  cobra.RangeArgs(1, 2),
-		Run:   wrapHandler(processTrimCommand),
+		RunE:  wrapHandler(processTrimCommand),
 	}
 	cmd.Flags().StringVar(&upw, "upw", "", "user password")
 	cmd.Flags().StringVar(&opw, "opw", "", "owner password")
@@ -1381,13 +1339,9 @@ func validateCmd() *cobra.Command {
 		Short: "Validate PDF against PDF 32000-1:2008 (PDF 1.7) + basic PDF 2.0 validation",
 		Long:  usageLongValidate,
 		Args:  cobra.MinimumNArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processValidateCommand(conf, args, opts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processValidateCommand(conf, args, opts)
+		}),
 	}
 	cmd.Flags().StringVar(&upw, "upw", "", "user password")
 	cmd.Flags().StringVar(&opw, "opw", "", "owner password")
@@ -1403,7 +1357,7 @@ func versionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Print version",
 		Long:  usageLongVersion,
-		Run:   wrapHandler(printVersion),
+		RunE:  wrapHandler(printVersion),
 	}
 }
 
@@ -1421,13 +1375,9 @@ func viewerprefCmd() *cobra.Command {
 		Use:   "list inFile",
 		Short: "List viewer preferences",
 		Args:  cobra.ExactArgs(1),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processListViewerPreferencesCommand(conf, args, listOpts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processListViewerPreferencesCommand(conf, args, listOpts)
+		}),
 	}
 	list.Flags().BoolVarP(&listOpts.all, "all", "a", listOpts.all, "output all (including default values)")
 	list.Flags().BoolVarP(&listOpts.json, "json", "j", listOpts.json, "output JSON")
@@ -1438,13 +1388,13 @@ func viewerprefCmd() *cobra.Command {
 			Use:   "set inFile ( inFileJSON | JSONstring ) [ outFile ]",
 			Short: "Set viewer preferences",
 			Args:  cobra.RangeArgs(2, 3),
-			Run:   wrapHandler(processSetViewerPreferencesCommand),
+			RunE:  wrapHandler(processSetViewerPreferencesCommand),
 		},
 		&cobra.Command{
 			Use:   "reset inFile [ outFile ]",
 			Short: "Reset viewer preferences",
 			Args:  cobra.RangeArgs(1, 2),
-			Run:   wrapHandler(processResetViewerPreferencesCommand),
+			RunE:  wrapHandler(processResetViewerPreferencesCommand),
 		},
 	)
 
@@ -1464,13 +1414,9 @@ func watermarkCmd() *cobra.Command {
 		Use:   "add string | file description inFile [ outFile ]",
 		Short: "Add, remove, update text, image or PDF watermarks for selected pages",
 		Args:  cobra.MinimumNArgs(3),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processAddWatermarksCommand(conf, args, addOpts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processAddWatermarksCommand(conf, args, addOpts)
+		}),
 	}
 	addCmd.Flags().StringVarP(&addOpts.mode, "mode", "m", addOpts.mode, "watermark mode: text | image | pdf")
 	addCmd.Flags().StringVarP(&unit, "unit", "u", "", "display unit: po(ints) | in(ches) | cm | mm")
@@ -1480,13 +1426,9 @@ func watermarkCmd() *cobra.Command {
 		Use:   "update string | file description inFile [ outFile ]",
 		Short: "Update watermarks",
 		Args:  cobra.MinimumNArgs(3),
-		Run: func(cmd *cobra.Command, args []string) {
-			conf := getConfig()
-			if conf.Version != model.VersionStr {
-				model.CheckConfigVersion(conf.Version)
-			}
-			processUpdateWatermarksCommand(conf, args, updateOpts)
-		},
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processUpdateWatermarksCommand(conf, args, updateOpts)
+		}),
 	}
 	updateCmd.Flags().StringVarP(&updateOpts.mode, "mode", "m", updateOpts.mode, "watermark mode: text|image|pdf")
 	updateCmd.Flags().StringVarP(&unit, "unit", "u", "", "display unit: po(ints) | in(ches) | cm | mm")
@@ -1495,7 +1437,7 @@ func watermarkCmd() *cobra.Command {
 		Use:   "remove inFile [ outFile ]",
 		Short: "Remove watermarks",
 		Args:  cobra.RangeArgs(1, 2),
-		Run:   wrapHandler(processRemoveWatermarksCommand),
+		RunE:  wrapHandler(processRemoveWatermarksCommand),
 	}
 
 	cmd.AddCommand(addCmd, updateCmd, removeCmd)
@@ -1509,7 +1451,7 @@ func zoomCmd() *cobra.Command {
 		Short: "Zoom in/out of selected pages",
 		Long:  usageLongZoom,
 		Args:  cobra.MinimumNArgs(2),
-		Run:   wrapHandler(processZoomCommand),
+		RunE:  wrapHandler(processZoomCommand),
 	}
 
 	cmd.Flags().StringVarP(&selectedPages, "pages", "p", "", "pages to process")

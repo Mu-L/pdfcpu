@@ -1031,7 +1031,7 @@ func checkLinks(xRefTable *model.XRefTable, client http.Client, pages []int) boo
 	for _, page := range pages {
 		for uri := range xRefTable.URIs[page] {
 			if log.CLIEnabled() {
-				fmt.Printf(".")
+				log.CLI.Print(".")
 			}
 			_, err := url.ParseRequestURI(uri)
 			if err != nil {

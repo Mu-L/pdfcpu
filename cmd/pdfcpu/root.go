@@ -97,31 +97,31 @@ func initConfig() {
 	}
 }
 
-func validateConfigDirFlag() {
+func validateConfigDirFlag() error {
 	if len(conf) > 0 && conf != "disable" {
 		info, err := os.Stat(conf)
 		if err != nil {
 			if os.IsNotExist(err) {
-				fmt.Fprintf(os.Stderr, "conf: %s does not exist\n\n", conf)
-				os.Exit(1)
+				return fmt.Errorf("conf: %s does not exist", conf)
 			}
-			fmt.Fprintf(os.Stderr, "conf: %s %v\n\n", conf, err)
-			os.Exit(1)
+			return fmt.Errorf("conf: %s %v", conf, err)
 		}
 		if !info.IsDir() {
-			fmt.Fprintf(os.Stderr, "conf: %s not a directory\n\n", conf)
-			os.Exit(1)
+			return fmt.Errorf("conf: %s not a directory", conf)
 		}
 		model.ConfigPath = conf
-		return
+		return nil
 	}
 	if conf == "disable" {
 		model.ConfigPath = "disable"
 	}
+	return nil
 }
 
 func ensureDefaultConfig() (*model.Configuration, error) {
-	validateConfigDirFlag()
+	if err := validateConfigDirFlag(); err != nil {
+		return nil, err
+	}
 
 	// Check if offline flag was explicitly set
 	if cmd := rootCmd; cmd != nil {
@@ -138,11 +138,10 @@ func ensureDefaultConfig() (*model.Configuration, error) {
 	return model.NewDefaultConfiguration(), nil
 }
 
-func getConfig() *model.Configuration {
+func getConfig() (*model.Configuration, error) {
 	conf, err := ensureDefaultConfig()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "pdfcpu: %v\n", err)
-		os.Exit(1)
+		return nil, fmt.Errorf("pdfcpu: %v", err)
 	}
 
 	conf.OwnerPW = opw
@@ -155,5 +154,5 @@ func getConfig() *model.Configuration {
 		conf.Offline = offline
 	}
 
-	return conf
+	return conf, nil
 }

@@ -144,8 +144,10 @@ func (fd ttf) PrintChars() string {
 		}
 		sb.WriteString(fmt.Sprintf("#%x -> #%x(%d)\n", c, g, g))
 	}
-	fmt.Printf("using glyphs[%08x,%08x] [%d,%d]\n", min, max, min, max)
-	fmt.Printf("using glyphs #%x - #%x (%d-%d)\n", min, max, min, max)
+	if log.CLIEnabled() {
+		log.CLI.Printf("using glyphs[%08x,%08x] [%d,%d]\n", min, max, min, max)
+		log.CLI.Printf("using glyphs #%x - #%x (%d-%d)\n", min, max, min, max)
+	}
 	return sb.String()
 }
 
@@ -588,7 +590,9 @@ func headerAndTables(fn string, r io.ReaderAt, baseOff int64) ([]byte, map[strin
 		}
 		sum := calcTableChecksum(tag, t)
 		if sum != chk {
-			fmt.Printf("pdfcpu: fixing table<%s> checksum error; want:%d got:%d\n", tag, chk, sum)
+			if log.CLIEnabled() {
+				log.CLI.Printf("pdfcpu: fixing table<%s> checksum error; want:%d got:%d\n", tag, chk, sum)
+			}
 			chk = sum
 		}
 		tables[tag] = &table{chksum: chk, off: o, size: l, padded: ll, data: t}
