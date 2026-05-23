@@ -2104,20 +2104,26 @@ func DetectWatermarks(ctx *model.Context) error {
 			return err
 		}
 
-		if o == nil {
+		if d == nil {
+			println("continue")
 			continue
 		}
 
-		if *d.Type() != "OCG" {
+		n, err := ctx.Dereference(d["Type"])
+		if err != nil {
+			return err
+		}
+		typ, ok := n.(types.Name)
+		if !ok || typ != "OCG" {
 			continue
 		}
 
-		n := d.StringEntry("Name")
-		if n == nil {
-			continue
+		n, err = ctx.Dereference(d["Name"])
+		if err != nil {
+			return err
 		}
-
-		if *n != "Background" && *n != "Watermark" {
+		name, ok := n.(types.StringLiteral)
+		if !ok || name != "Background" && name != "Watermark" {
 			continue
 		}
 
