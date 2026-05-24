@@ -402,7 +402,7 @@ func wArr(ttf font.TTFLight, from, thru int) types.Array {
 	return a
 }
 
-func prepGids(xRefTable *model.XRefTable, ttf font.TTFLight, fontName string, used bool) []int {
+func prepGids(xRefTable *model.XRefTable, ttf font.TTFLight, fontName string, used bool) ([]int, bool) {
 	gids := ttf.GlyphWidths
 	if used {
 		usedGIDs, ok := xRefTable.UsedGIDs[fontName]
@@ -412,9 +412,10 @@ func prepGids(xRefTable *model.XRefTable, ttf font.TTFLight, fontName string, us
 				gids = append(gids, int(gid))
 			}
 			sort.Ints(gids)
+			return gids, true
 		}
 	}
-	return gids
+	return gids, false
 }
 
 func handleEqualWidths(w, w0, wl, g, g0, gl *int, a *types.Array, skip, equalWidths *bool) {
@@ -450,13 +451,13 @@ func finalizeWidths(ttf font.TTFLight, w0, g0, gl int, skip, equalWidths bool, a
 }
 
 func calcWidthArray(xRefTable *model.XRefTable, ttf font.TTFLight, fontName string, used bool) types.Array {
-	gids := prepGids(xRefTable, ttf, fontName, used)
+	gids, ok := prepGids(xRefTable, ttf, fontName, used)
 	a := types.Array{}
 	var g0, w0, gl, wl int
 	start, equalWidths, skip := true, false, false
 
 	for g, w := range gids {
-		if used {
+		if ok {
 			g = w
 			w = ttf.GlyphWidths[g]
 		}
@@ -511,10 +512,7 @@ func calcWidthArray(xRefTable *model.XRefTable, ttf font.TTFLight, fontName stri
 			if g-g0 > 1 {
 				// switch from non equalW to equalW
 				a = append(a, types.Integer(g0)) // write non-contiguous width block
-				tru := gl - 1
-				if tru < g0 {
-					tru = g0
-				}
+				tru := max(gl-1, g0)
 				a1 := wArr(ttf, g0, tru)
 				a = append(a, a1)
 				g0, w0 = gl, wl
@@ -890,7 +888,7 @@ func CIDFontDict(xRefTable *model.XRefTable, ttf font.TTFLight, fontName, baseFo
 	}
 
 	if parms == nil {
-		wIndRef, err := CIDWidths(xRefTable, ttf, fontName, parms == nil, nil)
+		wIndRef, err := CIDWidths(xRefTable, ttf, fontName, true, nil)
 		if err != nil {
 			return nil, err
 		}
