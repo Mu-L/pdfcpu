@@ -518,94 +518,131 @@ func Booklet(cmd *Command) ([]string, error) {
 // ImportImages turns image files into a page sequence and writes the result to outFile.
 // In its simplest form this operation converts an image into a PDF.
 func ImportImages(cmd *Command) ([]string, error) {
-	stdinImage := false
-	for _, fn := range cmd.InFiles {
-		if fn == "-" {
-			if stdinImage {
-				return nil, fmt.Errorf("pdfcpu: only one imageFile may read from stdin")
-			}
-			stdinImage = true
-		}
+	stdinImage, err := hasStdinImage(cmd.InFiles)
+	if err != nil {
+		return nil, err
 	}
 	if *cmd.OutFile != "-" && !stdinImage {
 		return nil, api.ImportImagesFile(cmd.InFiles, *cmd.OutFile, cmd.Import, cmd.Conf)
 	}
 
-	var (
-		readers []io.Reader
-		closers []io.Closer
-	)
-	for _, fn := range cmd.InFiles {
-		if fn == "-" {
-			bb, err := io.ReadAll(os.Stdin)
-			if err != nil {
-				return nil, err
-			}
-			if len(bb) == 0 {
-				return nil, fmt.Errorf("pdfcpu: stdin is empty")
-			}
-			readers = append(readers, bytes.NewReader(bb))
-			continue
-		}
-
-		f, err := os.Open(fn)
-		if err != nil {
-			for _, c := range closers {
-				_ = c.Close()
-			}
-			return nil, err
-		}
-		closers = append(closers, f)
-		readers = append(readers, f)
+	readers, closers, err := importImageReaders(cmd.InFiles)
+	if err != nil {
+		return nil, err
 	}
-	defer func() {
-		for _, c := range closers {
-			_ = c.Close()
-		}
-	}()
+	defer closeAll(closers)
 
 	if *cmd.OutFile == "-" {
 		log.SetCLILogger(nil)
 		return nil, api.ImportImages(nil, os.Stdout, readers, cmd.Import, cmd.Conf)
 	}
 
-	var rs io.ReadSeeker
-	tmpFile := *cmd.OutFile
-	if _, err := os.Stat(*cmd.OutFile); err == nil {
-		f, err := os.Open(*cmd.OutFile)
-		if err != nil {
-			return nil, err
+	return nil, importImagesToFile(*cmd.OutFile, readers, cmd.Import, cmd.Conf)
+}
+
+func hasStdinImage(inFiles []string) (bool, error) {
+	stdinImage := false
+	for _, fn := range inFiles {
+		if fn == "-" {
+			if stdinImage {
+				return false, fmt.Errorf("pdfcpu: only one imageFile may read from stdin")
+			}
+			stdinImage = true
 		}
-		defer f.Close()
-		rs = f
-		tmpFile += ".tmp"
-	} else if !os.IsNotExist(err) {
-		return nil, err
+	}
+	return stdinImage, nil
+}
+
+func importImageReader(fn string) (io.Reader, io.Closer, error) {
+	if fn != "-" {
+		f, err := os.Open(fn)
+		if err != nil {
+			return nil, nil, err
+		}
+		return f, f, nil
 	}
 
+	bb, err := io.ReadAll(os.Stdin)
+	if err != nil {
+		return nil, nil, err
+	}
+	if len(bb) == 0 {
+		return nil, nil, fmt.Errorf("pdfcpu: stdin is empty")
+	}
+	return bytes.NewReader(bb), nil, nil
+}
+
+func importImageReaders(inFiles []string) ([]io.Reader, []io.Closer, error) {
+	readers := make([]io.Reader, 0, len(inFiles))
+	closers := []io.Closer{}
+	for _, fn := range inFiles {
+		r, c, err := importImageReader(fn)
+		if err != nil {
+			closeAll(closers)
+			return nil, nil, err
+		}
+		readers = append(readers, r)
+		if c != nil {
+			closers = append(closers, c)
+		}
+	}
+	return readers, closers, nil
+}
+
+func closeAll(closers []io.Closer) {
+	for _, c := range closers {
+		_ = c.Close()
+	}
+}
+
+func importImagesDestination(outFile string) (io.ReadSeeker, string, *os.File, error) {
+	var rs io.ReadSeeker
+	tmpFile := outFile
+	if _, err := os.Stat(outFile); err == nil {
+		f, err := os.Open(outFile)
+		if err != nil {
+			return nil, "", nil, err
+		}
+		rs = f
+		tmpFile += ".tmp"
+		return rs, tmpFile, f, nil
+	} else if !os.IsNotExist(err) {
+		return nil, "", nil, err
+	}
+	return rs, tmpFile, nil, nil
+}
+
+func importImagesToFile(outFile string, readers []io.Reader, imp *pdfcpu.Import, conf *model.Configuration) error {
+	rs, tmpFile, f1, err := importImagesDestination(outFile)
+	if err != nil {
+		return err
+	}
+	if f1 != nil {
+		defer f1.Close()
+	}
 	f, err := os.Create(tmpFile)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	ok := false
 	defer func() {
 		_ = f.Close()
-		if !ok && tmpFile != *cmd.OutFile {
+		if !ok && tmpFile != outFile {
 			_ = os.Remove(tmpFile)
 		}
 	}()
 
-	if err := api.ImportImages(rs, f, readers, cmd.Import, cmd.Conf); err != nil {
-		return nil, err
+	if err := api.ImportImages(rs, f, readers, imp, conf); err != nil {
+		return err
 	}
 	if err := f.Close(); err != nil {
-		return nil, err
+		return err
 	}
 	ok = true
-	if tmpFile != *cmd.OutFile {
-		return nil, os.Rename(tmpFile, *cmd.OutFile)
+	if tmpFile != outFile {
+		return os.Rename(tmpFile, outFile)
 	}
-	return nil, nil
+	return nil
 }
 
 // InsertPages inserts a blank page before or after each selected page.
