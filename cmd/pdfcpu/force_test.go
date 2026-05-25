@@ -257,9 +257,21 @@ func TestForceFlagProtectsExplicitOutputFiles(t *testing.T) {
 			},
 		},
 		{
+			name: "watermark add empty description",
+			args: func(outFile, outDir string) []string {
+				return []string{"watermark", "add", "Draft", "", inFile, outFile}
+			},
+		},
+		{
 			name: "watermark update",
 			args: func(outFile, outDir string) []string {
 				return []string{"watermark", "update", "Draft", "pos:c", inFile, outFile}
+			},
+		},
+		{
+			name: "watermark update empty description",
+			args: func(outFile, outDir string) []string {
+				return []string{"watermark", "update", "Draft", "", inFile, outFile}
 			},
 		},
 		{
@@ -275,9 +287,21 @@ func TestForceFlagProtectsExplicitOutputFiles(t *testing.T) {
 			},
 		},
 		{
+			name: "stamp add empty description",
+			args: func(outFile, outDir string) []string {
+				return []string{"stamp", "add", "Draft", "", inFile, outFile}
+			},
+		},
+		{
 			name: "stamp update",
 			args: func(outFile, outDir string) []string {
 				return []string{"stamp", "update", "Draft", "pos:c", inFile, outFile}
+			},
+		},
+		{
+			name: "stamp update empty description",
+			args: func(outFile, outDir string) []string {
+				return []string{"stamp", "update", "Draft", "", inFile, outFile}
 			},
 		},
 		{

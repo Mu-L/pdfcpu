@@ -211,9 +211,29 @@ func stdoutForStdin(inFile string) string {
 	return ""
 }
 
+func validateNoEmptyArgs(args []string, name string) error {
+	for _, arg := range args {
+		if strings.TrimSpace(arg) == "" {
+			return errors.Errorf("%s must not be empty", name)
+		}
+	}
+	return nil
+}
+
+func validateAttachmentArg(arg string) error {
+	fileName := strings.TrimSpace(strings.SplitN(arg, ",", 2)[0])
+	if fileName == "" {
+		return errors.New("attachment filename must not be empty")
+	}
+	return nil
+}
+
 func attachmentFiles(args []string, expandGlobs bool) ([]string, error) {
 	fileNames := []string{}
 	for _, arg := range args {
+		if err := validateAttachmentArg(arg); err != nil {
+			return nil, err
+		}
 		if expandGlobs && strings.Contains(arg, "*") {
 			matches, err := filepath.Glob(arg)
 			if err != nil {
@@ -905,6 +925,9 @@ func processRemoveAttachmentsCommand(conf *model.Configuration, args []string) e
 	if err := inputPDFArg(conf, inFile); err != nil {
 		return err
 	}
+	if err := validateNoEmptyArgs(args[1:], "attachment filename"); err != nil {
+		return err
+	}
 	return process(cli.RemoveAttachmentsCommand(inFile, stdoutForStdin(inFile), args[1:], conf))
 }
 
@@ -914,6 +937,9 @@ func processExtractAttachmentsCommand(conf *model.Configuration, args []string) 
 		return err
 	}
 	outDir := args[1]
+	if err := validateNoEmptyArgs(args[2:], "attachment filename"); err != nil {
+		return err
+	}
 	if err := ensureOutputDirEmpty(outDir); err != nil {
 		return err
 	}
@@ -1135,10 +1161,19 @@ func validateWatermarkMode(wmMode string) error {
 func parseWatermark(args []string, onTop bool, wmMode string, unit types.DisplayUnit) (*model.Watermark, error) {
 	switch wmMode {
 	case "text":
+		if err := pdfcpu.ValidateWatermarkModeParam(model.WMText, args[0], onTop); err != nil {
+			return nil, err
+		}
 		return pdfcpu.ParseTextWatermarkDetails(args[0], args[1], onTop, unit)
 	case "image":
+		if err := pdfcpu.ValidateWatermarkModeParam(model.WMImage, args[0], onTop); err != nil {
+			return nil, err
+		}
 		return pdfcpu.ParseImageWatermarkDetails(args[0], args[1], onTop, unit)
 	case "pdf":
+		if err := pdfcpu.ValidateWatermarkModeParam(model.WMPDF, args[0], onTop); err != nil {
+			return nil, err
+		}
 		return pdfcpu.ParsePDFWatermarkDetails(args[0], args[1], onTop, unit)
 	}
 	return nil, errors.Errorf("unsupported wm type: %s", wmMode)
@@ -1668,6 +1703,9 @@ func processInstallFontsCommand(conf *model.Configuration, args []string) error 
 }
 
 func processCreateCheatSheetFontsCommand(conf *model.Configuration, args []string) error {
+	if err := validateNoEmptyArgs(args, "font name"); err != nil {
+		return err
+	}
 	fileNames := []string{}
 	if len(args) > 0 {
 		fileNames = append(fileNames, args...)
@@ -1708,12 +1746,18 @@ func processAddKeywordsCommand(conf *model.Configuration, args []string) error {
 	if err != nil {
 		return err
 	}
+	if err := validateNoEmptyArgs(keywords, "keyword"); err != nil {
+		return err
+	}
 	return process(cli.AddKeywordsCommand(inFile, outFile, keywords, conf))
 }
 
 func processRemoveKeywordsCommand(conf *model.Configuration, args []string) error {
 	inFile, outFile, keywords, err := metadataArgs(conf, args)
 	if err != nil {
+		return err
+	}
+	if err := validateNoEmptyArgs(keywords, "keyword"); err != nil {
 		return err
 	}
 	return process(cli.RemoveKeywordsCommand(inFile, outFile, keywords, conf))
@@ -1734,10 +1778,16 @@ func parsePropertyAssignment(arg string) (string, string, error) {
 		return "", "", errors.New("keyValuePair = 'key = value'")
 	}
 	k := strings.TrimSpace(ss[0])
+	if k == "" {
+		return "", "", errors.New("property name must not be empty")
+	}
 	if !validate.DocumentProperty(k) {
 		return "", "", errors.Errorf("property name \"%s\" not allowed!", k)
 	}
 	v := strings.TrimSpace(ss[1])
+	if v == "" {
+		return "", "", errors.New("property value must not be empty")
+	}
 	return k, v, nil
 }
 
@@ -1768,10 +1818,14 @@ func processAddPropertiesCommand(conf *model.Configuration, args []string) error
 func propertyKeys(args []string) ([]string, error) {
 	keys := []string{}
 	for _, arg := range args {
-		if !validate.DocumentProperty(arg) {
-			return nil, errors.Errorf("property name \"%s\" not allowed!", arg)
+		k := strings.TrimSpace(arg)
+		if k == "" {
+			return nil, errors.New("property name must not be empty")
 		}
-		keys = append(keys, arg)
+		if !validate.DocumentProperty(k) {
+			return nil, errors.Errorf("property name \"%s\" not allowed!", k)
+		}
+		keys = append(keys, k)
 	}
 	return keys, nil
 }
@@ -1929,7 +1983,10 @@ func annotationRemovalArgs(conf *model.Configuration, args []string) (string, st
 
 		j, err := strconv.Atoi(arg)
 		if err != nil {
-			// strings args may be and id or annotType
+			// strings args may be an id or annotType
+			if err := validateNoEmptyArgs([]string{arg}, "annotation ID or type"); err != nil {
+				return "", "", nil, nil, err
+			}
 			idsAndTypes = append(idsAndTypes, arg)
 			continue
 		}
@@ -2165,9 +2222,15 @@ func formFieldArgs(conf *model.Configuration, args []string, rejectPDFAsOnlyFiel
 				}
 			}
 		} else {
+			if err := validateNoEmptyArgs([]string{args[1]}, "form field ID or name"); err != nil {
+				return "", "", nil, err
+			}
 			fieldIDs = append(fieldIDs, args[1])
 		}
 		for i := 2; i < len(args); i++ {
+			if err := validateNoEmptyArgs([]string{args[i]}, "form field ID or name"); err != nil {
+				return "", "", nil, err
+			}
 			fieldIDs = append(fieldIDs, args[i])
 		}
 	}

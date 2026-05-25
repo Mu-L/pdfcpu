@@ -63,6 +63,9 @@ func AddAttachments(rs io.ReadSeeker, w io.Writer, files []string, coll bool, co
 	if w == nil {
 		return errors.New("pdfcpu: AddAttachments: missing w")
 	}
+	if err := validateAttachmentFileNames(files); err != nil {
+		return err
+	}
 
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
@@ -122,6 +125,10 @@ func AddAttachmentsFile(inFile, outFile string, files []string, coll bool, conf 
 	var f1, f2 *os.File
 	ok := false
 
+	if err := validateAttachmentFileNames(files); err != nil {
+		return err
+	}
+
 	if f1, err = os.Open(inFile); err != nil {
 		return err
 	}
@@ -172,6 +179,9 @@ func RemoveAttachments(rs io.ReadSeeker, w io.Writer, files []string, conf *mode
 	if w == nil {
 		return errors.New("pdfcpu: RemoveAttachments: missing w")
 	}
+	if err := validateNoEmptyStrings(files, "attachment filename"); err != nil {
+		return err
+	}
 
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
@@ -198,6 +208,10 @@ func RemoveAttachments(rs io.ReadSeeker, w io.Writer, files []string, conf *mode
 func RemoveAttachmentsFile(inFile, outFile string, files []string, conf *model.Configuration) (err error) {
 	var f1, f2 *os.File
 	ok := false
+
+	if err := validateNoEmptyStrings(files, "attachment filename"); err != nil {
+		return err
+	}
 
 	if f1, err = os.Open(inFile); err != nil {
 		return err
@@ -245,6 +259,9 @@ func ExtractAttachmentsRaw(rs io.ReadSeeker, outDir string, fileNames []string, 
 
 	if rs == nil {
 		return nil, errors.New("pdfcpu: ExtractAttachmentsRaw: missing rs")
+	}
+	if err := validateNoEmptyStrings(fileNames, "attachment filename"); err != nil {
+		return nil, err
 	}
 
 	if conf == nil {
@@ -295,6 +312,10 @@ func ExtractAttachments(rs io.ReadSeeker, outDir string, fileNames []string, con
 
 // ExtractAttachmentsFile extracts embedded files from a PDF context read from inFile into outDir.
 func ExtractAttachmentsFile(inFile, outDir string, files []string, conf *model.Configuration) error {
+	if err := validateNoEmptyStrings(files, "attachment filename"); err != nil {
+		return err
+	}
+
 	f, err := os.Open(inFile)
 	if err != nil {
 		return err

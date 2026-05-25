@@ -74,6 +74,9 @@ func RemoveFormFields(rs io.ReadSeeker, w io.Writer, fieldIDsOrNames []string, c
 	if rs == nil {
 		return errors.New("pdfcpu: RemoveFormFields: missing rs")
 	}
+	if err := validateNoEmptyStrings(fieldIDsOrNames, "form field ID or name"); err != nil {
+		return err
+	}
 
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
@@ -100,6 +103,10 @@ func RemoveFormFields(rs io.ReadSeeker, w io.Writer, fieldIDsOrNames []string, c
 func RemoveFormFieldsFile(inFile, outFile string, fieldIDsOrNames []string, conf *model.Configuration) (err error) {
 	var f1, f2 *os.File
 	ok := false
+
+	if err := validateNoEmptyStrings(fieldIDsOrNames, "form field ID or name"); err != nil {
+		return err
+	}
 
 	if f1, err = os.Open(inFile); err != nil {
 		return err
@@ -150,6 +157,9 @@ func LockFormFields(rs io.ReadSeeker, w io.Writer, fieldIDsOrNames []string, con
 	if rs == nil {
 		return errors.New("pdfcpu: LockFormFields: missing rs")
 	}
+	if err := validateNoEmptyStrings(fieldIDsOrNames, "form field ID or name"); err != nil {
+		return err
+	}
 
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
@@ -176,6 +186,10 @@ func LockFormFields(rs io.ReadSeeker, w io.Writer, fieldIDsOrNames []string, con
 func LockFormFieldsFile(inFile, outFile string, fieldIDsOrNames []string, conf *model.Configuration) (err error) {
 	var f1, f2 *os.File
 	ok := false
+
+	if err := validateNoEmptyStrings(fieldIDsOrNames, "form field ID or name"); err != nil {
+		return err
+	}
 
 	if f1, err = os.Open(inFile); err != nil {
 		return err
@@ -226,6 +240,9 @@ func UnlockFormFields(rs io.ReadSeeker, w io.Writer, fieldIDsOrNames []string, c
 	if rs == nil {
 		return errors.New("pdfcpu: UnlockFormFields: missing rs")
 	}
+	if err := validateNoEmptyStrings(fieldIDsOrNames, "form field ID or name"); err != nil {
+		return err
+	}
 
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
@@ -252,6 +269,10 @@ func UnlockFormFields(rs io.ReadSeeker, w io.Writer, fieldIDsOrNames []string, c
 func UnlockFormFieldsFile(inFile, outFile string, fieldIDsOrNames []string, conf *model.Configuration) (err error) {
 	var f1, f2 *os.File
 	ok := true
+
+	if err := validateNoEmptyStrings(fieldIDsOrNames, "form field ID or name"); err != nil {
+		return err
+	}
 
 	if f1, err = os.Open(inFile); err != nil {
 		return err
@@ -302,6 +323,9 @@ func ResetFormFields(rs io.ReadSeeker, w io.Writer, fieldIDsOrNames []string, co
 	if rs == nil {
 		return errors.New("pdfcpu: ResetFormFields: missing rs")
 	}
+	if err := validateNoEmptyStrings(fieldIDsOrNames, "form field ID or name"); err != nil {
+		return err
+	}
 
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
@@ -328,6 +352,10 @@ func ResetFormFields(rs io.ReadSeeker, w io.Writer, fieldIDsOrNames []string, co
 func ResetFormFieldsFile(inFile, outFile string, fieldIDsOrNames []string, conf *model.Configuration) (err error) {
 	var f1, f2 *os.File
 	ok := false
+
+	if err := validateNoEmptyStrings(fieldIDsOrNames, "form field ID or name"); err != nil {
+		return err
+	}
 
 	if f1, err = os.Open(inFile); err != nil {
 		return err

@@ -50,6 +50,9 @@ func AddProperties(rs io.ReadSeeker, w io.Writer, properties map[string]string, 
 	if rs == nil {
 		return errors.New("pdfcpu: AddProperties: missing rs")
 	}
+	if err := validateProperties(properties); err != nil {
+		return err
+	}
 
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
@@ -74,6 +77,10 @@ func AddProperties(rs io.ReadSeeker, w io.Writer, properties map[string]string, 
 func AddPropertiesFile(inFile, outFile string, properties map[string]string, conf *model.Configuration) (err error) {
 	var f1, f2 *os.File
 	ok := false
+
+	if err := validateProperties(properties); err != nil {
+		return err
+	}
 
 	if f1, err = os.Open(inFile); err != nil {
 		return err
@@ -120,6 +127,9 @@ func RemoveProperties(rs io.ReadSeeker, w io.Writer, properties []string, conf *
 	if rs == nil {
 		return errors.New("pdfcpu: RemoveProperties: missing rs")
 	}
+	if err := validateNoEmptyStrings(properties, "property name"); err != nil {
+		return err
+	}
 
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
@@ -148,6 +158,10 @@ func RemoveProperties(rs io.ReadSeeker, w io.Writer, properties []string, conf *
 func RemovePropertiesFile(inFile, outFile string, properties []string, conf *model.Configuration) (err error) {
 	var f1, f2 *os.File
 	ok := false
+
+	if err := validateNoEmptyStrings(properties, "property name"); err != nil {
+		return err
+	}
 
 	if f1, err = os.Open(inFile); err != nil {
 		return err

@@ -240,6 +240,10 @@ func CreateUserFontDemoFiles(dir, fn string) error {
 
 // CreateCheatSheetsUserFonts creates single page PDF cheat sheets for installed user fonts.
 func CreateCheatSheetsUserFonts(fontNames []string) error {
+	if err := validateNoEmptyStrings(fontNames, "font name"); err != nil {
+		return err
+	}
+
 	if len(fontNames) == 0 {
 		fontNames = font.UserFontNames()
 	}

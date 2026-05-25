@@ -469,6 +469,26 @@ func parseBorder(s string, wm *model.Watermark) error {
 	return err
 }
 
+func watermarkModeParamName(mode int) string {
+	switch mode {
+	case model.WMText:
+		return "text"
+	case model.WMImage:
+		return "image filename"
+	case model.WMPDF:
+		return "PDF filename"
+	}
+	return "mode parameter"
+}
+
+// ValidateWatermarkModeParam validates the user supplied watermark/stamp mode parameter.
+func ValidateWatermarkModeParam(mode int, modeParm string, onTop bool) error {
+	if strings.TrimSpace(modeParm) == "" {
+		return errors.Errorf("pdfcpu: %s %s must not be empty", onTopString(onTop), watermarkModeParamName(mode))
+	}
+	return nil
+}
+
 func parseWatermarkDetails(mode int, modeParm, s string, onTop bool, u types.DisplayUnit) (*model.Watermark, error) {
 	wm := model.DefaultWatermarkConfig()
 	wm.OnTop = onTop

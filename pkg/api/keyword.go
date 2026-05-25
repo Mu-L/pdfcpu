@@ -56,6 +56,9 @@ func AddKeywords(rs io.ReadSeeker, w io.Writer, files []string, conf *model.Conf
 	if rs == nil {
 		return errors.New("pdfcpu: AddKeywords: missing rs")
 	}
+	if err := validateNoEmptyStrings(files, "keyword"); err != nil {
+		return err
+	}
 
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
@@ -80,6 +83,10 @@ func AddKeywords(rs io.ReadSeeker, w io.Writer, files []string, conf *model.Conf
 func AddKeywordsFile(inFile, outFile string, files []string, conf *model.Configuration) (err error) {
 	var f1, f2 *os.File
 	ok := false
+
+	if err := validateNoEmptyStrings(files, "keyword"); err != nil {
+		return err
+	}
 
 	if f1, err = os.Open(inFile); err != nil {
 		return err
@@ -128,6 +135,9 @@ func RemoveKeywords(rs io.ReadSeeker, w io.Writer, keywords []string, conf *mode
 	if rs == nil {
 		return errors.New("pdfcpu: RemoveKeywords: missing rs")
 	}
+	if err := validateNoEmptyStrings(keywords, "keyword"); err != nil {
+		return err
+	}
 
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
@@ -156,6 +166,10 @@ func RemoveKeywords(rs io.ReadSeeker, w io.Writer, keywords []string, conf *mode
 func RemoveKeywordsFile(inFile, outFile string, keywords []string, conf *model.Configuration) (err error) {
 	var f1, f2 *os.File
 	ok := false
+
+	if err := validateNoEmptyStrings(keywords, "keyword"); err != nil {
+		return err
+	}
 
 	if f1, err = os.Open(inFile); err != nil {
 		return err

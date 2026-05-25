@@ -309,6 +309,9 @@ func RemoveAnnotations(rs io.ReadSeeker, w io.Writer, selectedPages, idsAndTypes
 	if rs == nil {
 		return errors.New("pdfcpu: RemoveAnnotations: missing rs")
 	}
+	if err := validateNoEmptyStrings(idsAndTypes, "annotation ID or type"); err != nil {
+		return err
+	}
 
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
@@ -343,6 +346,9 @@ func RemoveAnnotationsAsIncrement(rws io.ReadWriteSeeker, selectedPages, idsAndT
 
 	if rws == nil {
 		return errors.New("pdfcpu: RemoveAnnotationsAsIncrement: missing rws")
+	}
+	if err := validateNoEmptyStrings(idsAndTypes, "annotation ID or type"); err != nil {
+		return err
 	}
 
 	if conf == nil {
@@ -380,6 +386,10 @@ func RemoveAnnotationsAsIncrement(rws io.ReadWriteSeeker, selectedPages, idsAndT
 func RemoveAnnotationsFile(inFile, outFile string, selectedPages, idsAndTypes []string, objNrs []int, conf *model.Configuration, incr bool) (err error) {
 	var f1, f2 *os.File
 	ok := false
+
+	if err := validateNoEmptyStrings(idsAndTypes, "annotation ID or type"); err != nil {
+		return err
+	}
 
 	tmpFile := inFile + ".tmp"
 	if outFile != "" && inFile != outFile {
