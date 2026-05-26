@@ -16,9 +16,22 @@ limitations under the License.
 
 package main
 
-func abs(i int) int {
-	if i < 0 {
-		return -i
+import (
+	"errors"
+	"testing"
+)
+
+func TestCommandErrorStripsPDFCPUPrefix(t *testing.T) {
+	baseErr := errors.New("pdfcpu: validation failed")
+
+	err := commandError(baseErr)
+	if err == nil {
+		t.Fatal("expected error")
 	}
-	return i
+	if got, want := err.Error(), "validation failed"; got != want {
+		t.Fatalf("expected %q, got %q", want, got)
+	}
+	if !errors.Is(err, baseErr) {
+		t.Fatal("expected normalized command error to unwrap to original error")
+	}
 }

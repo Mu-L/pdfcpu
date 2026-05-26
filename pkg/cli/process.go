@@ -17,15 +17,17 @@ limitations under the License.
 package cli
 
 import (
+	"fmt"
+	"runtime/debug"
+
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
-	"github.com/pkg/errors"
 )
 
 // Process executes a pdfcpu command.
 func Process(cmd *Command) (out []string, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.Errorf("unexpected panic attack: %v\n", r)
+			err = fmt.Errorf("unexpected panic attack: %v\n%s", r, debug.Stack())
 		}
 	}()
 
@@ -35,7 +37,7 @@ func Process(cmd *Command) (out []string, err error) {
 		return f(cmd)
 	}
 
-	return nil, errors.Errorf("pdfcpu: process: Unknown command mode %d\n", cmd.Mode)
+	return nil, fmt.Errorf("pdfcpu: process: Unknown command mode %d\n", cmd.Mode)
 }
 
 func processAttachments(cmd *Command) (out []string, err error) {

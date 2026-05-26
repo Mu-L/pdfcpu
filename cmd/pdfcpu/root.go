@@ -64,6 +64,61 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&offline, "offline", "o", false, "disable http traffic")
 	rootCmd.PersistentFlags().BoolVarP(&quiet, "quiet", "q", false, "disable output")
 	rootCmd.PersistentFlags().CountVarP(&verbose, "verbose", "v", "Increase verbosity. Use -v or -vv.")
+	rootCmd.AddCommand(commands()...)
+}
+
+func commands() []*cobra.Command {
+	return []*cobra.Command{
+		annotationsCmd(),
+		attachmentsCmd(),
+		bookmarksCmd(),
+		bookletCmd(),
+		boxesCmd(),
+		certificatesCmd(),
+		changeopwCmd(),
+		changeupwCmd(),
+		collectCmd(),
+		completionCmd(),
+		configCmd(),
+		createCmd(),
+		cropCmd(),
+		cutCmd(),
+		decryptCmd(),
+		dumpCmd(),
+		encryptCmd(),
+		extractCmd(),
+		fontsCmd(),
+		formCmd(),
+		gridCmd(),
+		imagesCmd(),
+		importCmd(),
+		infoCmd(),
+		keywordsCmd(),
+		mergeCmd(),
+		ndownCmd(),
+		nupCmd(),
+		optimizeCmd(),
+		pagelayoutCmd(),
+		pagemodeCmd(),
+		pagesCmd(),
+		paperCmd(),
+		permissionsCmd(),
+		portfolioCmd(),
+		posterCmd(),
+		propertiesCmd(),
+		resizeCmd(),
+		rotateCmd(),
+		selectedpagesCmd(),
+		signaturesCmd(),
+		splitCmd(),
+		stampCmd(),
+		trimCmd(),
+		validateCmd(),
+		versionCmd(),
+		viewerprefCmd(),
+		watermarkCmd(),
+		zoomCmd(),
+	}
 }
 
 func initConfig() {

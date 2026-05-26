@@ -51,7 +51,7 @@ func TestForceEnsureOutputFileAvailable(t *testing.T) {
 			t.Fatal("expected existing output file to fail without --force")
 		}
 
-		want := "pdfcpu: refusing to overwrite existing file: " + outFile + "\nUse --force to overwrite."
+		want := "refusing to overwrite existing file: " + outFile + "\nUse --force to overwrite."
 		if err.Error() != want {
 			t.Fatalf("expected %q, got %q", want, err.Error())
 		}
@@ -102,7 +102,7 @@ func TestForceFlagAllowsExplicitOverwrite(t *testing.T) {
 			name:       "output file exists without force",
 			existing:   true,
 			wantErr:    true,
-			wantErrMsg: "pdfcpu: refusing to overwrite existing file:",
+			wantErrMsg: "refusing to overwrite existing file:",
 		},
 		{
 			name:     "output file exists with force",
@@ -537,7 +537,7 @@ func TestForceFlagProtectsExplicitOutputFiles(t *testing.T) {
 				t.Fatalf("expected command to fail for existing output file, output:\n%s", out)
 			}
 
-			want := "pdfcpu: refusing to overwrite existing file: " + outFile
+			want := "refusing to overwrite existing file: " + outFile
 			if !strings.Contains(string(out), want) {
 				t.Fatalf("expected output to contain %q, got:\n%s", want, out)
 			}
@@ -589,7 +589,7 @@ func TestForceFlagProtectsDefaultOutputFiles(t *testing.T) {
 				t.Fatalf("expected command to fail for existing default output file, output:\n%s", out)
 			}
 
-			want := "pdfcpu: refusing to overwrite existing file: out.json"
+			want := "refusing to overwrite existing file: out.json"
 			if !strings.Contains(string(out), want) {
 				t.Fatalf("expected output to contain %q, got:\n%s", want, out)
 			}
@@ -686,7 +686,7 @@ func TestForceFlagProtectsNonEmptyOutputDirs(t *testing.T) {
 				t.Fatalf("expected command to fail for non-empty output directory, output:\n%s", out)
 			}
 
-			want := "pdfcpu: refusing to write to non-empty directory: " + outDir
+			want := "refusing to write to non-empty directory: " + outDir
 			if !strings.Contains(string(out), want) {
 				t.Fatalf("expected output to contain %q, got:\n%s", want, out)
 			}
