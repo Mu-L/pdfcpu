@@ -19,6 +19,7 @@ package filter
 import (
 	"bytes"
 	"compress/zlib"
+	"io"
 	"strings"
 	"testing"
 )
@@ -32,6 +33,20 @@ func flateTestData(t *testing.T, s string) *bytes.Buffer {
 		t.Fatal(err)
 	}
 	if err := w.Close(); err != nil {
+		t.Fatal(err)
+	}
+	return &b
+}
+
+func flatePartialFlushTestData(t *testing.T, data []byte) *bytes.Buffer {
+	t.Helper()
+
+	var b bytes.Buffer
+	w := zlib.NewWriter(&b)
+	if _, err := w.Write(data); err != nil {
+		t.Fatal(err)
+	}
+	if err := w.Flush(); err != nil {
 		t.Fatal(err)
 	}
 	return &b
@@ -90,5 +105,26 @@ func TestFlatePredictorRejectsRowLargerThanDecodeLimit(t *testing.T) {
 	_, err := f.Decode(flateTestData(t, ""))
 	if err != ErrDecodeLimitExceeded {
 		t.Fatalf("got %v, want %v", err, ErrDecodeLimitExceeded)
+	}
+}
+
+// TestFlatePredictorIgnoresUnexpectedEOF verifies predictor postprocessing tolerates partial flushes.
+func TestFlatePredictorIgnoresUnexpectedEOF(t *testing.T) {
+	f := flate{baseFilter{parms: map[string]int{
+		"Predictor": PredictorNone,
+		"Columns":   3,
+	}}}
+
+	r, err := f.Decode(flatePartialFlushTestData(t, []byte{PNGNone, 'f', 'o', 'o'}))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	b, err := io.ReadAll(r)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(b) != "foo" {
+		t.Fatalf("got %q, want %q", b, "foo")
 	}
 }

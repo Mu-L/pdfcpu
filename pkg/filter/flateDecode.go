@@ -112,18 +112,72 @@ func (f flate) passThru(rin io.Reader, maxLen int64) (*bytes.Buffer, error) {
 		err = nil
 	}
 	if err == io.ErrUnexpectedEOF {
-		// Workaround for missing support for partial flush in compress/flate.
-		// See also https://github.com/golang/go/issues/31514
-		if log.ReadEnabled() {
-			log.Read.Println("flateDecode: ignoring unexpected EOF")
-		}
+		logUnexpectedEOFFlateDecode()
 		err = nil
 	}
 	return b, err
 }
 
+func logUnexpectedEOFFlateDecode() {
+	// Workaround for missing support for partial flush in compress/flate.
+	// See also https://github.com/golang/go/issues/31514
+	if log.ReadEnabled() {
+		log.Read.Println("flateDecode: ignoring unexpected EOF")
+	}
+}
+
 func intMemberOf(i int, list []int) bool {
 	return slices.Contains(list, i)
+}
+
+func validatePredictor(predictor int) error {
+	if intMemberOf(
+		predictor,
+		[]int{PredictorTIFF,
+			PredictorNone,
+			PredictorSub,
+			PredictorUp,
+			PredictorAverage,
+			PredictorPaeth,
+			PredictorOptimum,
+		}) {
+		return nil
+	}
+
+	return errors.Errorf("pdfcpu: filter FlateDecode: undefined \"Predictor\" %d", predictor)
+}
+
+func predictorRowParams(predictor, colors, bpc, columns int) (rowSize, rowLen, bytesPerPixel int, err error) {
+	bitsPerPixel, err := safemath.MultiplyInt(bpc, colors)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	bitsPerPixelRounded, err := safemath.AddInt(bitsPerPixel, 7)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	bytesPerPixel = bitsPerPixelRounded / 8
+
+	rowBits, err := safemath.MultiplyInt(bitsPerPixel, columns)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	rowBitsRounded, err := safemath.AddInt(rowBits, 7)
+	if err != nil {
+		return 0, 0, 0, err
+	}
+	rowSize = rowBitsRounded / 8
+
+	rowLen = rowSize
+	if predictor != PredictorTIFF {
+		// PNG prediction uses a row filter byte prefixing the pixelbytes of a row.
+		rowLen, err = safemath.AddInt(rowLen, 1)
+		if err != nil {
+			return 0, 0, 0, err
+		}
+	}
+
+	return rowSize, rowLen, bytesPerPixel, nil
 }
 
 // Each prediction value implies (a) certain row filter(s).
@@ -298,6 +352,10 @@ func (f flate) decodePostProcessRows(r io.Reader, maxLen int64, m, predictor, co
 		// Read decompressed bytes for one pixel row.
 		n, err := io.ReadFull(r, cr)
 		if err != nil {
+			if err == io.ErrUnexpectedEOF && n == 0 {
+				logUnexpectedEOFFlateDecode()
+				break
+			}
 			if err != io.EOF {
 				return nil, err
 			}
@@ -337,17 +395,8 @@ func (f flate) decodePostProcess(r io.Reader, maxLen int64) (io.Reader, error) {
 		return f.passThru(r, maxLen)
 	}
 
-	if !intMemberOf(
-		predictor,
-		[]int{PredictorTIFF,
-			PredictorNone,
-			PredictorSub,
-			PredictorUp,
-			PredictorAverage,
-			PredictorPaeth,
-			PredictorOptimum,
-		}) {
-		return nil, errors.Errorf("pdfcpu: filter FlateDecode: undefined \"Predictor\" %d", predictor)
+	if err := validatePredictor(predictor); err != nil {
+		return nil, err
 	}
 
 	colors, bpc, columns, err := f.parameters()
@@ -355,40 +404,19 @@ func (f flate) decodePostProcess(r io.Reader, maxLen int64) (io.Reader, error) {
 		return nil, err
 	}
 
-	bitsPerPixel, err := safemath.MultiplyInt(bpc, colors)
+	rowSize, rowLen, bytesPerPixel, err := predictorRowParams(predictor, colors, bpc, columns)
 	if err != nil {
 		return nil, err
-	}
-	bitsPerPixelRounded, err := safemath.AddInt(bitsPerPixel, 7)
-	if err != nil {
-		return nil, err
-	}
-	bytesPerPixel := bitsPerPixelRounded / 8
-
-	rowBits, err := safemath.MultiplyInt(bitsPerPixel, columns)
-	if err != nil {
-		return nil, err
-	}
-	rowBitsRounded, err := safemath.AddInt(rowBits, 7)
-	if err != nil {
-		return nil, err
-	}
-	rowSize := rowBitsRounded / 8
-
-	m := rowSize
-	if predictor != PredictorTIFF {
-		// PNG prediction uses a row filter byte prefixing the pixelbytes of a row.
-		m, err = safemath.AddInt(m, 1)
-		if err != nil {
-			return nil, err
-		}
 	}
 
-	if limit := f.decodeLimit(-1); limit >= 0 && int64(m) > limit {
+	if limit := f.decodeLimit(-1); limit >= 0 && int64(rowLen) > limit {
 		return nil, ErrDecodeLimitExceeded
 	}
 
-	b, err := f.decodePostProcessRows(r, maxLen, m, predictor, colors, bytesPerPixel)
+	b, err := f.decodePostProcessRows(r, maxLen, rowLen, predictor, colors, bytesPerPixel)
+	if err != nil {
+		return nil, err
+	}
 
 	if maxLen < 0 && b.Len()%rowSize > 0 {
 		log.Info.Printf("failed postprocessing: %d %d\n", b.Len(), rowSize)
