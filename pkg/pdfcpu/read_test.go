@@ -145,6 +145,18 @@ func TestReadStreamContentRejectsStreamLimit(t *testing.T) {
 	}
 }
 
+// TestEnsureStreamLengthRejectsNilDict verifies malformed stream dicts do not panic.
+func TestEnsureStreamLengthRejectsNilDict(t *testing.T) {
+	sd := &types.StreamDict{
+		Raw: []byte("abc"),
+	}
+
+	err := ensureStreamLength(sd, true)
+	if err == nil || !strings.Contains(err.Error(), "corrupt stream dict") {
+		t.Fatalf("got %v, want corrupt stream dict error", err)
+	}
+}
+
 // TestReadLargeDictObjectStream verifies large object streams are handled.
 func TestReadLargeDictObjectStream(t *testing.T) {
 	// Test without "stream" and "endobj" inside the dictionary.

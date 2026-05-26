@@ -58,6 +58,30 @@ func TestMain(m *testing.M) {
 	os.Exit(exitCode)
 }
 
+func TestRenderImagePreservesJBIG2Stream(t *testing.T) {
+	content := []byte{0x97, 0x4a, 0x42, 0x32}
+	sd := &types.StreamDict{
+		Dict:           types.NewDict(),
+		Content:        content,
+		FilterPipeline: []types.PDFFilter{{Name: filter.JBIG2}},
+	}
+
+	r, ext, err := RenderImage(nil, sd, false, "", 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if ext != "jbig2" {
+		t.Fatalf("got extension %q, want jbig2", ext)
+	}
+	var buf bytes.Buffer
+	if _, err := buf.ReadFrom(r); err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.Equal(buf.Bytes(), content) {
+		t.Fatalf("got %x, want %x", buf.Bytes(), content)
+	}
+}
+
 func streamDictForJPGFile(xRefTable *model.XRefTable, fileName string) (*types.StreamDict, error) {
 
 	bb, err := os.ReadFile(fileName)

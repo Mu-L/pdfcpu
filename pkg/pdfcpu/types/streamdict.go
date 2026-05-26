@@ -333,6 +333,10 @@ func fixParms(f PDFFilter, parms map[string]int, sd *StreamDict) error {
 	return nil
 }
 
+func preserveEncodedImageFilter(name string) bool {
+	return name == filter.JPX || name == filter.JBIG2
+}
+
 // Decode applies sd's filter pipeline to sd.Raw in order to produce sd.Content.
 func (sd *StreamDict) Decode() error {
 	_, err := sd.DecodeLengthWithLimit(-1, filter.DefaultMaxDecodeBytes)
@@ -352,7 +356,11 @@ func (sd *StreamDict) decodeLength(maxLen, maxDecodeBytes int64) ([]byte, error)
 	// Apply each filter in the pipeline to result of preceding filter.
 	for idx, f := range sd.FilterPipeline {
 
-		if f.Name == filter.JPX {
+		if preserveEncodedImageFilter(f.Name) {
+			if idx != len(sd.FilterPipeline)-1 {
+				return nil, filter.ErrUnsupportedFilter
+			}
+			c = b
 			break
 		}
 
@@ -440,8 +448,9 @@ func (sd *StreamDict) DecodeLengthWithLimit(maxLen, maxDecodeBytes int64) ([]byt
 
 	fpl := sd.FilterPipeline
 
-	// No filter or sole filter DTC && !CMYK or JPX - nothing to decode.
-	if fpl == nil || len(fpl) == 1 && ((fpl[0].Name == filter.DCT && sd.CSComponents != 4) || fpl[0].Name == filter.JPX) {
+	// No filter, sole DCT except CMYK, or terminal opaque image filters:
+	// nothing to decode for consumers that can preserve the original image stream.
+	if fpl == nil || len(fpl) == 1 && ((fpl[0].Name == filter.DCT && sd.CSComponents != 4) || preserveEncodedImageFilter(fpl[0].Name)) {
 		sd.Content = sd.Raw
 		//fmt.Printf("decodedStream returning %d(#%02x)bytes: \n%s\n", len(sd.Content), len(sd.Content), hex.Dump(sd.Content))
 		if maxLen < 0 {

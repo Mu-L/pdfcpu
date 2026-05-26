@@ -255,14 +255,11 @@ func streamBytes(sd *types.StreamDict) ([]byte, error) {
 
 	switch f {
 
-	case filter.DCT, filter.Flate, filter.CCITTFax, filter.ASCII85, filter.RunLength:
+	case filter.DCT, filter.Flate, filter.CCITTFax, filter.ASCII85, filter.RunLength, filter.JPX, filter.JBIG2:
 		// If color space is CMYK then write .tif else write .png
 		if err := sd.Decode(); err != nil {
 			return nil, err
 		}
-
-	case filter.JPX:
-		//imageObj.Extension = "jpx"
 
 	default:
 		if log.DebugEnabled() {
@@ -1027,6 +1024,9 @@ func RenderImage(xRefTable *model.XRefTable, sd *types.StreamDict, thumb bool, r
 
 	case filter.JPX:
 		return bytes.NewReader(sd.Content), "jpx", nil
+
+	case filter.JBIG2:
+		return bytes.NewReader(sd.Content), "jbig2", nil
 	}
 
 	return nil, "", nil

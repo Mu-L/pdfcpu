@@ -140,7 +140,8 @@ func newEncryptDict(pdf20, needAES bool, keyLength int, permissions int16) types
 		d.Insert("Length", types.Integer(keyLength))
 		i := 4
 		if keyLength == 256 {
-			// TODO Switch to V 6 (AES-256 in GCM mode)
+			// PDF 2.0 AES-256 uses V=5/R=6 with AESV3.
+			// TODO Support ISO/TS 32003 V=6/AESV4 AES-256-GCM.
 			i = 5
 		}
 		d.Insert("V", types.Integer(i))
@@ -1240,7 +1241,7 @@ func validateEncryptV(d types.Dict) (int, error) {
 	if *v < 1 || *v > 5 {
 		return -1, errors.Errorf("validateV: encrypt \"V\" must be one of 1,2,3,4,5")
 	}
-	// TODO Support v == 6, AES-256 in GCM mode (ISO/TS32003), Extlevel 2.0 32003
+	// TODO Support ISO/TS 32003 V=6/AESV4 AES-256-GCM.
 	return *v, nil
 }
 

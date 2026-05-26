@@ -2472,12 +2472,18 @@ func readStreamContent(rd io.Reader, streamLength int, maxStreamBytes int64) ([]
 	return buf, nil
 }
 
-func ensureStreamLength(sd *types.StreamDict, fixLength bool) {
+func ensureStreamLength(sd *types.StreamDict, fixLength bool) error {
+	if sd == nil || sd.Dict == nil {
+		return errors.New("pdfcpu: corrupt stream dict")
+	}
+
 	l := int64(len(sd.Raw))
 	if fixLength || sd.StreamLength == nil || l != *sd.StreamLength {
 		sd.StreamLength = &l
-		sd.Dict["Length"] = types.Integer(l) // TODO panic here still a problem because sd.Dict == nil
+		sd.Dict["Length"] = types.Integer(l)
 	}
+
+	return nil
 }
 
 func decodeLimit(ctx *model.Context) int64 {
@@ -2501,6 +2507,27 @@ func recursionLimit(ctx *model.Context) int {
 	return ctx.Configuration.Limits.MaxRecursionDepth
 }
 
+func ensureIndirectStreamLength(c context.Context, ctx *model.Context, sd *types.StreamDict, fixLength bool) error {
+	if fixLength || sd.StreamLength != nil {
+		return nil
+	}
+	if sd.StreamLengthObjNr == nil {
+		if ctx.XRefTable.ValidationMode == model.ValidationStrict {
+			return errors.New("pdfcpu: loadEncodedStreamContent: missing streamLength")
+		}
+		model.ShowSkipped("missing stream length")
+		return nil
+	}
+
+	streamLength, err := int64Object(c, ctx, *sd.StreamLengthObjNr)
+	if err != nil && err != ErrReferenceDoesNotExist {
+		return err
+	}
+	sd.StreamLength = streamLength
+
+	return nil
+}
+
 // loadEncodedStreamContent loads the encoded stream content into sd.
 func loadEncodedStreamContent(c context.Context, ctx *model.Context, sd *types.StreamDict, fixLength bool) error {
 	if sd.Raw != nil {
@@ -2511,25 +2538,11 @@ func loadEncodedStreamContent(c context.Context, ctx *model.Context, sd *types.S
 		log.Read.Printf("loadEncodedStreamContent: begin\n%v\n", sd)
 	}
 
-	var err error
-
 	// Read stream content encoded at offset with stream length.
 
 	// Dereference stream length if stream length is an indirect object.
-	if !fixLength && sd.StreamLength == nil {
-		if sd.StreamLengthObjNr == nil {
-			if ctx.XRefTable.ValidationMode == model.ValidationStrict {
-				return errors.New("pdfcpu: loadEncodedStreamContent: missing streamLength")
-			}
-			model.ShowSkipped("missing stream length")
-		}
-		if sd.StreamLengthObjNr != nil {
-			if sd.StreamLength, err = int64Object(c, ctx, *sd.StreamLengthObjNr); err != nil {
-				if err != ErrReferenceDoesNotExist {
-					return err
-				}
-			}
-		}
+	if err := ensureIndirectStreamLength(c, ctx, sd, fixLength); err != nil {
+		return err
 	}
 
 	rd, err := newPositionedReader(ctx.Read.RS, &sd.StreamOffset)
@@ -2546,13 +2559,29 @@ func loadEncodedStreamContent(c context.Context, ctx *model.Context, sd *types.S
 		return err
 	}
 
-	ensureStreamLength(sd, fixLength)
+	if err := ensureStreamLength(sd, fixLength); err != nil {
+		return err
+	}
 
 	if log.ReadEnabled() {
 		log.Read.Printf("loadEncodedStreamContent: end: len(streamDictRaw)=%d\n", len(sd.Raw))
 	}
 
 	return nil
+}
+
+func decryptStreamContent(ctx *model.Context, sd *types.StreamDict, objNr, genNr int) error {
+	if ctx == nil || ctx.EncKey == nil {
+		return nil
+	}
+
+	raw, err := decryptStream(sd.Raw, objNr, genNr, ctx.EncKey, ctx.AES4Streams, ctx.E.R)
+	if err != nil {
+		return err
+	}
+	sd.Raw = raw
+
+	return ensureStreamLength(sd, true)
 }
 
 // Decodes the raw encoded stream content and saves it to streamDict.Content.
@@ -2577,11 +2606,8 @@ func saveDecodedStreamContent(ctx *model.Context, sd *types.StreamDict, objNr, g
 
 	// ctx gets created after XRefStream parsing.
 	// XRefStreams are not encrypted.
-	if ctx != nil && ctx.EncKey != nil {
-		if sd.Raw, err = decryptStream(sd.Raw, objNr, genNr, ctx.EncKey, ctx.AES4Streams, ctx.E.R); err != nil {
-			return err
-		}
-		ensureStreamLength(sd, true)
+	if err := decryptStreamContent(ctx, sd, objNr, genNr); err != nil {
+		return err
 	}
 
 	if !decode {
