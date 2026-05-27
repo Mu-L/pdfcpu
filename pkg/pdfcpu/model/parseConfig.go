@@ -181,6 +181,7 @@ func loadedConfig(c configuration, configPath string) *Configuration {
 	conf.OptimizeResourceDicts = c.OptimizeResourceDicts
 	conf.OptimizeDuplicateContentStreams = c.OptimizeDuplicateContentStreams
 	conf.CreateBookmarks = c.CreateBookmarks
+	conf.MergeBookmarkMode = MergeBookmarkModeWrap
 	conf.NeedAppearances = c.NeedAppearances
 	conf.Offline = c.Offline
 	conf.Timeout = c.Timeout

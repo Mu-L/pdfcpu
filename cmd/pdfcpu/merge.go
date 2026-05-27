@@ -33,22 +33,25 @@ import (
 )
 
 type mergeOptions struct {
-	mode         string
-	bookmarks    bool
-	dividerPage  bool
-	optimize     bool
-	sorted       bool
-	bookmarksSet bool
-	optimizeSet  bool
+	mode            string
+	bookmarkMode    string
+	bookmarks       bool
+	dividerPage     bool
+	optimize        bool
+	sorted          bool
+	bookmarksSet    bool
+	bookmarkModeSet bool
+	optimizeSet     bool
 }
 
 func mergeCmd() *cobra.Command {
 	opts := &mergeOptions{
-		mode:        "create",
-		sorted:      false,
-		bookmarks:   false,
-		dividerPage: false,
-		optimize:    false,
+		mode:         "create",
+		bookmarkMode: string(model.MergeBookmarkModeWrap),
+		sorted:       false,
+		bookmarks:    false,
+		dividerPage:  false,
+		optimize:     false,
 	}
 
 	cmd := &cobra.Command{
@@ -59,6 +62,7 @@ func mergeCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Check if flags were explicitly set
 			opts.bookmarksSet = cmd.Flags().Changed("bookmarks")
+			opts.bookmarkModeSet = cmd.Flags().Changed("bookmark-mode")
 			opts.optimizeSet = cmd.Flags().Changed("optimize")
 			return wrapHandler(func(conf *model.Configuration, args []string) error {
 				return processMergeCommand(conf, args, opts)
@@ -69,6 +73,7 @@ func mergeCmd() *cobra.Command {
 	cmd.Flags().StringVarP(&opts.mode, "mode", "m", opts.mode, "merge mode: create|append|zip")
 	cmd.Flags().BoolVarP(&opts.sorted, "sort", "s", opts.sorted, "sort inFiles by file name")
 	cmd.Flags().BoolVarP(&opts.bookmarks, "bookmarks", "b", opts.bookmarks, "create bookmarks")
+	cmd.Flags().StringVar(&opts.bookmarkMode, "bookmark-mode", opts.bookmarkMode, "bookmark mode: wrap|preserve")
 	cmd.Flags().BoolVarP(&opts.dividerPage, "divider", "d", opts.dividerPage, "insert blank page between merged documents")
 	cmd.Flags().BoolVar(&opts.optimize, "optimize", opts.optimize, "optimize before writing")
 	cmd.Flags().BoolVar(&opts.optimize, "opt", opts.optimize, "optimize before writing")
@@ -155,6 +160,20 @@ func mergeMode(mode string) (string, error) {
 	return mode, nil
 }
 
+func mergeBookmarkMode(mode string) (model.MergeBookmarkMode, error) {
+	if mode == "" {
+		mode = string(model.MergeBookmarkModeWrap)
+	}
+	mode = modeCompletion(mode, []string{
+		string(model.MergeBookmarkModeWrap),
+		string(model.MergeBookmarkModePreserve),
+	})
+	if mode == "" {
+		return "", errors.New("bookmark-mode must be one of: preserve, wrap")
+	}
+	return model.MergeBookmarkMode(mode), nil
+}
+
 func validateMergeModeArgs(mode string, args []string, dividerPage bool) error {
 	if mode == "zip" && len(args) != 3 {
 		return errors.New("merge zip: expecting outFile inFile1 inFile2")
@@ -180,17 +199,27 @@ func validateMergeFiles(mode, outFile string, inFiles []string) error {
 	return nil
 }
 
-func applyMergeOptions(opts *mergeOptions, conf *model.Configuration) *model.Configuration {
+func applyMergeOptions(opts *mergeOptions, conf *model.Configuration) (*model.Configuration, error) {
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
 	}
 	if opts.bookmarksSet {
 		conf.CreateBookmarks = opts.bookmarks
 	}
+	if opts.bookmarkModeSet {
+		if !conf.CreateBookmarks {
+			return nil, errors.New("merge: --bookmark-mode requires --bookmarks")
+		}
+		bookmarkMode, err := mergeBookmarkMode(opts.bookmarkMode)
+		if err != nil {
+			return nil, err
+		}
+		conf.MergeBookmarkMode = bookmarkMode
+	}
 	if opts.optimizeSet {
 		conf.OptimizeBeforeWriting = opts.optimize
 	}
-	return conf
+	return conf, nil
 }
 
 func processMergeCommand(conf *model.Configuration, args []string, opts *mergeOptions) error {
@@ -214,7 +243,10 @@ func processMergeCommand(conf *model.Configuration, args []string, opts *mergeOp
 		sortFiles(inFiles)
 	}
 
-	conf = applyMergeOptions(opts, conf)
+	conf, err = applyMergeOptions(opts, conf)
+	if err != nil {
+		return err
+	}
 	cmd := mergeCommandVariation(inFiles, outFile, opts.dividerPage, conf, opts.mode)
 	if cmd == nil {
 		return errors.New("missing merge mode")

@@ -62,6 +62,17 @@ const (
 	PermissionsAll   = PermissionFlags(0xFFFF)
 )
 
+// MergeBookmarkMode controls how merge creates or preserves bookmarks.
+type MergeBookmarkMode string
+
+const (
+	// MergeBookmarkModeWrap creates one top-level bookmark per merged file.
+	MergeBookmarkModeWrap MergeBookmarkMode = "wrap"
+
+	// MergeBookmarkModePreserve merges existing bookmark roots without per-file wrapper bookmarks.
+	MergeBookmarkModePreserve MergeBookmarkMode = "preserve"
+)
+
 const (
 
 	// StatsFileNameDefault is the standard stats filename.
@@ -264,6 +275,10 @@ type Configuration struct {
 
 	// Merge creates bookmarks.
 	CreateBookmarks bool
+
+	// MergeBookmarkMode controls how merge creates or preserves bookmarks.
+	// This is a runtime option and is not read from config.yml.
+	MergeBookmarkMode MergeBookmarkMode
 
 	// PDF Viewer is expected to supply appearance streams for form fields.
 	NeedAppearances bool
@@ -547,6 +562,7 @@ func newDefaultConfiguration() *Configuration {
 		OptimizeResourceDicts:           true,
 		OptimizeDuplicateContentStreams: false,
 		CreateBookmarks:                 true,
+		MergeBookmarkMode:               MergeBookmarkModeWrap,
 		NeedAppearances:                 false,
 		Offline:                         false,
 		Timeout:                         5,

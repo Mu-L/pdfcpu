@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
 // TestMergeCreateNew verifies merge create new.
@@ -76,6 +77,43 @@ func TestMergeCreateZipped(t *testing.T) {
 
 	if err := api.ValidateFile(outFile, conf); err != nil {
 		t.Fatalf("%s: %v\n", msg, err)
+	}
+}
+
+// TestMergeCreatePreserveBookmarks verifies merge create preserves source bookmarks without filename wrappers.
+func TestMergeCreatePreserveBookmarks(t *testing.T) {
+	msg := "TestMergeCreatePreserveBookmarks"
+	inFile := filepath.Join(samplesDir, "bookmarks", "bookmarkTree.pdf")
+	inFiles := []string{inFile, inFile}
+	outFile := filepath.Join(outDir, "outPreserveBookmarks1.pdf")
+	conf := model.NewDefaultConfiguration()
+	conf.MergeBookmarkMode = model.MergeBookmarkModePreserve
+
+	if err := api.MergeCreateFile(inFiles, outFile, false, conf); err != nil {
+		t.Fatalf("%s: %v\n", msg, err)
+	}
+
+	if err := api.ValidateFile(outFile, conf); err != nil {
+		t.Fatalf("%s: %v\n", msg, err)
+	}
+
+	f, err := os.Open(outFile)
+	if err != nil {
+		t.Fatalf("%s: %v\n", msg, err)
+	}
+	defer f.Close()
+
+	bms, err := api.Bookmarks(f, conf)
+	if err != nil {
+		t.Fatalf("%s: %v\n", msg, err)
+	}
+	if len(bms) != 4 {
+		t.Fatalf("%s: got %d top-level bookmarks, want 4", msg, len(bms))
+	}
+	for _, bm := range bms {
+		if bm.Title == "bookmarkTree.pdf" {
+			t.Fatalf("%s: found filename wrapper bookmark", msg)
+		}
 	}
 }
 

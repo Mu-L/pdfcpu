@@ -176,6 +176,117 @@ func mergeOutlines(fName string, p int, ctxSrc, ctxDest *model.Context) error {
 	return nil
 }
 
+func ensureOutlinesRoot(ctx *model.Context) (*types.IndirectRef, types.Dict, error) {
+	rootDict, err := ctx.Catalog()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	indRef := rootDict.IndirectRefEntry("Outlines")
+	if indRef != nil {
+		d, err := ctx.DereferenceDict(*indRef)
+		return indRef, d, err
+	}
+
+	outlinesDict := types.Dict(map[string]types.Object{"Type": types.Name("Outlines")})
+	indRef, err = ctx.IndRefForNewObject(outlinesDict)
+	if err != nil {
+		return nil, nil, err
+	}
+	rootDict["Outlines"] = *indRef
+	return indRef, outlinesDict, nil
+}
+
+func sourceOutlines(ctxSrc, ctxDest *model.Context) (*types.IndirectRef, *types.IndirectRef, int, error) {
+	rootDictSource, err := ctxSrc.Catalog()
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	obj, ok := rootDictSource.Find("Outlines")
+	if !ok {
+		return nil, nil, 0, nil
+	}
+
+	d, err := ctxDest.DereferenceDict(obj)
+	if err != nil {
+		return nil, nil, 0, err
+	}
+
+	first, last := d.IndirectRefEntry("First"), d.IndirectRefEntry("Last")
+	if first == nil || last == nil {
+		return nil, nil, 0, nil
+	}
+
+	count := d.IntEntry("Count")
+	if count != nil {
+		return first, last, *count, nil
+	}
+
+	return first, last, 0, nil
+}
+
+func reparentOutlineItems(ctx *model.Context, first, parent *types.IndirectRef) (int, error) {
+	count := 0
+	for ir := first; ir != nil; {
+		d, err := ctx.DereferenceDict(*ir)
+		if err != nil {
+			return 0, err
+		}
+		d["Parent"] = *parent
+
+		if i := d.IntEntry("Count"); i != nil && *i > 0 {
+			count += *i
+		}
+		count++
+		ir = d.IndirectRefEntry("Next")
+	}
+	return count, nil
+}
+
+func mergeOutlinesPreserve(ctxSrc, ctxDest *model.Context) error {
+	first, last, sourceCount, err := sourceOutlines(ctxSrc, ctxDest)
+	if err != nil || first == nil {
+		return err
+	}
+
+	indRef, outlinesDict, err := ensureOutlinesRoot(ctxDest)
+	if err != nil {
+		return err
+	}
+
+	count, err := reparentOutlineItems(ctxDest, first, indRef)
+	if err != nil {
+		return err
+	}
+	if sourceCount != 0 {
+		count = sourceCount
+	}
+
+	if l := outlinesDict.IndirectRefEntry("Last"); l != nil {
+		d, err := ctxDest.DereferenceDict(*l)
+		if err != nil {
+			return err
+		}
+		d["Next"] = *first
+		d, err = ctxDest.DereferenceDict(*first)
+		if err != nil {
+			return err
+		}
+		d["Prev"] = *l
+	} else {
+		outlinesDict["First"] = *first
+	}
+
+	outlinesDict["Last"] = *last
+	if c := outlinesDict.IntEntry("Count"); c != nil {
+		count += *c
+	}
+	outlinesDict["Count"] = types.Integer(count)
+
+	return nil
+}
+
 func handleNeedAppearances(ctxSrc *model.Context, dSrc, dDest types.Dict) error {
 	o, found := dSrc.Find("NeedAppearances")
 	if !found || o == nil {
@@ -965,7 +1076,12 @@ func MergeXRefTables(fName string, ctxSrc, ctxDest *model.Context, zip, dividerP
 	}
 
 	if !zip && ctxDest.Configuration.CreateBookmarks {
-		if err = mergeOutlines(fName, origDestPageCount+1, ctxSrc, ctxDest); err != nil {
+		if ctxDest.Configuration.MergeBookmarkMode == model.MergeBookmarkModePreserve {
+			err = mergeOutlinesPreserve(ctxSrc, ctxDest)
+		} else {
+			err = mergeOutlines(fName, origDestPageCount+1, ctxSrc, ctxDest)
+		}
+		if err != nil {
 			return err
 		}
 	}

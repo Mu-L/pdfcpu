@@ -104,7 +104,7 @@ func prepDestContext(destFile string, rs io.ReadSeeker, conf *model.Configuratio
 		return nil, err
 	}
 
-	if conf.CreateBookmarks {
+	if conf.CreateBookmarks && conf.MergeBookmarkMode != model.MergeBookmarkModePreserve {
 		if err := pdfcpu.EnsureOutlines(ctxDest, filepath.Base(destFile), conf.Cmd == model.MERGEAPPEND); err != nil {
 			return nil, err
 		}

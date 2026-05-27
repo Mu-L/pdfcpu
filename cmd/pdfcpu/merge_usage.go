@@ -18,14 +18,15 @@ package main
 
 const usageLongMerge = `Concatenate a sequence of PDFs/inFiles into outFile.
 
-      mode ... merge mode (defaults to create)
-      sort ... sort inFiles by file name
- bookmarks ... create bookmarks
-   divider ... insert blank page between merged documents
-  optimize ... optimize before writing (default: true)
-   outFile ... output PDF file, use - to write to stdout
-    inFile ... a list of PDF files subject to concatenation.
-               use - to read from stdin for the first inFile in create mode only
+          mode ... merge mode (defaults to create)
+          sort ... sort inFiles by file name
+     bookmarks ... create bookmarks
+ bookmark-mode ... bookmark mode: wrap|preserve (defaults to wrap)
+       divider ... insert blank page between merged documents
+      optimize ... optimize before writing (default: true)
+       outFile ... output PDF file, use - to write to stdout
+        inFile ... a list of PDF files subject to concatenation.
+                   use - to read from stdin for the first inFile in create mode only
 
 The merge modes are:
     create ... outFile will be created and possibly overwritten (default).
@@ -34,6 +35,8 @@ The merge modes are:
        zip ... zip inFile1 and inFile2 into outFile (which will be created and possibly overwritten).
 
 Skip bookmark creation: -b=false or --bookmarks=false
+
+Preserve input bookmark trees without filename wrapper bookmarks: --bookmark-mode preserve
 
 Skip optimization before writing: --opt=false
 
