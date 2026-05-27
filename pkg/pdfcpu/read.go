@@ -3113,6 +3113,7 @@ func dereferenceObjects(c context.Context, ctx *model.Context) error {
 func identifyRootVersion(xRefTable *model.XRefTable) error {
 	if log.ReadEnabled() {
 		log.Read.Println("identifyRootVersion: begin")
+		defer log.Read.Println("identifyRootVersion: end")
 	}
 
 	// Try to get Version from Root.
@@ -3125,30 +3126,27 @@ func identifyRootVersion(xRefTable *model.XRefTable) error {
 		return nil
 	}
 
-	// Validate version and save corresponding constant to xRefTable.
-	rootVersion, err := model.PDFVersion(*rootVersionStr)
-	if err != nil {
-		if xRefTable.ValidationMode == model.ValidationStrict {
-			return errors.Wrapf(err, "identifyRootVersion: unknown PDF Root version: %s\n", *rootVersionStr)
-		}
-		rootVersion, err = model.PDFVersionRelaxed(*rootVersionStr)
-		if err != nil {
-			return errors.Wrapf(err, "identifyRootVersion: unknown PDF Root version: %s\n", *rootVersionStr)
-		}
-	}
-
-	xRefTable.RootVersion = &rootVersion
-
-	// since V1.4 the header version may be overridden by a Version entry in the catalog.
+	// Since PDF 1.4 the header version may be overridden by a Version entry in the catalog.
 	if *xRefTable.HeaderVersion < model.V14 {
 		if log.InfoEnabled() {
 			log.Info.Printf("identifyRootVersion: PDF version is %s - will ignore root version: %s\n", xRefTable.HeaderVersion, *rootVersionStr)
 		}
+		return nil
 	}
 
-	if log.ReadEnabled() {
-		log.Read.Println("identifyRootVersion: end")
+	// Validate version and save corresponding constant to xRefTable.
+	rootVersion, err := model.PDFVersion(*rootVersionStr)
+	if err != nil {
+		if xRefTable.ValidationMode == model.ValidationStrict {
+			return nil
+		}
+		rootVersion, err = model.PDFVersionRelaxed(*rootVersionStr)
+		if err != nil {
+			return nil
+		}
 	}
+
+	xRefTable.RootVersion = &rootVersion
 
 	return nil
 }
@@ -3159,6 +3157,8 @@ func dereferenceXRefTable(c context.Context, ctx *model.Context) error {
 	if log.ReadEnabled() {
 		log.Read.Println("dereferenceXRefTable: begin")
 	}
+
+	xRefTable := ctx.XRefTable
 
 	// Note for encrypted files:
 	// Mandatory provide userpw to open & display file.
@@ -3176,6 +3176,11 @@ func dereferenceXRefTable(c context.Context, ctx *model.Context) error {
 
 	// For each xRefTableEntry assign a Object either by parsing from file or pointing to a decompressed object.
 	if err := dereferenceObjects(c, ctx); err != nil {
+		return err
+	}
+
+	// Identify an optional Version entry in the root object/catalog.
+	if err := identifyRootVersion(xRefTable); err != nil {
 		return err
 	}
 
