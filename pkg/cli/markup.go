@@ -47,8 +47,7 @@ func RemoveWatermarksCommand(inFile, outFile string, pageSelection []string, con
 		Conf:          conf}
 }
 
-// ListAnnotationsCommand creates a new command to list annotations for selected pages.
-func ListAnnotationsCommand(inFile string, pageSelection []string, conf *model.Configuration) *Command {
+func listAnnotationsCommand(inFile string, pageSelection []string, json bool, conf *model.Configuration) *Command {
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
 	}
@@ -57,7 +56,18 @@ func ListAnnotationsCommand(inFile string, pageSelection []string, conf *model.C
 		Mode:          model.LISTANNOTATIONS,
 		InFile:        &inFile,
 		PageSelection: pageSelection,
+		BoolVal1:      json,
 		Conf:          conf}
+}
+
+// ListAnnotationsCommand creates a new command to list annotations for selected pages.
+func ListAnnotationsCommand(inFile string, pageSelection []string, conf *model.Configuration) *Command {
+	return listAnnotationsCommand(inFile, pageSelection, false, conf)
+}
+
+// ListAnnotationsJSONCommand creates a new command to list annotations as JSON.
+func ListAnnotationsJSONCommand(inFile string, pageSelection []string, conf *model.Configuration) *Command {
+	return listAnnotationsCommand(inFile, pageSelection, true, conf)
 }
 
 // RemoveAnnotationsCommand creates a new command to remove annotations for selected pages.

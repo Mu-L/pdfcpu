@@ -21,6 +21,7 @@ import (
 	"os"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
+	"github.com/pdfcpu/pdfcpu/pkg/log"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
@@ -59,24 +60,39 @@ func RemoveWatermarks(cmd *Command) ([]string, error) {
 	return nil, api.RemoveWatermarks(rs, w, cmd.PageSelection, cmd.Conf)
 }
 
-func listAnnotations(rs io.ReadSeeker, selectedPages []string, conf *model.Configuration) (int, []string, error) {
+func listAnnotations(rs io.ReadSeeker, selectedPages []string, json bool, conf *model.Configuration) (int, []string, error) {
+	if json {
+		log.SetCLILogger(nil)
+	}
 	annots, err := api.Annotations(rs, selectedPages, conf)
 	if err != nil {
 		return 0, nil, err
+	}
+	if json {
+		return pdfcpu.ListAnnotationsJSON(annots)
 	}
 
 	return pdfcpu.ListAnnotations(annots)
 }
 
-// ListAnnotationsFile returns a list of page annotations of inFile.
-func ListAnnotationsFile(inFile string, selectedPages []string, conf *model.Configuration) (int, []string, error) {
+func listAnnotationsFile(inFile string, selectedPages []string, json bool, conf *model.Configuration) (int, []string, error) {
 	f, err := os.Open(inFile)
 	if err != nil {
 		return 0, nil, err
 	}
 	defer f.Close()
 
-	return listAnnotations(f, selectedPages, conf)
+	return listAnnotations(f, selectedPages, json, conf)
+}
+
+// ListAnnotationsFile returns a list of page annotations of inFile.
+func ListAnnotationsFile(inFile string, selectedPages []string, conf *model.Configuration) (int, []string, error) {
+	return listAnnotationsFile(inFile, selectedPages, false, conf)
+}
+
+// ListAnnotationsJSONFile returns a JSON list of page annotations of inFile.
+func ListAnnotationsJSONFile(inFile string, selectedPages []string, conf *model.Configuration) (int, []string, error) {
+	return listAnnotationsFile(inFile, selectedPages, true, conf)
 }
 
 // ListAnnotations returns inFile's page annotations.
@@ -86,11 +102,11 @@ func ListAnnotations(cmd *Command) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		_, ss, err := listAnnotations(rs, cmd.PageSelection, cmd.Conf)
+		_, ss, err := listAnnotations(rs, cmd.PageSelection, cmd.BoolVal1, cmd.Conf)
 		return ss, err
 	}
 
-	_, ss, err := ListAnnotationsFile(*cmd.InFile, cmd.PageSelection, cmd.Conf)
+	_, ss, err := listAnnotationsFile(*cmd.InFile, cmd.PageSelection, cmd.BoolVal1, cmd.Conf)
 	return ss, err
 }
 

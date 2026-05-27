@@ -236,9 +236,11 @@ func LineEndingStyleName(les LineEndingStyle) string {
 type AnnotationRenderer interface {
 	RenderDict(xRefTable *XRefTable, pageIndRef *types.IndirectRef) (types.Dict, error)
 	Type() AnnotationType
+	Rectangle() types.Rectangle
 	RectString() string
 	APObjNrInt() int
 	ID() string
+	Content() string
 	ContentString() string
 	CustomTypeString() string
 }
@@ -327,6 +329,11 @@ func (ann Annotation) ContentString() string {
 	return ann.Contents
 }
 
+// Content returns ann's contents.
+func (ann Annotation) Content() string {
+	return ann.Contents
+}
+
 // CustomTypeString returns a string representation of ann's contents.
 func (ann Annotation) CustomTypeString() string {
 	return ann.CustomSubType
@@ -335,6 +342,11 @@ func (ann Annotation) CustomTypeString() string {
 // RectString returns ann's positioning rectangle.
 func (ann Annotation) RectString() string {
 	return ann.Rect.ShortString()
+}
+
+// Rectangle returns ann's positioning rectangle.
+func (ann Annotation) Rectangle() types.Rectangle {
+	return ann.Rect
 }
 
 // APObjNrInt returns APObjnr.

@@ -36,6 +36,10 @@ type stampOptions struct {
 	mode string
 }
 
+type annotationListOptions struct {
+	json bool
+}
+
 func annotationsCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "annotations",
@@ -44,13 +48,17 @@ func annotationsCmd() *cobra.Command {
 	}
 	addPersistentPasswordFlags(cmd)
 
+	listOpts := &annotationListOptions{json: false}
 	listCmd := &cobra.Command{
 		Use:   "list inFile",
 		Short: "List annotations",
 		Args:  cobra.MinimumNArgs(1),
-		RunE:  wrapHandler(processListAnnotationsCommand),
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processListAnnotationsCommand(conf, args, listOpts)
+		}),
 	}
 	addSelectedPagesFlag(listCmd)
+	listCmd.Flags().BoolVarP(&listOpts.json, "json", "j", listOpts.json, "output JSON")
 
 	removeCmd := &cobra.Command{
 		Use:   "remove inFile [ outFile ] [ objNr | annotId | annotType]...",
@@ -253,7 +261,7 @@ func processRemoveWatermarksCommand(conf *model.Configuration, args []string) er
 	return removeWatermarks(conf, args, false)
 }
 
-func processListAnnotationsCommand(conf *model.Configuration, args []string) error {
+func processListAnnotationsCommand(conf *model.Configuration, args []string, opts *annotationListOptions) error {
 	inFile := args[0]
 	if err := inputPDFArg(conf, inFile); err != nil {
 		return err
@@ -264,6 +272,9 @@ func processListAnnotationsCommand(conf *model.Configuration, args []string) err
 		return err
 	}
 
+	if opts.json {
+		return process(cli.ListAnnotationsJSONCommand(inFile, selectedPages, conf))
+	}
 	return process(cli.ListAnnotationsCommand(inFile, selectedPages, conf))
 }
 

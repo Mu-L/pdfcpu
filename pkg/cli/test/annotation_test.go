@@ -17,11 +17,24 @@ limitations under the License.
 package test
 
 import (
+	"encoding/json"
 	"path/filepath"
 	"testing"
 
 	"github.com/pdfcpu/pdfcpu/pkg/cli"
 )
+
+type annotationListJSON struct {
+	Header struct {
+		Version string `json:"version"`
+	} `json:"header"`
+	Annotations map[string][]struct {
+		Type    string     `json:"type"`
+		ObjNr   int        `json:"objNr"`
+		Rect    [4]float64 `json:"rect"`
+		Content *string    `json:"content"`
+	} `json:"annotations"`
+}
 
 // TestListAndRemoveAnnotations verifies list and remove annotations.
 func TestListAndRemoveAnnotations(t *testing.T) {
@@ -37,6 +50,25 @@ func TestListAndRemoveAnnotations(t *testing.T) {
 	cmd := cli.ListAnnotationsCommand(inFile, nil, conf)
 	if _, err := cli.Process(cmd); err != nil {
 		t.Fatalf("%s: %v\n", msg, err)
+	}
+
+	cmd = cli.ListAnnotationsJSONCommand(inFile, nil, conf)
+	out, err := cli.Process(cmd)
+	if err != nil {
+		t.Fatalf("%s json: %v\n", msg, err)
+	}
+	if len(out) != 1 {
+		t.Fatalf("%s json: want 1 output string, got %d\n", msg, len(out))
+	}
+	var annots annotationListJSON
+	if err := json.Unmarshal([]byte(out[0]), &annots); err != nil {
+		t.Fatalf("%s json: %v\n", msg, err)
+	}
+	if annots.Header.Version == "" {
+		t.Fatalf("%s json: missing header version\n", msg)
+	}
+	if len(annots.Annotations) == 0 {
+		t.Fatalf("%s json: missing annotations\n", msg)
 	}
 
 	// Remove page annotation using obj# 34

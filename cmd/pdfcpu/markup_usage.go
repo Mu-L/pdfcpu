@@ -224,6 +224,9 @@ Pipeline examples:
       List all annotations:
          pdfcpu annot list in.pdf
 
+      List all annotations as JSON:
+         pdfcpu annot list --json in.pdf
+
       List annotation of first two pages:
          pdfcpu annot list in.pdf --pages 1-2
 
