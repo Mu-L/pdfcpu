@@ -24,6 +24,7 @@ const (
        inFileJSON ... input JSON file
           outFile ... output PDF file, use - to write to stdout where the command writes a single PDF
       outFileJSON ... output JSON file
+             json ... output form export JSON
              mode ... output mode (defaults to single)
            outDir ... output directory
           outName ... base output name
@@ -42,6 +43,8 @@ Supported usecases:
    1) Get a list of form fields:
          "pdfcpu form list in.pdf" returns a list of form fields of in.pdf.
          Each field is identified by its name and id.
+         "pdfcpu form list --json in.pdf" writes the form export JSON to stdout.
+         "pdfcpu form list --json *.pdf" writes one fill-compatible form entry per input file.
 
    2) Remove some form fields:
          "pdfcpu form remove in.pdf middleName birthPlace" removes the the two fields "middleName" and "birthPlace".
@@ -99,6 +102,9 @@ Supported usecases:
 Pipeline examples:
    aws s3 cp s3://acme-forms/application.pdf - \
       | pdfcpu form list -
+
+   aws s3 cp s3://acme-forms/application.pdf - \
+      | pdfcpu form list --json -
 
    aws s3 cp s3://acme-forms/application.pdf - \
       | pdfcpu form export - application.json

@@ -17,15 +17,16 @@ limitations under the License.
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/log"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/form"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
-	"path/filepath"
 )
 
 func listFormFields(rs io.ReadSeeker, conf *model.Configuration) ([]string, error) {
@@ -40,6 +41,58 @@ func listFormFields(rs io.ReadSeeker, conf *model.Configuration) ([]string, erro
 	}
 
 	return form.ListFormFields(ctx)
+}
+
+func exportFormGroup(rs io.ReadSeeker, source string, conf *model.Configuration) (*form.FormGroup, error) {
+	formGroup, err := api.ExportForm(rs, source, conf)
+	if err != nil {
+		return nil, err
+	}
+	return formGroup, nil
+}
+
+func listFormFieldsJSON(inFiles []string, conf *model.Configuration) ([]string, error) {
+	formGroup := &form.FormGroup{}
+
+	for _, fn := range inFiles {
+		rs, err := formFieldReadSeeker(fn)
+		if err != nil {
+			return nil, err
+		}
+		if f, ok := rs.(*os.File); ok {
+			defer f.Close()
+		}
+
+		source := formFieldSource(fn)
+		fg, err := exportFormGroup(rs, source, conf)
+		if err != nil {
+			return nil, err
+		}
+		if len(formGroup.Forms) == 0 {
+			formGroup.Header = fg.Header
+		}
+		formGroup.Forms = append(formGroup.Forms, fg.Forms...)
+	}
+
+	bb, err := json.MarshalIndent(formGroup, "", "\t")
+	if err != nil {
+		return nil, err
+	}
+	return []string{string(bb)}, nil
+}
+
+func formFieldReadSeeker(fn string) (io.ReadSeeker, error) {
+	if fn == "-" {
+		return readSeekerFromStdin()
+	}
+	return os.Open(fn)
+}
+
+func formFieldSource(fn string) string {
+	if fn == "-" {
+		return "stdin"
+	}
+	return fn
 }
 
 // ListFormFieldsFile returns a list of form field ids in inFile.
@@ -78,6 +131,11 @@ func ListFormFieldsFile(inFiles []string, conf *model.Configuration) ([]string, 
 
 // ListFormFields returns inFile's form field ids.
 func ListFormFields(cmd *Command) ([]string, error) {
+	if cmd.BoolVal1 {
+		log.SetCLILogger(nil)
+		return listFormFieldsJSON(cmd.InFiles, cmd.Conf)
+	}
+
 	stdin := false
 	for _, fn := range cmd.InFiles {
 		if fn == "-" {

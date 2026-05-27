@@ -31,6 +31,10 @@ type formMultifillOptions struct {
 	mode string
 }
 
+type formListOptions struct {
+	json bool
+}
+
 func formCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "form",
@@ -56,13 +60,19 @@ func formCmd() *cobra.Command {
 	}
 	multifill.Flags().StringVarP(&multifillOpts.mode, "mode", "m", multifillOpts.mode, "output mode: single|merge")
 
+	listOpts := &formListOptions{json: false}
+	list := &cobra.Command{
+		Use:   "list inFile...",
+		Short: "List form fields",
+		Args:  cobra.MinimumNArgs(1),
+		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
+			return processListFormFieldsCommand(conf, args, listOpts)
+		}),
+	}
+	list.Flags().BoolVarP(&listOpts.json, "json", "j", listOpts.json, "output JSON")
+
 	cmd.AddCommand(
-		&cobra.Command{
-			Use:   "list inFile...",
-			Short: "List form fields",
-			Args:  cobra.MinimumNArgs(1),
-			RunE:  wrapHandler(processListFormFieldsCommand),
-		},
+		list,
 		&cobra.Command{
 			Use:   "remove inFile [ outFile ] < fieldID | fieldName >...",
 			Short: "Remove form fields",
@@ -122,10 +132,13 @@ func listFormFiles(conf *model.Configuration, args []string) ([]string, error) {
 	return inFiles, nil
 }
 
-func processListFormFieldsCommand(conf *model.Configuration, args []string) error {
+func processListFormFieldsCommand(conf *model.Configuration, args []string, opts *formListOptions) error {
 	inFiles, err := listFormFiles(conf, args)
 	if err != nil {
 		return err
+	}
+	if opts.json {
+		return process(cli.ListFormFieldsJSONCommand(inFiles, conf))
 	}
 	return process(cli.ListFormFieldsCommand(inFiles, conf))
 }

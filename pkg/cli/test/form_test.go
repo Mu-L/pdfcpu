@@ -17,17 +17,20 @@ limitations under the License.
 package test
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/pdfcpu/pdfcpu/pkg/cli"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/form"
 )
 
 /**************************************************************
  * All form related processing is optimized for Adobe Reader! *
  **************************************************************/
 
+// TestListFormFields verifies listing form fields.
 func TestListFormFields(t *testing.T) {
 
 	msg := "TestListFormFields"
@@ -36,6 +39,92 @@ func TestListFormFields(t *testing.T) {
 	cmd := cli.ListFormFieldsCommand([]string{inFile}, conf)
 	if _, err := cli.Process(cmd); err != nil {
 		t.Fatalf("%s %s: %v\n", msg, inFile, err)
+	}
+}
+
+// TestListFormFieldsJSON verifies listing form fields as export JSON.
+func TestListFormFieldsJSON(t *testing.T) {
+	msg := "TestListFormFieldsJSON"
+	inFile := filepath.Join(samplesDir, "form", "demoSinglePage", "english.pdf")
+
+	cmd := cli.ListFormFieldsJSONCommand([]string{inFile}, conf)
+	ss, err := cli.Process(cmd)
+	if err != nil {
+		t.Fatalf("%s %s: %v\n", msg, inFile, err)
+	}
+	if len(ss) != 1 {
+		t.Fatalf("%s: want 1 JSON output string, got %d\n", msg, len(ss))
+	}
+
+	formGroup := form.FormGroup{}
+	if err := json.Unmarshal([]byte(ss[0]), &formGroup); err != nil {
+		t.Fatalf("%s: %v\n", msg, err)
+	}
+	if len(formGroup.Forms) != 1 {
+		t.Fatalf("%s: want 1 form, got %d\n", msg, len(formGroup.Forms))
+	}
+	if formGroup.Header.Source != "english.pdf" {
+		t.Fatalf("%s: want source english.pdf, got %s\n", msg, formGroup.Header.Source)
+	}
+}
+
+// TestListFormFieldsJSONCanFill verifies JSON form list output can be fed into form fill.
+func TestListFormFieldsJSONCanFill(t *testing.T) {
+	msg := "TestListFormFieldsJSONCanFill"
+	inFile := filepath.Join(samplesDir, "form", "demoSinglePage", "english.pdf")
+	jsonFile := filepath.Join(outDir, "english-list.json")
+	outFile := filepath.Join(outDir, "english-list-filled.pdf")
+
+	cmd := cli.ListFormFieldsJSONCommand([]string{inFile}, conf)
+	ss, err := cli.Process(cmd)
+	if err != nil {
+		t.Fatalf("%s %s: %v\n", msg, inFile, err)
+	}
+
+	formGroup := form.FormGroup{}
+	if err := json.Unmarshal([]byte(ss[0]), &formGroup); err != nil {
+		t.Fatalf("%s: %v\n", msg, err)
+	}
+	if len(formGroup.Forms) == 0 || len(formGroup.Forms[0].TextFields) == 0 {
+		t.Fatalf("%s: missing text fields\n", msg)
+	}
+	formGroup.Forms[0].TextFields[0].Value = "list json fill"
+
+	bb, err := json.MarshalIndent(formGroup, "", "\t")
+	if err != nil {
+		t.Fatalf("%s: %v\n", msg, err)
+	}
+	if err := os.WriteFile(jsonFile, bb, 0644); err != nil {
+		t.Fatalf("%s: %v\n", msg, err)
+	}
+
+	cmd = cli.FillFormCommand(inFile, jsonFile, outFile, conf)
+	if _, err := cli.Process(cmd); err != nil {
+		t.Fatalf("%s %s: %v\n", msg, inFile, err)
+	}
+}
+
+// TestListFormFieldsJSONMultiFile verifies JSON form list output for multiple input files.
+func TestListFormFieldsJSONMultiFile(t *testing.T) {
+	msg := "TestListFormFieldsJSONMultiFile"
+	inDir := filepath.Join(samplesDir, "form", "demoSinglePage")
+	inFiles := []string{
+		filepath.Join(inDir, "english.pdf"),
+		filepath.Join(inDir, "person.pdf"),
+	}
+
+	cmd := cli.ListFormFieldsJSONCommand(inFiles, conf)
+	ss, err := cli.Process(cmd)
+	if err != nil {
+		t.Fatalf("%s: %v\n", msg, err)
+	}
+
+	formGroup := form.FormGroup{}
+	if err := json.Unmarshal([]byte(ss[0]), &formGroup); err != nil {
+		t.Fatalf("%s: %v\n", msg, err)
+	}
+	if len(formGroup.Forms) != len(inFiles) {
+		t.Fatalf("%s: want %d forms, got %d\n", msg, len(inFiles), len(formGroup.Forms))
 	}
 }
 

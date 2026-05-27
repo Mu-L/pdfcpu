@@ -18,16 +18,26 @@ package cli
 
 import "github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 
-// ListFormFieldsCommand creates a new command to list the field ids from a PDF form.
-func ListFormFieldsCommand(inFiles []string, conf *model.Configuration) *Command {
+func listFormFieldsCommand(inFiles []string, json bool, conf *model.Configuration) *Command {
 	if conf == nil {
 		conf = model.NewDefaultConfiguration()
 	}
 	conf.Cmd = model.LISTFORMFIELDS
 	return &Command{
-		Mode:    model.LISTFORMFIELDS,
-		InFiles: inFiles,
-		Conf:    conf}
+		Mode:     model.LISTFORMFIELDS,
+		InFiles:  inFiles,
+		BoolVal1: json,
+		Conf:     conf}
+}
+
+// ListFormFieldsCommand creates a new command to list the field ids from a PDF form.
+func ListFormFieldsCommand(inFiles []string, conf *model.Configuration) *Command {
+	return listFormFieldsCommand(inFiles, false, conf)
+}
+
+// ListFormFieldsJSONCommand creates a new command to list PDF form fields as export JSON.
+func ListFormFieldsJSONCommand(inFiles []string, conf *model.Configuration) *Command {
+	return listFormFieldsCommand(inFiles, true, conf)
 }
 
 // RemoveFormFieldsCommand creates a new command to remove fields from a PDF form.
