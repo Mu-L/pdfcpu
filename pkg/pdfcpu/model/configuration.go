@@ -17,7 +17,7 @@ limitations under the License.
 package model
 
 import (
-	"embed"
+	_ "embed"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -381,9 +381,6 @@ var configFileBytes []byte
 //go:embed resources/Roboto-Regular.ttf
 var robotoFontFileBytes []byte
 
-//go:embed resources/certs/*.p7c
-var certFilesEU embed.FS
-
 func ensureConfigFileAt(path string, override bool) error {
 	f, err := os.Open(path)
 	if err != nil || override {
@@ -449,11 +446,6 @@ func ensureFontDirInitialized() error {
 }
 
 func initCertificates() error {
-	// Install certs managed by The European Union Trusted Lists (EUTL) (https://eidas.ec.europa.eu/efda/trust-services/browse/eidas/tls).
-	// The embedded files are unpacked and stored into the pdfcpu config dir.
-	// Additional certificates may be loaded using the corresponding CLI command: pdfcpu certificates import
-	// Certificates are loaded into memory lazily.
-
 	files, err := os.ReadDir(TrustedCertDir)
 	if err != nil {
 		return err
@@ -462,40 +454,7 @@ func initCertificates() error {
 		return nil
 	}
 
-	files, err = certFilesEU.ReadDir("resources/certs")
-	if err != nil {
-		return err
-	}
-
-	euDir := filepath.Join(TrustedCertDir, "eu")
-	if err := os.MkdirAll(euDir, os.ModePerm); err != nil {
-		return err
-	}
-
-	for _, file := range files {
-		//fmt.Println("Embedded file:", file.Name())
-
-		content, err := certFilesEU.ReadFile("resources/certs/" + file.Name())
-		if err != nil {
-			return err
-		}
-
-		path := filepath.Join(euDir, file.Name())
-		//fmt.Printf("writing to %s\n", path)
-
-		destFile, err := os.Create(path)
-		if err != nil {
-			return err
-		}
-		defer destFile.Close()
-
-		_, err = destFile.Write(content)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return installDefaultCertificates()
 }
 
 // EnsureDefaultConfigAt tries to load the default configuration from path.
