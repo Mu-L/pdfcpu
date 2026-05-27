@@ -80,10 +80,11 @@ func validateObjectReferenceDict(xRefTable *model.XRefTable, d types.Dict) error
 	// Obj: required, indirect reference
 	ir := d.IndirectRefEntry("Obj")
 	if xRefTable.ValidationMode == model.ValidationStrict && ir == nil {
-		return errors.New("pdfcpu: validateObjectReferenceDict: missing required entry \"Obj\"")
+		return errors.New(`objectReferenceDict: missing required entry "Obj"`)
 	}
 
 	if ir == nil {
+		model.ShowSkipped(`objectReferenceDict: entry "Obj"`)
 		return nil
 	}
 
@@ -93,6 +94,10 @@ func validateObjectReferenceDict(xRefTable *model.XRefTable, d types.Dict) error
 	}
 
 	if obj == nil {
+		if xRefTable.ValidationMode == model.ValidationRelaxed {
+			model.ShowSkipped(fmt.Sprintf("objectReferenceDict: missing obj#%s", ir.ObjectNumber))
+			return nil
+		}
 		return errors.Errorf("pdfcpu: validateObjectReferenceDict: missing obj#%s", ir.ObjectNumber)
 	}
 
