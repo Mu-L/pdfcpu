@@ -117,6 +117,44 @@ func TestMergeCreatePreserveBookmarks(t *testing.T) {
 	}
 }
 
+// TestMergeCreateDuplicateBookmarkDestinations verifies duplicate merge bookmark titles resolve to their own pages.
+func TestMergeCreateDuplicateBookmarkDestinations(t *testing.T) {
+	msg := "TestMergeCreateDuplicateBookmarkDestinations"
+	inFile := filepath.Join(inDir, "test.pdf")
+	inFiles := []string{inFile, inFile, inFile, inFile}
+	outFile := filepath.Join(outDir, "outDuplicateBookmarkDestinations.pdf")
+
+	if err := api.MergeCreateFile(inFiles, outFile, false, nil); err != nil {
+		t.Fatalf("%s: %v\n", msg, err)
+	}
+
+	if err := api.ValidateFile(outFile, conf); err != nil {
+		t.Fatalf("%s: %v\n", msg, err)
+	}
+
+	f, err := os.Open(outFile)
+	if err != nil {
+		t.Fatalf("%s: %v\n", msg, err)
+	}
+	defer f.Close()
+
+	bms, err := api.Bookmarks(f, nil)
+	if err != nil {
+		t.Fatalf("%s: %v\n", msg, err)
+	}
+	if len(bms) != len(inFiles) {
+		t.Fatalf("%s: got %d bookmarks, want %d", msg, len(bms), len(inFiles))
+	}
+	for i, bm := range bms {
+		if bm.Title != "test.pdf" {
+			t.Fatalf("%s: bookmark %d title = %q, want test.pdf", msg, i, bm.Title)
+		}
+		if bm.PageFrom != i+1 {
+			t.Fatalf("%s: bookmark %d page = %d, want %d", msg, i, bm.PageFrom, i+1)
+		}
+	}
+}
+
 // TestMergeAppendNew verifies merge append new.
 func TestMergeAppendNew(t *testing.T) {
 	msg := "TestMergeAppend"

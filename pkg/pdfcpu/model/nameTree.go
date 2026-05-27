@@ -294,6 +294,17 @@ func (n *Node) HandleLeaf(xRefTable *XRefTable, k string, v types.Object, m Name
 	return nil
 }
 
+func updateNameTreeLimits(path []*Node) {
+	for i := len(path) - 1; i >= 0; i-- {
+		n := path[i]
+		if len(n.Kids) == 0 {
+			continue
+		}
+		n.Kmin = n.Kids[0].Kmin
+		n.Kmax = n.Kids[len(n.Kids)-1].Kmax
+	}
+}
+
 // Add adds an entry to a name tree.
 func (n *Node) Add(xRefTable *XRefTable, k string, v types.Object, m NameMap, nameRefDictKeys []string) error {
 	//fmt.Printf("Add: %s %v\n", k, v)
@@ -303,13 +314,18 @@ func (n *Node) Add(xRefTable *XRefTable, k string, v types.Object, m NameMap, na
 	// Dictionary, array, and string objects should be specified by indirect object references.
 	// Other PDF objects (null, number, boolean and name) should be specified as direct objects.
 
+	var path []*Node
 	for {
 		if n.Names == nil {
 			n.Names = make([]entry, 0, maxEntries)
 		}
 
 		if n.leaf() {
-			return n.HandleLeaf(xRefTable, k, v, m, nameRefDictKeys)
+			if err := n.HandleLeaf(xRefTable, k, v, m, nameRefDictKeys); err != nil {
+				return err
+			}
+			updateNameTreeLimits(path)
+			return nil
 		}
 
 		if keyLess(k, n.Kmin) {
@@ -331,6 +347,7 @@ func (n *Node) Add(xRefTable *XRefTable, k string, v types.Object, m NameMap, na
 		if target == nil {
 			target = n.Kids[len(n.Kids)-1]
 		}
+		path = append(path, n)
 		n = target
 	}
 }

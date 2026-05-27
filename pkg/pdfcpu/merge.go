@@ -18,6 +18,7 @@ package pdfcpu
 
 import (
 	"fmt"
+	"maps"
 
 	"github.com/pdfcpu/pdfcpu/pkg/log"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
@@ -27,7 +28,6 @@ import (
 
 // EnsureOutlines ensures outlines.
 func EnsureOutlines(ctx *model.Context, fName string, append bool) error {
-
 	rootDict, err := ctx.Catalog()
 	if err != nil {
 		return err
@@ -89,42 +89,24 @@ func EnsureOutlines(ctx *model.Context, fName string, append bool) error {
 	return nil
 }
 
-func mergeOutlines(fName string, p int, ctxSrc, ctxDest *model.Context) error {
-	rootDictDest, _ := ctxDest.Catalog()
-	indRef := rootDictDest.IndirectRefEntry("Outlines")
-	outlinesDict, err := ctxDest.DereferenceDict(*indRef)
+func mergeOutlinesWrapped(fName string, p int, ctxSrc, ctxDest *model.Context) error {
+	indRef, outlinesDict, oldLast, err := destOutlines(ctxDest)
 	if err != nil {
 		return err
 	}
+	if indRef == nil || oldLast == nil {
+		return nil
+	}
 
-	first, last, _, _, err := createOutlineItemDict(ctxDest, []Bookmark{{PageFrom: p, Title: fName}}, indRef, nil)
+	first, wrapperDict, err := appendOutlineWrapper(ctxDest, outlinesDict, indRef, oldLast, fName, p)
 	if err != nil {
 		return err
 	}
-
-	l := outlinesDict.IndirectRefEntry("Last")
-	outlinesDict["Last"] = *last
-
-	topCount := 0
-
-	count := outlinesDict.IntEntry("Count")
-	if count != nil {
-		topCount = *count
+	if first == nil {
+		return nil
 	}
 
-	topCount++
-
-	d1, err := ctxDest.DereferenceDict(*l)
-	if err != nil {
-		return err
-	}
-	d1["Next"] = *last
-
-	d2, err := ctxDest.DereferenceDict(*last)
-	if err != nil {
-		return err
-	}
-	d2["Previous"] = *l
+	topCount := outlineTopCount(outlinesDict) + 1
 
 	rootDictSource, err := ctxSrc.Catalog()
 	if err != nil {
@@ -141,13 +123,13 @@ func mergeOutlines(fName string, p int, ctxSrc, ctxDest *model.Context) error {
 		}
 
 		f, l := d.IndirectRefEntry("First"), d.IndirectRefEntry("Last")
-		if f == nil && l == nil {
+		if f == nil || l == nil {
 			outlinesDict["Count"] = types.Integer(topCount)
 			return nil
 		}
 
-		d2["First"] = *f
-		d2["Last"] = *l
+		wrapperDict["First"] = *f
+		wrapperDict["Last"] = *l
 
 		c := 0
 
@@ -158,22 +140,78 @@ func mergeOutlines(fName string, p int, ctxSrc, ctxDest *model.Context) error {
 			if err != nil {
 				return err
 			}
-			d["Parent"] = *first
 
+			d["Parent"] = *first
 			i := d.IntEntry("Count")
 			if i != nil && *i > 0 {
 				c += *i
 			}
-
 			c++
 		}
 
-		d2["Count"] = types.Integer(c)
+		wrapperDict["Count"] = types.Integer(c)
 		topCount += c
 	}
 
 	outlinesDict["Count"] = types.Integer(topCount)
 	return nil
+}
+
+func destOutlines(ctxDest *model.Context) (*types.IndirectRef, types.Dict, *types.IndirectRef, error) {
+	rootDictDest, err := ctxDest.Catalog()
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	indRef := rootDictDest.IndirectRefEntry("Outlines")
+	if indRef == nil {
+		return nil, nil, nil, nil
+	}
+
+	outlinesDict, err := ctxDest.DereferenceDict(*indRef)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
+	return indRef, outlinesDict, outlinesDict.IndirectRefEntry("Last"), nil
+}
+
+func outlineTopCount(outlinesDict types.Dict) int {
+	count := outlinesDict.IntEntry("Count")
+	if count == nil {
+		return 0
+	}
+	return *count
+}
+
+func appendOutlineWrapper(ctxDest *model.Context, outlinesDict types.Dict, indRef, oldLast *types.IndirectRef, fName string, p int) (*types.IndirectRef, types.Dict, error) {
+	first, last, _, _, err := createOutlineItemDict(ctxDest, []Bookmark{{PageFrom: p, Title: fName}}, indRef, nil)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if first == nil || last == nil {
+		return nil, nil, nil
+	}
+
+	if first != last {
+		return nil, nil, errors.New("mergeOutlines: unexpected first != last indRefs")
+	}
+
+	d1, err := ctxDest.DereferenceDict(*oldLast)
+	if err != nil {
+		return nil, nil, err
+	}
+	d1["Next"] = *first
+
+	d2, err := ctxDest.DereferenceDict(*first)
+	if err != nil {
+		return nil, nil, err
+	}
+	d2["Previous"] = *oldLast
+
+	outlinesDict["Last"] = *first
+	return first, d2, nil
 }
 
 func ensureOutlinesRoot(ctx *model.Context) (*types.IndirectRef, types.Dict, error) {
@@ -193,22 +231,23 @@ func ensureOutlinesRoot(ctx *model.Context) (*types.IndirectRef, types.Dict, err
 	if err != nil {
 		return nil, nil, err
 	}
+
 	rootDict["Outlines"] = *indRef
 	return indRef, outlinesDict, nil
 }
 
 func sourceOutlines(ctxSrc, ctxDest *model.Context) (*types.IndirectRef, *types.IndirectRef, int, error) {
-	rootDictSource, err := ctxSrc.Catalog()
+	rootDictSrc, err := ctxSrc.Catalog()
 	if err != nil {
 		return nil, nil, 0, err
 	}
 
-	obj, ok := rootDictSource.Find("Outlines")
-	if !ok {
+	indRef := rootDictSrc.IndirectRefEntry("Outlines")
+	if indRef == nil {
 		return nil, nil, 0, nil
 	}
 
-	d, err := ctxDest.DereferenceDict(obj)
+	d, err := ctxDest.DereferenceDict(*indRef)
 	if err != nil {
 		return nil, nil, 0, err
 	}
@@ -334,6 +373,7 @@ func handleDR(ctxSrc *model.Context, dSrc, dDest types.Dict) error {
 	if !found {
 		return nil
 	}
+
 	dSrc, err := ctxSrc.DereferenceDict(o)
 	if err != nil {
 		return err
@@ -341,10 +381,12 @@ func handleDR(ctxSrc *model.Context, dSrc, dDest types.Dict) error {
 	if len(dSrc) == 0 {
 		return nil
 	}
+
 	_, found = dDest.Find("DR")
 	if !found {
 		dDest["DR"] = dSrc
 	}
+
 	return nil
 }
 
@@ -514,15 +556,12 @@ func mergeDests(ctxSource, ctxDest *model.Context) error {
 	}
 
 	// Note: We ignore duplicate keys
-	for k, v := range destsSrc {
-		destsDest[k] = v
-	}
+	maps.Copy(destsDest, destsSrc)
 
 	return nil
 }
 
 func mergeNames(ctxSrc, ctxDest *model.Context) error {
-
 	rootDictSrc, rootDictDest, err := rootDicts(ctxSrc, ctxDest)
 	if err != nil {
 		return err
@@ -558,7 +597,6 @@ func mergeNames(ctxSrc, ctxDest *model.Context) error {
 }
 
 func mergeForms(ctxSrc, ctxDest *model.Context) error {
-
 	rootDictSource, rootDictDest, err := rootDicts(ctxSrc, ctxDest)
 	if err != nil {
 		return err
@@ -1043,9 +1081,7 @@ func mergeDuplicateObjNumberIntSets(ctxSrc, ctxDest *model.Context) {
 // zip         ... zip 2 files together (eg. 1A,1B,2A,2B,3A,3B...)
 // dividerPage ... insert blank page between merged files (not applicable for zipping)
 func MergeXRefTables(fName string, ctxSrc, ctxDest *model.Context, zip, dividerPage bool) (err error) {
-
 	patchSourceObjectNumbers(ctxSrc, ctxDest)
-
 	appendSourceObjectsToDest(ctxSrc, ctxDest)
 
 	origDestPageCount := ctxDest.PageCount
@@ -1079,7 +1115,7 @@ func MergeXRefTables(fName string, ctxSrc, ctxDest *model.Context, zip, dividerP
 		if ctxDest.Configuration.MergeBookmarkMode == model.MergeBookmarkModePreserve {
 			err = mergeOutlinesPreserve(ctxSrc, ctxDest)
 		} else {
-			err = mergeOutlines(fName, origDestPageCount+1, ctxSrc, ctxDest)
+			err = mergeOutlinesWrapped(fName, origDestPageCount+1, ctxSrc, ctxDest)
 		}
 		if err != nil {
 			return err
