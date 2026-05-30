@@ -21,6 +21,7 @@ import (
 	"crypto/x509/pkix"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -104,12 +105,32 @@ func CertString(cert *x509.Certificate) string {
 	)
 }
 
-// ResetCertificates reset certificates.
+// ResetCertificates resets installed trusted certificates to the build defaults.
 func ResetCertificates() error {
-	// remove certs/*.pem
-	path, err := os.UserConfigDir()
-	if err != nil {
-		path = os.TempDir()
+	if TrustedCertDir == "" {
+		path, err := os.UserConfigDir()
+		if err != nil {
+			path = os.TempDir()
+		}
+		if err := EnsureDefaultConfigAt(path, false); err != nil {
+			return err
+		}
 	}
-	return EnsureDefaultConfigAt(path, true)
+	if err := resetCertificatesDir(); err != nil {
+		return err
+	}
+	return installDefaultCertificates()
+}
+
+func resetCertificatesDir() error {
+	files, err := os.ReadDir(TrustedCertDir)
+	if err != nil {
+		return err
+	}
+	for _, file := range files {
+		if err := os.RemoveAll(filepath.Join(TrustedCertDir, file.Name())); err != nil {
+			return err
+		}
+	}
+	return nil
 }

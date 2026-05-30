@@ -17,20 +17,50 @@ limitations under the License.
 package cli
 
 import (
+	"crypto/x509"
+	"crypto/x509/pkix"
+	"encoding/json"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
-	"crypto/x509"
-	"encoding/pem"
 	"github.com/hhrutter/pkcs7"
 	"github.com/pdfcpu/pdfcpu/pkg/api"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
-	"path/filepath"
 )
+
+type certificateName struct {
+	Organization       []string `json:"organization,omitempty"`
+	OrganizationalUnit []string `json:"organizationalUnit,omitempty"`
+	CommonName         string   `json:"commonName,omitempty"`
+	StreetAddress      []string `json:"streetAddress,omitempty"`
+	Locality           []string `json:"locality,omitempty"`
+	Province           []string `json:"province,omitempty"`
+	PostalCode         []string `json:"postalCode,omitempty"`
+	Country            []string `json:"country,omitempty"`
+}
+
+type certificateListEntry struct {
+	Subject      certificateName `json:"subject"`
+	Issuer       certificateName `json:"issuer"`
+	SerialNumber string          `json:"serialNumber"`
+	NotBefore    string          `json:"notBefore"`
+	NotAfter     string          `json:"notAfter"`
+	IsCA         bool            `json:"isCA"`
+}
+
+type certificateFileEntry struct {
+	Name         string                 `json:"name"`
+	Certificates []certificateListEntry `json:"certificates,omitempty"`
+	Error        string                 `json:"error,omitempty"`
+}
 
 func listPEM(fName string, ss *[]string) (int, error) {
 	bb, err := os.ReadFile(fName)
@@ -98,8 +128,12 @@ func listP7C(fName string, ss *[]string) (int, error) {
 	return len(ss1), nil
 }
 
-// ListCertificatesAll returns formatted information about installed certificates.
+// ListCertificatesAll returns information about installed certificates.
 func ListCertificatesAll(json bool, conf *model.Configuration) ([]string, error) {
+	if json {
+		return listCertificatesAllJSON()
+	}
+
 	// Process *.pem and *.p7c
 
 	if err := os.MkdirAll(model.TrustedCertDir, os.ModePerm); err != nil {
@@ -143,6 +177,102 @@ func ListCertificatesAll(json bool, conf *model.Configuration) ([]string, error)
 	ss = append(ss, fmt.Sprintf("total installed certs: %d", count))
 
 	return ss, err
+}
+
+func listCertificatesAllJSON() ([]string, error) {
+	if err := os.MkdirAll(model.TrustedCertDir, os.ModePerm); err != nil {
+		return nil, err
+	}
+
+	files, count, err := certificateFilesJSON(model.TrustedCertDir)
+	if err != nil {
+		return nil, err
+	}
+
+	s := struct {
+		Header              pdfcpu.Header          `json:"header"`
+		TrustedCertDir      string                 `json:"trustedCertDir"`
+		TotalInstalledCerts int                    `json:"totalInstalledCerts"`
+		Files               []certificateFileEntry `json:"files"`
+	}{
+		Header:              pdfcpu.Header{Version: "pdfcpu " + model.VersionStr, Creation: time.Now().Format("2006-01-02 15:04:05 MST")},
+		TrustedCertDir:      model.TrustedCertDir,
+		TotalInstalledCerts: count,
+		Files:               files,
+	}
+
+	bb, err := json.MarshalIndent(s, "", "\t")
+	if err != nil {
+		return nil, err
+	}
+
+	return []string{string(bb)}, nil
+}
+
+func certificateFilesJSON(dir string) ([]certificateFileEntry, int, error) {
+	count := 0
+	var files []certificateFileEntry
+
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if skipCertificateFile(path, d) {
+			return nil
+		}
+		entry := certificateFileJSON(dir, path)
+		count += len(entry.Certificates)
+		files = append(files, entry)
+		return nil
+	})
+
+	return files, count, err
+}
+
+func skipCertificateFile(path string, d os.DirEntry) bool {
+	return d.IsDir() || (!model.IsPEM(path) && !model.IsP7C(path))
+}
+
+func certificateFileJSON(dir, path string) certificateFileEntry {
+	entry := certificateFileEntry{Name: strings.TrimPrefix(path, dir)}
+	certs, err := pdfcpu.LoadCertificatesFile(path)
+	if err != nil {
+		entry.Error = err.Error()
+		return entry
+	}
+	sort.Slice(certs, func(i, j int) bool {
+		return model.CertString(certs[i]) < model.CertString(certs[j])
+	})
+	entry.Certificates = certificateListEntries(certs)
+	return entry
+}
+
+func certificateListEntries(certs []*x509.Certificate) []certificateListEntry {
+	entries := make([]certificateListEntry, 0, len(certs))
+	for _, cert := range certs {
+		entries = append(entries, certificateListEntry{
+			Subject:      newCertificateName(cert.Subject),
+			Issuer:       newCertificateName(cert.Issuer),
+			SerialNumber: cert.SerialNumber.Text(16),
+			NotBefore:    cert.NotBefore.Format("2006-01-02"),
+			NotAfter:     cert.NotAfter.Format("2006-01-02"),
+			IsCA:         cert.IsCA,
+		})
+	}
+	return entries
+}
+
+func newCertificateName(name pkix.Name) certificateName {
+	return certificateName{
+		Organization:       name.Organization,
+		OrganizationalUnit: name.OrganizationalUnit,
+		CommonName:         name.CommonName,
+		StreetAddress:      name.StreetAddress,
+		Locality:           name.Locality,
+		Province:           name.Province,
+		PostalCode:         name.PostalCode,
+		Country:            name.Country,
+	}
 }
 
 // ListCertificates returns installed certificates.

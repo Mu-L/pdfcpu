@@ -20,13 +20,24 @@ const (
 	usageLongCertificates = `Manage certificates.
 
            inFile ... .pem, .p7c, .cer, .crt file
-       inFileJSON ... input JSON file
-          outFile ... output PDF file
-      outFileJSON ... output PDF file
+             json ... output JSON
 
-   pdfcpu comes preloaded with certificates approved by the EU Trusted Lists.
+   Standard builds start with an empty trusted certificate directory.
+   Builds created with -tags pdfcpu_eutl initialize this directory with an
+   embedded snapshot of EU Trusted List certificate bundles.
 
-   Please import any missing certificates. // add .. remove missing
+   Please import any missing certificates.
+`
+
+	usageLongCertificatesList = `List installed trusted certificates.
+
+             json ... output JSON
+
+   Certificates are read from pdfcpu's trusted certificate directory.
+
+Examples:
+   pdfcpu certificates list
+   pdfcpu certificates list --json
 `
 
 	usageLongSignatures = `Manage digital signatures.

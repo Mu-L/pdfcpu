@@ -48,6 +48,7 @@ func certificatesCmd() *cobra.Command {
 	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List certificates",
+		Long:  usageLongCertificatesList,
 		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
 			return processListCertificatesCommand(conf, args, listOpts)
 		}),
@@ -116,7 +117,7 @@ func signaturesCmd() *cobra.Command {
 }
 
 func resetCertificates(conf *model.Configuration, args []string) error {
-	fmt.Println("Are you ready to reset your certificates to your system root certificates?")
+	fmt.Println("Are you ready to reset your trusted certificates to the build defaults?")
 	if confirmed() {
 		fmt.Println("resetting..")
 		if err := model.ResetCertificates(); err != nil {
