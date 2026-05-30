@@ -53,9 +53,7 @@ var (
 	}
 )
 
-type nUpParamMap map[string]func(string, *model.NUp) error
-
-var nupParamMap = nUpParamMap{
+var nupParamMap = parameterMap[model.NUp]{
 	"dimensions":      parseDimensionsNUp,
 	"formsize":        parsePageFormatNUp,
 	"papersize":       parsePageFormatNUp,
@@ -71,29 +69,6 @@ var nupParamMap = nUpParamMap{
 	"btype":           parseBookletType,
 	"binding":         parseBookletBinding,
 	"enforce":         parseEnforce,
-}
-
-// Handle applies parameter completion and if successful
-// parses the parameter values into import.
-func (m nUpParamMap) Handle(paramPrefix, paramValueStr string, nup *model.NUp) error {
-	var param string
-
-	// Completion support
-	for k := range m {
-		if !strings.HasPrefix(k, strings.ToLower(paramPrefix)) {
-			continue
-		}
-		if len(param) > 0 {
-			return errors.Errorf("pdfcpu: ambiguous parameter prefix \"%s\"", paramPrefix)
-		}
-		param = k
-	}
-
-	if param == "" {
-		return errors.Errorf("pdfcpu: ambiguous parameter prefix \"%s\"", paramPrefix)
-	}
-
-	return m[param](paramValueStr, nup)
 }
 
 func parsePageFormatNUp(s string, nup *model.NUp) (err error) {
@@ -314,7 +289,7 @@ func ParseNUpDetails(s string, nup *model.NUp) error {
 		paramPrefix := strings.TrimSpace(ss1[0])
 		paramValueStr := strings.TrimSpace(ss1[1])
 
-		if err := nupParamMap.Handle(paramPrefix, paramValueStr, nup); err != nil {
+		if err := handleParameter(nupParamMap, paramPrefix, paramValueStr, nup); err != nil {
 			return err
 		}
 	}

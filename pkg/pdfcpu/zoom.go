@@ -49,7 +49,7 @@ func ParseZoomConfig(s string, u types.DisplayUnit) (*model.Zoom, error) {
 		paramPrefix := strings.TrimSpace(ss1[0])
 		paramValueStr := strings.TrimSpace(ss1[1])
 
-		if err := model.ZoomParamMap.Handle(paramPrefix, paramValueStr, zoom); err != nil {
+		if err := handleParameter(model.ZoomParamMap, paramPrefix, paramValueStr, zoom); err != nil {
 			return nil, err
 		}
 	}

@@ -51,7 +51,7 @@ func ParseResizeConfig(s string, u types.DisplayUnit) (*model.Resize, error) {
 		paramPrefix := strings.TrimSpace(ss1[0])
 		paramValueStr := strings.TrimSpace(ss1[1])
 
-		if err := model.ResizeParamMap.Handle(paramPrefix, paramValueStr, res); err != nil {
+		if err := handleParameter(model.ResizeParamMap, paramPrefix, paramValueStr, res); err != nil {
 			return nil, err
 		}
 	}

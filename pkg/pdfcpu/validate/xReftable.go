@@ -205,7 +205,7 @@ func validateRootVersion(xRefTable *model.XRefTable, rootDict types.Dict, requir
 	// and record this as rootVersion (as opposed to headerVersion).
 
 	if xRefTable.ValidationMode == model.ValidationRelaxed {
-		sinceVersion = model.V13
+		sinceVersion = model.V10
 	}
 	n, err := validateNameEntry(xRefTable, rootDict, "rootDict", "Version", required, sinceVersion, nil)
 	if err == nil {

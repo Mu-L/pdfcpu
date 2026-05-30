@@ -25,33 +25,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type pagesParamMap map[string]func(string, *PageConfiguration) error
-
-// Handle applies parameter completion and if successful
-// parses the parameter values into pages.
-func (m pagesParamMap) Handle(paramPrefix, paramValueStr string, pageConf *PageConfiguration) error {
-
-	var param string
-
-	// Completion support
-	for k := range m {
-		if !strings.HasPrefix(k, strings.ToLower(paramPrefix)) {
-			continue
-		}
-		if len(param) > 0 {
-			return errors.Errorf("pdfcpu: ambiguous parameter prefix \"%s\"", paramPrefix)
-		}
-		param = k
-	}
-
-	if param == "" {
-		return errors.Errorf("pdfcpu: unknown parameter prefix \"%s\"", paramPrefix)
-	}
-
-	return m[param](paramValueStr, pageConf)
-}
-
-var pParamMap = pagesParamMap{
+var pParamMap = parameterMap[PageConfiguration]{
 	"dimensions": parseDimensions,
 	"formsize":   parsePageFormat,
 	"papersize":  parsePageFormat,
@@ -117,7 +91,7 @@ func ParsePageConfiguration(s string, u types.DisplayUnit) (*PageConfiguration, 
 		paramPrefix := strings.TrimSpace(ss1[0])
 		paramValueStr := strings.TrimSpace(ss1[1])
 
-		if err := pParamMap.Handle(paramPrefix, paramValueStr, pageConf); err != nil {
+		if err := handleParameter(pParamMap, paramPrefix, paramValueStr, pageConf); err != nil {
 			return nil, err
 		}
 	}

@@ -31,33 +31,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type importParamMap map[string]func(string, *Import) error
-
-// Handle applies parameter completion and if successful
-// parses the parameter values into import.
-func (m importParamMap) Handle(paramPrefix, paramValueStr string, imp *Import) error {
-
-	var param string
-
-	// Completion support
-	for k := range m {
-		if !strings.HasPrefix(k, strings.ToLower(paramPrefix)) {
-			continue
-		}
-		if len(param) > 0 {
-			return errors.Errorf("pdfcpu: ambiguous parameter prefix \"%s\"", paramPrefix)
-		}
-		param = k
-	}
-
-	if param == "" {
-		return errors.Errorf("pdfcpu: unknown parameter prefix \"%s\"", paramPrefix)
-	}
-
-	return m[param](paramValueStr, imp)
-}
-
-var impParamMap = importParamMap{
+var impParamMap = parameterMap[Import]{
 	"dimensions":      parseDimensionsImp,
 	"dpi":             parseDPI,
 	"formsize":        parsePageFormatImp,
@@ -249,7 +223,7 @@ func ParseImportDetails(s string, u types.DisplayUnit) (*Import, error) {
 		paramPrefix := strings.TrimSpace(ss1[0])
 		paramValueStr := strings.TrimSpace(ss1[1])
 
-		if err := impParamMap.Handle(paramPrefix, paramValueStr, imp); err != nil {
+		if err := handleParameter(impParamMap, paramPrefix, paramValueStr, imp); err != nil {
 			return nil, err
 		}
 	}

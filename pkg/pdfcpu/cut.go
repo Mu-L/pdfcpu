@@ -51,7 +51,7 @@ func ParseCutConfigForPoster(s string, u types.DisplayUnit) (*model.Cut, error) 
 		paramPrefix := strings.TrimSpace(ss1[0])
 		paramValueStr := strings.TrimSpace(ss1[1])
 
-		if err := model.CutParamMap.Handle(paramPrefix, paramValueStr, cut); err != nil {
+		if err := handleParameter(model.CutParamMap, paramPrefix, paramValueStr, cut); err != nil {
 			return nil, err
 		}
 	}
@@ -83,7 +83,7 @@ func ParseCutConfigForN(n int, s string, u types.DisplayUnit) (*model.Cut, error
 		paramPrefix := strings.TrimSpace(ss1[0])
 		paramValueStr := strings.TrimSpace(ss1[1])
 
-		if err := model.CutParamMap.Handle(paramPrefix, paramValueStr, cut); err != nil {
+		if err := handleParameter(model.CutParamMap, paramPrefix, paramValueStr, cut); err != nil {
 			return nil, err
 		}
 	}
@@ -111,7 +111,7 @@ func ParseCutConfig(s string, u types.DisplayUnit) (*model.Cut, error) {
 		paramPrefix := strings.TrimSpace(ss1[0])
 		paramValueStr := strings.TrimSpace(ss1[1])
 
-		if err := model.CutParamMap.Handle(paramPrefix, paramValueStr, cut); err != nil {
+		if err := handleParameter(model.CutParamMap, paramPrefix, paramValueStr, cut); err != nil {
 			return nil, err
 		}
 	}
