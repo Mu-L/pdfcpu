@@ -33,22 +33,41 @@ var (
 )
 
 func init() {
-	// Update version info from build info if not set by Goreleaser
-	if date == "?" {
-		if info, ok := debug.ReadBuildInfo(); ok {
-			for _, setting := range info.Settings {
-				if setting.Key == "vcs.revision" {
-					commit = setting.Value
-					if len(commit) >= 8 {
-						commit = commit[:8]
-					}
-				}
-				if setting.Key == "vcs.time" {
-					date = setting.Value
-				}
+	updateVersionInfoFromBuildInfo()
+}
+
+func updateVersionInfoFromBuildInfo() {
+	if commit != "?" && date != "?" {
+		return
+	}
+
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return
+	}
+	setVersionInfoFromBuildSettings(info.Settings)
+}
+
+func setVersionInfoFromBuildSettings(settings []debug.BuildSetting) {
+	for _, setting := range settings {
+		switch setting.Key {
+		case "vcs.revision":
+			if commit == "?" {
+				commit = shortCommit(setting.Value)
+			}
+		case "vcs.time":
+			if date == "?" {
+				date = setting.Value
 			}
 		}
 	}
+}
+
+func shortCommit(s string) string {
+	if len(s) < 8 {
+		return s
+	}
+	return s[:8]
 }
 
 func main() {

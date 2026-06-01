@@ -5,7 +5,7 @@ builds:
     env:
       - CGO_ENABLED=0
     ldflags:
-      - '-s -w -X main.version={{.Version}} -X github.com/pdfcpu/pdfcpu/pkg/pdfcpu.VersionStr={{.Version}} -X main.commit={{.ShortCommit}} -X main.date={{.Date}} -X main.builtBy=goreleaser'
+      - '-s -w -X github.com/pdfcpu/pdfcpu/cmd/pdfcpu.version={{.Version}} -X github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model.VersionStr={{.Version}} -X github.com/pdfcpu/pdfcpu/cmd/pdfcpu.commit={{.ShortCommit}} -X github.com/pdfcpu/pdfcpu/cmd/pdfcpu.date={{.Date}}'
     goos:
       - linux
       - darwin
@@ -62,4 +62,3 @@ release:
   replace_existing_draft: true
   replace_existing_artifacts: true 
   prerelease: false  # Optional: Set to true if it's a prerelease
-

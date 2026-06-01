@@ -23,8 +23,8 @@ import (
 	"io"
 	"os"
 	"runtime"
-	"runtime/debug"
 	"strings"
+	"time"
 
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 	"github.com/spf13/cobra"
@@ -141,6 +141,7 @@ func versionCmd() *cobra.Command {
 		Use:   "version",
 		Short: "Print version",
 		Long:  usageLongVersion,
+		Args:  cobra.NoArgs,
 		RunE:  wrapHandler(printVersion),
 	}
 }
@@ -215,26 +216,23 @@ func printSelectedPages(conf *model.Configuration, args []string) error {
 }
 
 func printVersion(conf *model.Configuration, args []string) error {
-	fmt.Fprintf(os.Stdout, "version: %s\n", version)
-
-	if date == "?" {
-		if info, ok := debug.ReadBuildInfo(); ok {
-			for _, setting := range info.Settings {
-				if setting.Key == "vcs.revision" {
-					commit = setting.Value
-					if len(commit) >= 8 {
-						commit = commit[:8]
-					}
-				}
-				if setting.Key == "vcs.time" {
-					date = setting.Value
-				}
-			}
-		}
-	}
-
-	fmt.Fprintf(os.Stdout, "commit: %s (%s)\n", commit, date)
-	fmt.Fprintf(os.Stdout, "config: %s\n", conf.Path)
-	fmt.Fprintf(os.Stdout, "base  : %s\n", runtime.Version())
+	updateVersionInfoFromBuildInfo()
+	writeVersionInfo(os.Stdout, conf.Path)
 	return nil
+}
+
+func writeVersionInfo(w io.Writer, configPath string) {
+	fmt.Fprintf(w, "version: %s\n", version)
+	fmt.Fprintf(w, " config: %s\n", configPath)
+	fmt.Fprintf(w, " commit: %s\n", commit)
+	fmt.Fprintf(w, "   date: %s\n", formatVersionDate(date))
+	fmt.Fprintf(w, "     go: %s\n", runtime.Version())
+}
+
+func formatVersionDate(s string) string {
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return s
+	}
+	return t.UTC().Format("2006-01-02 15:04:05 MST")
 }
