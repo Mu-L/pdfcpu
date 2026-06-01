@@ -94,21 +94,22 @@ func signaturesValidateCmd() *cobra.Command {
 	opts := &signaturesValidateOptions{all: false, full: false}
 	cmd := &cobra.Command{
 		Use:   "validate inFile",
-		Short: "Validate signatures",
+		Short: "Validate signature integrity",
+		Long:  usageLongSignaturesValidate,
 		Args:  cobra.ExactArgs(1),
 		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
 			return processValidateSignaturesCommand(conf, args, opts)
 		}),
 	}
 	cmd.Flags().BoolVarP(&opts.all, "all", "a", opts.all, "validate all signatures")
-	cmd.Flags().BoolVarP(&opts.full, "full", "f", opts.full, "comprehensive output")
+	cmd.Flags().BoolVarP(&opts.full, "full", "f", opts.full, "detailed output")
 	return cmd
 }
 
 func signaturesCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "signatures",
-		Short: "Remove, validate signatures",
+		Short: "Remove signatures, validate integrity",
 		Long:  usageLongSignatures,
 	}
 	addPersistentPasswordFlags(cmd)

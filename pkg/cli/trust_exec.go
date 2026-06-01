@@ -290,7 +290,7 @@ func InspectCertificates(cmd *Command) ([]string, error) {
 	return api.InspectCertificates(cmd.InFiles)
 }
 
-// ValidateSignatures validates contained digital signatures.
+// ValidateSignatures validates contained digital signature integrity.
 func ValidateSignatures(cmd *Command) ([]string, error) {
 	if *cmd.InFile == "-" {
 		rs, err := readSeekerFromStdin()

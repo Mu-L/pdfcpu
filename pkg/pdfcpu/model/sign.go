@@ -293,7 +293,7 @@ var SignatureReasonStrings = map[SignatureReason]string{
 	SignatureReasonSignatureForged:       "signer's signature is not authentic",
 	SignatureReasonTimestampTokenInvalid: "timestamp token is invalid",
 	SignatureReasonCertInvalid:           "signer's certificate is invalid",
-	SignatureReasonCertNotTrusted:        "signer's certificate chain is not in the trusted list of Root CAs",
+	SignatureReasonCertNotTrusted:        "signer's certificate chain is not in the configured local trusted certificate store",
 	SignatureReasonCertExpired:           "signer's certificate or one of its parent certificates has expired",
 	SignatureReasonCertRevoked:           "signer's certificate or one of its parent certificates has been revoked",
 	SignatureReasonInternal:              "internal error",
@@ -310,8 +310,8 @@ type Signer struct {
 	CertificatePathStatus int
 	HasTimestamp          bool
 	Timestamp             time.Time // signature timestamp attribute (which contains a timestamp token)
-	LTVEnabled            bool      // needs timestamp token & revocation info
-	PAdES                 string    // baseline level: B-B, B-T, B-LT, B-LTA
+	LTVEnabled            bool      // timestamp and revocation evidence detected
+	PAdES                 string    // reported baseline evidence level: B-B, B-T, B-LT, B-LTA
 	Certified             bool      // indicated by DocMDP entry
 	Authoritative         bool      // true if certified or first (youngest) signature
 	Permissions           int       // see table 257

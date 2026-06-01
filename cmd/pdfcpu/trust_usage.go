@@ -43,20 +43,41 @@ Examples:
 	usageLongSignatures = `Manage digital signatures.
 
            all ... validate all signatures (certified, approval, usage rights, digital timestamps)
-          full ... comprehensive output including certificate chains, revocation status and any problems encountered
+          full ... detailed output including certificate chains, revocation status and any problems encountered
         inFile ... input PDF file, use - to read from stdin
        outFile ... output PDF file, use - to write to stdout
 
-      Related configuration parameters: timeoutCRL,
-                                        timeoutOCSP,
-                                        preferredCertRevocationChecker
+       Related configuration parameters: timeoutCRL,
+                                         timeoutOCSP,
+                                         preferredCertRevocationChecker
 
 Pipeline examples:
-   aws s3 cp s3://acme-signing/executed.pdf - \
+   aws s3 cp s3://acme-docs/signed.pdf - \
       | pdfcpu signatures validate -
 
-   aws s3 cp s3://acme-signing/executed.pdf - \
+   aws s3 cp s3://acme-docs/signed.pdf - \
       | pdfcpu signatures remove - - \
-      | aws s3 cp - s3://acme-signing/executed-unsigned.pdf
+      | aws s3 cp - s3://acme-docs/unsigned.pdf
+	`
+
+	usageLongSignaturesValidate = `Validate PDF signature integrity and report available signature evidence.
+
+This command validates signed byte ranges, CMS/PKCS#7 signature data and signer metadata. 
+It also reports certificate chains, timestamps, revocation responses,
+DSS data and PAdES baseline indicators where available.
+
+Certificate chain and revocation checks use pdfcpu's configured local trusted
+certificate store and available CRL/OCSP evidence on a best-effort basis.
+
+This command does not perform legal-validity, eIDAS, enterprise policy or full long-term validation (LTV).
+Policy-grade trust validation belongs to a dedicated trust validation layer.
+
+           all ... validate all signatures (certified, approval, usage rights, digital timestamps)
+          full ... detailed output including certificate chains, revocation status and any problems encountered
+        inFile ... input PDF file, use - to read from stdin
+
+        Related configuration parameters: timeoutCRL,
+                                          timeoutOCSP,
+                                          preferredCertRevocationChecker
 `
 )
