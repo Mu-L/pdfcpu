@@ -177,6 +177,13 @@ func TestUnknownCommand(t *testing.T) {
 	}
 }
 
+// TestDispatchRejectsNilCommand verifies nil commands fail before dispatch.
+func TestDispatchRejectsNilCommand(t *testing.T) {
+	if _, err := cli.Dispatch(nil); err == nil {
+		t.Fatal("expected missing command error")
+	}
+}
+
 // TestDispatchDefaultsNilConfig verifies manual commands get the same default config handling as command constructors.
 func TestDispatchDefaultsNilConfig(t *testing.T) {
 	msg := "TestDispatchDefaultsNilConfig"

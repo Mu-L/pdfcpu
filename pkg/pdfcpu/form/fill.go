@@ -340,12 +340,15 @@ func imageBox(s, src, url string) (*primitives.ImageBox, string, error) {
 
 func addImageBox(vv []string, fieldName string, im map[string]*Page) error {
 	src, url := "", ""
-	if len(vv) == 1 && vv[0][0] == '(' {
+	if len(vv) == 0 || vv[0] == "" {
+		return nil
+	}
+	if len(vv) == 1 && len(vv[0]) > 1 && vv[0][0] == '(' {
 		// link only, no image
 		url = vv[0][1 : len(vv[0])-1]
 	} else {
 		src = vv[0]
-		if len(vv) == 2 {
+		if len(vv) == 2 && len(vv[1]) > 1 {
 			url = vv[1][1 : len(vv[1])-1]
 		}
 	}

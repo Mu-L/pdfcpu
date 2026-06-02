@@ -290,6 +290,9 @@ func configureDisplayUnit(conf *model.Configuration) error {
 
 // runCommand dispatches a CLI command and writes command output.
 func runCommand(cmd *cli.Command) error {
+	if cmd == nil {
+		return errors.New("pdfcpu: missing command")
+	}
 	out, err := cli.Dispatch(cmd)
 	if err != nil {
 		return err

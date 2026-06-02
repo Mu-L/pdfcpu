@@ -137,6 +137,9 @@ func Dispatch(cmd *Command) (out []string, err error) {
 		}
 	}()
 
+	if cmd == nil {
+		return nil, fmt.Errorf("pdfcpu: dispatch: missing command")
+	}
 	if cmd.Conf == nil {
 		cmd.Conf = model.NewDefaultConfiguration()
 	}
