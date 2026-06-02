@@ -16,7 +16,156 @@ limitations under the License.
 
 package cli
 
-import "github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
+import (
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
+)
+
+// ImportImagesCommand creates a new command to import images.
+func ImportImagesCommand(imageFiles []string, outFile string, imp *pdfcpu.Import, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.IMPORTIMAGES
+	return &Command{
+		Mode:    model.IMPORTIMAGES,
+		InFiles: imageFiles,
+		OutFile: &outFile,
+		Import:  imp,
+		Conf:    conf}
+}
+
+// ListFontsCommand returns a list of supported fonts.
+func ListFontsCommand(conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.LISTFONTS
+	return &Command{
+		Mode: model.LISTFONTS,
+		Conf: conf}
+}
+
+// InstallFontsCommand installs true type fonts for embedding.
+func InstallFontsCommand(fontFiles []string, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.INSTALLFONTS
+	return &Command{
+		Mode:    model.INSTALLFONTS,
+		InFiles: fontFiles,
+		Conf:    conf}
+}
+
+// CreateCheatSheetsFontsCommand creates single page PDF cheat sheets in current dir.
+func CreateCheatSheetsFontsCommand(fontFiles []string, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.CHEATSHEETSFONTS
+	return &Command{
+		Mode:    model.CHEATSHEETSFONTS,
+		InFiles: fontFiles,
+		Conf:    conf}
+}
+
+// ListImagesCommand creates a new command to list images for selected pages.
+func ListImagesCommand(inFiles []string, pageSelection []string, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.LISTIMAGES
+	return &Command{
+		Mode:          model.LISTIMAGES,
+		InFiles:       inFiles,
+		PageSelection: pageSelection,
+		Conf:          conf}
+}
+
+// UpdateImagesCommand creates a new command to update images.
+func UpdateImagesCommand(inFile, imageFile, outFile string, objNrOrPageNr int, id string, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.UPDATEIMAGES
+
+	return &Command{
+		Mode:      model.UPDATEIMAGES,
+		InFiles:   []string{inFile, imageFile},
+		OutFile:   &outFile,
+		IntVal:    objNrOrPageNr,
+		StringVal: id,
+		Conf:      conf}
+}
+
+// ListAttachmentsCommand creates a new command to list attachments.
+func ListAttachmentsCommand(inFile string, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.LISTATTACHMENTS
+	return &Command{
+		Mode:   model.LISTATTACHMENTS,
+		InFile: &inFile,
+		Conf:   conf}
+}
+
+// AddAttachmentsCommand creates a new command to add attachments.
+func AddAttachmentsCommand(inFile, outFile string, fileNames []string, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.ADDATTACHMENTS
+	return &Command{
+		Mode:    model.ADDATTACHMENTS,
+		InFile:  &inFile,
+		OutFile: &outFile,
+		InFiles: fileNames,
+		Conf:    conf}
+}
+
+// AddAttachmentsPortfolioCommand creates a new command to add attachments to a portfolio.
+func AddAttachmentsPortfolioCommand(inFile, outFile string, fileNames []string, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.ADDATTACHMENTSPORTFOLIO
+	return &Command{
+		Mode:    model.ADDATTACHMENTSPORTFOLIO,
+		InFile:  &inFile,
+		OutFile: &outFile,
+		InFiles: fileNames,
+		Conf:    conf}
+}
+
+// RemoveAttachmentsCommand creates a new command to remove attachments.
+func RemoveAttachmentsCommand(inFile, outFile string, fileNames []string, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.REMOVEATTACHMENTS
+	return &Command{
+		Mode:    model.REMOVEATTACHMENTS,
+		InFile:  &inFile,
+		OutFile: &outFile,
+		InFiles: fileNames,
+		Conf:    conf}
+}
+
+// ExtractAttachmentsCommand creates a new command to extract attachments.
+func ExtractAttachmentsCommand(inFile string, outDir string, fileNames []string, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.EXTRACTATTACHMENTS
+	return &Command{
+		Mode:    model.EXTRACTATTACHMENTS,
+		InFile:  &inFile,
+		OutDir:  &outDir,
+		InFiles: fileNames,
+		Conf:    conf}
+}
 
 // ListKeywordsCommand creates a new command to list keywords.
 func ListKeywordsCommand(inFile string, conf *model.Configuration) *Command {
@@ -140,57 +289,4 @@ func RemoveBoxesCommand(inFile, outFile string, pageSelection []string, pb *mode
 		PageSelection:  pageSelection,
 		PageBoundaries: pb,
 		Conf:           conf}
-}
-
-// ListBookmarksCommand creates a new command to list bookmarks of inFile.
-func ListBookmarksCommand(inFile string, conf *model.Configuration) *Command {
-	if conf == nil {
-		conf = model.NewDefaultConfiguration()
-	}
-	conf.Cmd = model.LISTBOOKMARKS
-	return &Command{
-		Mode:   model.LISTBOOKMARKS,
-		InFile: &inFile,
-		Conf:   conf}
-}
-
-// ExportBookmarksCommand creates a new command to export bookmarks of inFile.
-func ExportBookmarksCommand(inFile, outFileJSON string, conf *model.Configuration) *Command {
-	if conf == nil {
-		conf = model.NewDefaultConfiguration()
-	}
-	conf.Cmd = model.EXPORTBOOKMARKS
-	return &Command{
-		Mode:        model.EXPORTBOOKMARKS,
-		InFile:      &inFile,
-		OutFileJSON: &outFileJSON,
-		Conf:        conf}
-}
-
-// ImportBookmarksCommand creates a new command to import bookmarks to inFile.
-func ImportBookmarksCommand(inFile, inFileJSON, outFile string, replace bool, conf *model.Configuration) *Command {
-	if conf == nil {
-		conf = model.NewDefaultConfiguration()
-	}
-	conf.Cmd = model.IMPORTBOOKMARKS
-	return &Command{
-		Mode:       model.IMPORTBOOKMARKS,
-		BoolVal1:   replace,
-		InFile:     &inFile,
-		InFileJSON: &inFileJSON,
-		OutFile:    &outFile,
-		Conf:       conf}
-}
-
-// RemoveBookmarksCommand creates a new command to remove all bookmarks from inFile.
-func RemoveBookmarksCommand(inFile, outFile string, conf *model.Configuration) *Command {
-	if conf == nil {
-		conf = model.NewDefaultConfiguration()
-	}
-	conf.Cmd = model.REMOVEBOOKMARKS
-	return &Command{
-		Mode:    model.REMOVEBOOKMARKS,
-		InFile:  &inFile,
-		OutFile: &outFile,
-		Conf:    conf}
 }

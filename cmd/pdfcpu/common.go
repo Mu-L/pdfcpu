@@ -288,8 +288,9 @@ func configureDisplayUnit(conf *model.Configuration) error {
 	return nil
 }
 
-func process(cmd *cli.Command) error {
-	out, err := cli.Process(cmd)
+// runCommand dispatches a CLI command and writes command output.
+func runCommand(cmd *cli.Command) error {
+	out, err := cli.Dispatch(cmd)
 	if err != nil {
 		return err
 	}

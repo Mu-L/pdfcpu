@@ -99,4 +99,107 @@ Pipeline examples:
    aws s3 cp s3://acme-forms/template.pdf - \
       | pdfcpu create overlay.json - - \
       | aws s3 cp - s3://acme-forms/template-filled.pdf`
+
+	usageLongSplit = `Generate a set of PDFs for the input file in outDir according to given span value or along bookmarks or page numbers.
+
+      mode ... split mode (defaults to span)
+    inFile ... input PDF file, use - to read from stdin
+    outDir ... output directory
+      span ... split span in pages (default: 1) for mode "span"
+    pageNr ... split before a specific page number for mode "page"
+
+The split modes are:
+
+      span     ... Split into PDF files with span pages each (default).
+                   span itself defaults to 1 resulting in single page PDF files.
+
+      bookmark ... Split into PDF files representing sections defined by existing bookmarks.
+                   Assumption: inFile contains an outline dictionary.
+
+      page     ... Split before specific page numbers.
+
+Eg. pdfcpu split test.pdf .      (= pdfcpu split -m span test.pdf . 1)
+      generates:
+         test_1.pdf
+         test_2.pdf
+         etc.
+
+    pdfcpu split test.pdf . 2    (= pdfcpu split -m span test.pdf . 2)
+      generates:
+         test_1-2.pdf
+         test_3-4.pdf
+         etc.
+
+    pdfcpu split -m bookmark test.pdf .
+      generates:
+         test_bm1Title_1-4.pdf
+         test_bm2Title.5-7-pdf
+         etc.
+
+    pdfcpu split -m page test.pdf . 2 4 10
+      generates:
+         test_1.pdf
+         test_2-3.pdf
+         test_4-9.pdf
+         test_10-20.pdf
+
+Pipeline example:
+   aws s3 cp s3://acme-reports/board-pack.pdf - \
+      | pdfcpu split -m page - ./board-pack 10 25`
+
+	usageLongTrim = `Generate a trimmed version of inFile for selected pages.
+
+     pages ... Please refer to "pdfcpu selectedpages"
+    inFile ... input PDF file, use - to read from stdin
+   outFile ... output PDF file, use - to write to stdout
+
+Pipeline example:
+   aws s3 cp s3://acme-cases/filing.pdf - \
+      | pdfcpu trim -p 1-12 - - \
+      | aws s3 cp - s3://acme-cases/filing-trimmed.pdf
+`
+
+	usageLongCollect = `Create custom sequence of selected pages.
+
+        pages ... Please refer to "pdfcpu selectedpages"
+       inFile ... input PDF file, use - to read from stdin
+      outFile ... output PDF file, use - to write to stdout
+
+Pipeline example:
+   aws s3 cp s3://acme-dataroom/deck.pdf - \
+      | pdfcpu collect -p 1,3,5-7 - - \
+      | aws s3 cp - s3://acme-dataroom/executive-extract.pdf
+  `
+
+	usageLongMerge = `Concatenate a sequence of PDFs/inFiles into outFile.
+
+          mode ... merge mode (defaults to create)
+          sort ... sort inFiles by file name
+     bookmarks ... create bookmarks
+ bookmark-mode ... bookmark mode: wrap|preserve (defaults to wrap)
+       divider ... insert blank page between merged documents
+      optimize ... optimize before writing (default: true)
+       outFile ... output PDF file, use - to write to stdout
+        inFile ... a list of PDF files subject to concatenation.
+                   use - to read from stdin for the first inFile in create mode only
+
+The merge modes are:
+    create ... outFile will be created and possibly overwritten (default).
+    append ... if outFile does not exist, it will be created (like in default mode).
+               if outFile already exists, inFiles will be appended to outFile.
+       zip ... zip inFile1 and inFile2 into outFile (which will be created and possibly overwritten).
+
+Skip bookmark creation: -b=false or --bookmarks=false
+
+Preserve input bookmark trees without filename wrapper bookmarks: --bookmark-mode preserve
+
+Skip optimization before writing: --opt=false
+
+Pipeline examples:
+   pdfcpu merge - quarterly/*.pdf \
+      | aws s3 cp - s3://acme-reports/quarterly/merged.pdf
+
+   aws s3 cp s3://acme-reports/cover.pdf - \
+      | pdfcpu merge - - chapter1.pdf chapter2.pdf \
+      | aws s3 cp - s3://acme-reports/book.pdf`
 )

@@ -49,7 +49,7 @@ func testAddWatermarks(t *testing.T, msg, inFile, outFile string, selectedPages 
 	}
 
 	cmd := cli.AddWatermarksCommand(inFile, outFile, selectedPages, wm, conf)
-	if _, err := cli.Process(cmd); err != nil {
+	if _, err := cli.Dispatch(cmd); err != nil {
 		t.Fatalf("%s %s: %v\n", msg, outFile, err)
 	}
 	if err := validateFile(t, outFile, conf); err != nil {
@@ -159,7 +159,7 @@ func TestStampingLifecycle(t *testing.T) {
 		t.Fatalf("%s %s: %v\n", msg, outFile, err)
 	}
 	cmd := cli.AddWatermarksCommand(inFile, outFile, nil, wm, conf)
-	if _, err := cli.Process(cmd); err != nil {
+	if _, err := cli.Dispatch(cmd); err != nil {
 		t.Fatalf("%s %s: %v\n", msg, outFile, err)
 	}
 
@@ -170,7 +170,7 @@ func TestStampingLifecycle(t *testing.T) {
 	}
 	wm.Update = true
 	cmd = cli.AddWatermarksCommand(outFile, "", []string{"1"}, wm, conf)
-	if _, err := cli.Process(cmd); err != nil {
+	if _, err := cli.Dispatch(cmd); err != nil {
 		t.Fatalf("%s %s: %v\n", msg, outFile, err)
 	}
 
@@ -181,19 +181,19 @@ func TestStampingLifecycle(t *testing.T) {
 		t.Fatalf("%s %s: %v\n", msg, outFile, err)
 	}
 	cmd = cli.AddWatermarksCommand(outFile, "", nil, wm, conf)
-	if _, err := cli.Process(cmd); err != nil {
+	if _, err := cli.Dispatch(cmd); err != nil {
 		t.Fatalf("%s %s: %v\n", msg, outFile, err)
 	}
 
 	// Remove stamp on page 1.
 	cmd = cli.RemoveWatermarksCommand(outFile, "", []string{"1"}, conf)
-	if _, err := cli.Process(cmd); err != nil {
+	if _, err := cli.Dispatch(cmd); err != nil {
 		t.Fatalf("%s %s: %v\n", msg, outFile, err)
 	}
 
 	// Remove all stamps.
 	cmd = cli.RemoveWatermarksCommand(outFile, "", nil, conf)
-	if _, err := cli.Process(cmd); err != nil {
+	if _, err := cli.Dispatch(cmd); err != nil {
 		t.Fatalf("%s %s: %v\n", msg, outFile, err)
 	}
 

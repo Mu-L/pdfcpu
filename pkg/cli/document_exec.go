@@ -117,6 +117,183 @@ func Optimize(cmd *Command) ([]string, error) {
 	return nil, api.Optimize(rs, w, cmd.Conf)
 }
 
+func mergeStdinCount(inFiles []string) int {
+	count := 0
+	for _, fn := range inFiles {
+		if fn == "-" {
+			count++
+		}
+	}
+	return count
+}
+
+func mergeReader(fn string) (io.ReadSeeker, *os.File, error) {
+	if fn == "-" {
+		rs, err := readSeekerFromStdin()
+		return rs, nil, err
+	}
+	f, err := os.Open(fn)
+	return f, f, err
+}
+
+func closeMergeFiles(files []*os.File) {
+	for _, f := range files {
+		_ = f.Close()
+	}
+}
+
+func mergeReaders(inFiles []string) ([]io.ReadSeeker, []*os.File, error) {
+	readers := make([]io.ReadSeeker, 0, len(inFiles))
+	files := make([]*os.File, 0, len(inFiles))
+	for _, fn := range inFiles {
+		rs, f, err := mergeReader(fn)
+		if err != nil {
+			closeMergeFiles(files)
+			return nil, nil, err
+		}
+		if f != nil {
+			files = append(files, f)
+		}
+		readers = append(readers, rs)
+	}
+	return readers, files, nil
+}
+
+func mergeOutput(outFile string) (io.Writer, func(), error) {
+	if outFile == "-" {
+		log.SetCLILogger(nil)
+		return os.Stdout, nil, nil
+	}
+	f, err := os.Create(outFile)
+	if err != nil {
+		return nil, nil, err
+	}
+	return f, func() {
+		_ = f.Close()
+	}, nil
+}
+
+func mergeCreateRaw(cmd *Command) ([]string, error) {
+	readers, files, err := mergeReaders(cmd.InFiles)
+	if err != nil {
+		return nil, err
+	}
+	defer closeMergeFiles(files)
+
+	w, cleanup, err := mergeOutput(*cmd.OutFile)
+	if err != nil {
+		return nil, err
+	}
+	if cleanup != nil {
+		defer cleanup()
+	}
+
+	return nil, api.MergeRaw(readers, w, cmd.BoolVal1, cmd.Conf)
+}
+
+// MergeCreate merges inFiles in the order specified and writes the result to outFile.
+func MergeCreate(cmd *Command) ([]string, error) {
+	stdinCount := mergeStdinCount(cmd.InFiles)
+	if stdinCount > 1 {
+		return nil, fmt.Errorf("pdfcpu: merge: only one stdin input supported")
+	}
+	if stdinCount == 1 {
+		return mergeCreateRaw(cmd)
+	}
+	if *cmd.OutFile == "-" {
+		log.SetCLILogger(nil)
+		return nil, api.Merge("", cmd.InFiles, os.Stdout, cmd.Conf, cmd.BoolVal1)
+	}
+	return nil, api.MergeCreateFile(cmd.InFiles, *cmd.OutFile, cmd.BoolVal1, cmd.Conf)
+}
+
+// MergeCreateZip zips two inFiles in the order specified and writes the result to outFile.
+func MergeCreateZip(cmd *Command) ([]string, error) {
+	if *cmd.OutFile != "-" {
+		return nil, api.MergeCreateZipFile(cmd.InFiles[0], cmd.InFiles[1], *cmd.OutFile, cmd.Conf)
+	}
+	log.SetCLILogger(nil)
+	f1, err := os.Open(cmd.InFiles[0])
+	if err != nil {
+		return nil, err
+	}
+	defer f1.Close()
+
+	f2, err := os.Open(cmd.InFiles[1])
+	if err != nil {
+		return nil, err
+	}
+	defer f2.Close()
+
+	return nil, api.MergeCreateZip(f1, f2, os.Stdout, cmd.Conf)
+}
+
+// MergeAppend merges inFiles in the order specified and writes the result to outFile.
+func MergeAppend(cmd *Command) ([]string, error) {
+	if *cmd.OutFile == "-" {
+		return nil, fmt.Errorf("pdfcpu: merge append: stdout not supported")
+	}
+	return nil, api.MergeAppendFile(cmd.InFiles, *cmd.OutFile, cmd.BoolVal1, cmd.Conf)
+}
+
+// Split inFile into single page PDFs and write result files to outDir.
+func Split(cmd *Command) ([]string, error) {
+	if *cmd.InFile == "-" {
+		rs, err := readSeekerFromStdin()
+		if err != nil {
+			return nil, err
+		}
+		return nil, api.Split(rs, *cmd.OutDir, "stdin.pdf", cmd.IntVal, cmd.Conf)
+	}
+	return nil, api.SplitFile(*cmd.InFile, *cmd.OutDir, cmd.IntVal, cmd.Conf)
+}
+
+// SplitByPageNr splits inFile along pages and writes result files to outDir.
+func SplitByPageNr(cmd *Command) ([]string, error) {
+	if *cmd.InFile == "-" {
+		rs, err := readSeekerFromStdin()
+		if err != nil {
+			return nil, err
+		}
+		return nil, api.SplitByPageNr(rs, *cmd.OutDir, "stdin.pdf", cmd.IntVals, cmd.Conf)
+	}
+	return nil, api.SplitByPageNrFile(*cmd.InFile, *cmd.OutDir, cmd.IntVals, cmd.Conf)
+}
+
+// Trim inFile and write result to outFile.
+func Trim(cmd *Command) ([]string, error) {
+	if *cmd.InFile != "-" && *cmd.OutFile != "-" {
+		return nil, api.TrimFile(*cmd.InFile, *cmd.OutFile, cmd.PageSelection, cmd.Conf)
+	}
+
+	rs, w, cleanup, err := streamInOut(*cmd.InFile, *cmd.OutFile)
+	if err != nil {
+		return nil, err
+	}
+	if cleanup != nil {
+		defer cleanup()
+	}
+
+	return nil, api.Trim(rs, w, cmd.PageSelection, cmd.Conf)
+}
+
+// Collect creates a custom page sequence for selected pages of inFile and writes result to outFile.
+func Collect(cmd *Command) ([]string, error) {
+	if *cmd.InFile != "-" && *cmd.OutFile != "-" {
+		return nil, api.CollectFile(*cmd.InFile, *cmd.OutFile, cmd.PageSelection, cmd.Conf)
+	}
+
+	rs, w, cleanup, err := streamInOut(*cmd.InFile, *cmd.OutFile)
+	if err != nil {
+		return nil, err
+	}
+	if cleanup != nil {
+		defer cleanup()
+	}
+
+	return nil, api.Collect(rs, w, cmd.PageSelection, cmd.Conf)
+}
+
 func listInfo(rs io.ReadSeeker, inFile string, selectedPages []string, fonts bool, conf *model.Configuration) ([]string, error) {
 	info, err := api.PDFInfo(rs, inFile, selectedPages, fonts, conf)
 	if err != nil {

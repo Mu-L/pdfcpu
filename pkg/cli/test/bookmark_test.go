@@ -31,7 +31,7 @@ func TestListBookmarks(t *testing.T) {
 	inFile := filepath.Join(inDir, "bookmarkTree.pdf")
 
 	cmd := cli.ListBookmarksCommand(inFile, conf)
-	if _, err := cli.Process(cmd); err != nil {
+	if _, err := cli.Dispatch(cmd); err != nil {
 		t.Fatalf("%s: %v\n", msg, err)
 	}
 }
@@ -44,7 +44,7 @@ func TestExportBookmarks(t *testing.T) {
 	outFile := filepath.Join(outDir, "bookmarkTree.json")
 
 	cmd := cli.ExportBookmarksCommand(inFile, outFile, nil)
-	if _, err := cli.Process(cmd); err != nil {
+	if _, err := cli.Dispatch(cmd); err != nil {
 		t.Fatalf("%s: %v\n", msg, err)
 	}
 }
@@ -59,7 +59,7 @@ func TestImportBookmarks(t *testing.T) {
 
 	replace := true
 	cmd := cli.ImportBookmarksCommand(inFile, inFileJSON, outFile, replace, nil)
-	if _, err := cli.Process(cmd); err != nil {
+	if _, err := cli.Dispatch(cmd); err != nil {
 		t.Fatalf("%s: %v\n", msg, err)
 	}
 
@@ -80,7 +80,7 @@ func TestRemoveBookmarks(t *testing.T) {
 	outFile := filepath.Join(outDir, "bookmarkTreeNoBookmarks.pdf")
 
 	cmd := cli.RemoveBookmarksCommand(inFile, outFile, nil)
-	if _, err := cli.Process(cmd); err != nil {
+	if _, err := cli.Dispatch(cmd); err != nil {
 		t.Fatalf("%s: %v\n", msg, err)
 	}
 

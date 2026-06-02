@@ -41,7 +41,7 @@ func testImportImages(t *testing.T, msg string, imgFiles []string, outFile, impC
 		}
 	}
 	cmd := cli.ImportImagesCommand(imgFiles, outFile, imp, conf)
-	if _, err := cli.Process(cmd); err != nil {
+	if _, err := cli.Dispatch(cmd); err != nil {
 		t.Fatalf("%s %s: %v\n", msg, outFile, err)
 	}
 	if err := validateFile(t, outFile, conf); err != nil {

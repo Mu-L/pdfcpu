@@ -31,7 +31,7 @@ func TestListCertificates(t *testing.T) {
 	msg := "TestListCertificates"
 
 	cmd := cli.ListCertificatesCommand(false, conf)
-	if _, err := cli.Process(cmd); err != nil {
+	if _, err := cli.Dispatch(cmd); err != nil {
 		t.Fatalf("%s: %v\n", msg, err)
 	}
 }
@@ -52,7 +52,7 @@ func TestListCertificatesJSON(t *testing.T) {
 	}
 
 	cmd := cli.ListCertificatesCommand(true, conf)
-	out, err := cli.Process(cmd)
+	out, err := cli.Dispatch(cmd)
 	if err != nil {
 		t.Fatalf("%s: %v\n", msg, err)
 	}

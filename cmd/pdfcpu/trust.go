@@ -50,7 +50,7 @@ func certificatesCmd() *cobra.Command {
 		Short: "List certificates",
 		Long:  usageLongCertificatesList,
 		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
-			return processListCertificatesCommand(conf, args, listOpts)
+			return handleListCertificatesCommand(conf, args, listOpts)
 		}),
 	}
 	listCmd.Flags().BoolVarP(&listOpts.json, "json", "j", listOpts.json, "output JSON")
@@ -61,13 +61,13 @@ func certificatesCmd() *cobra.Command {
 			Use:   "inspect inFile",
 			Short: "Inspect certificates",
 			Args:  cobra.ExactArgs(1),
-			RunE:  wrapHandler(processInspectCertificatesCommand),
+			RunE:  wrapHandler(handleInspectCertificatesCommand),
 		},
 		&cobra.Command{
 			Use:   "import inFile...",
 			Short: "Import certificates",
 			Args:  cobra.MinimumNArgs(1),
-			RunE:  wrapHandler(processImportCertificatesCommand),
+			RunE:  wrapHandler(handleImportCertificatesCommand),
 		},
 		&cobra.Command{
 			Use:   "reset",
@@ -84,7 +84,7 @@ func signaturesRemoveCmd() *cobra.Command {
 		Use:   "remove inFile [ outFile ]",
 		Short: "Remove signatures",
 		Args:  cobra.MinimumNArgs(1),
-		RunE:  wrapHandler(processRemoveSignaturesCommand),
+		RunE:  wrapHandler(handleRemoveSignaturesCommand),
 	}
 	cmd.Flags().BoolVar(&removeEncryption, "rmenc", false, "remove encryption")
 	return cmd
@@ -98,7 +98,7 @@ func signaturesValidateCmd() *cobra.Command {
 		Long:  usageLongSignaturesValidate,
 		Args:  cobra.ExactArgs(1),
 		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
-			return processValidateSignaturesCommand(conf, args, opts)
+			return handleValidateSignaturesCommand(conf, args, opts)
 		}),
 	}
 	cmd.Flags().BoolVarP(&opts.all, "all", "a", opts.all, "validate all signatures")
@@ -131,12 +131,12 @@ func resetCertificates(conf *model.Configuration, args []string) error {
 	return nil
 }
 
-func processListCertificatesCommand(conf *model.Configuration, args []string, opts *certificatesListOptions) error {
+func handleListCertificatesCommand(conf *model.Configuration, args []string, opts *certificatesListOptions) error {
 	if opts.json {
 		log.SetCLILogger(nil)
 	}
 
-	return process(cli.ListCertificatesCommand(opts.json, conf))
+	return runCommand(cli.ListCertificatesCommand(opts.json, conf))
 }
 
 func isCertificateFile(fName string) bool {
@@ -186,35 +186,35 @@ func expandedCertificateFiles(arg string) ([]string, error) {
 	return inFiles, nil
 }
 
-func processInspectCertificatesCommand(conf *model.Configuration, args []string) error {
+func handleInspectCertificatesCommand(conf *model.Configuration, args []string) error {
 	inFiles, err := certificateFiles(args)
 	if err != nil {
 		return err
 	}
-	return process(cli.InspectCertificatesCommand(inFiles, conf))
+	return runCommand(cli.InspectCertificatesCommand(inFiles, conf))
 }
 
-func processImportCertificatesCommand(conf *model.Configuration, args []string) error {
+func handleImportCertificatesCommand(conf *model.Configuration, args []string) error {
 	inFiles, err := certificateFiles(args)
 	if err != nil {
 		return err
 	}
-	return process(cli.ImportCertificatesCommand(inFiles, conf))
+	return runCommand(cli.ImportCertificatesCommand(inFiles, conf))
 }
 
-func processValidateSignaturesCommand(conf *model.Configuration, args []string, opts *signaturesValidateOptions) error {
+func handleValidateSignaturesCommand(conf *model.Configuration, args []string, opts *signaturesValidateOptions) error {
 	inFile := args[0]
 	if err := inputPDFArg(conf, inFile); err != nil {
 		return err
 	}
 
-	return process(cli.ValidateSignaturesCommand(inFile, opts.all, opts.full, conf))
+	return runCommand(cli.ValidateSignaturesCommand(inFile, opts.all, opts.full, conf))
 }
 
-func processRemoveSignaturesCommand(conf *model.Configuration, args []string) error {
+func handleRemoveSignaturesCommand(conf *model.Configuration, args []string) error {
 	inFile, outFile, err := inputOutputPDFArgs(conf, args)
 	if err != nil {
 		return err
 	}
-	return process(cli.RemoveSignaturesCommand(inFile, outFile, conf))
+	return runCommand(cli.RemoveSignaturesCommand(inFile, outFile, conf))
 }

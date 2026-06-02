@@ -40,7 +40,7 @@ func changeopwCmd() *cobra.Command {
 		Short: "Change owner password",
 		Long:  usageLongChangeOwnerPW,
 		Args:  cobra.RangeArgs(3, 4),
-		RunE:  wrapHandler(processChangeOwnerPasswordCommand),
+		RunE:  wrapHandler(handleChangeOwnerPasswordCommand),
 	}
 
 	cmd.Flags().StringVar(&upw, "upw", "", "user password")
@@ -54,7 +54,7 @@ func changeupwCmd() *cobra.Command {
 		Short: "Change user password",
 		Long:  usageLongChangeUserPW,
 		Args:  cobra.RangeArgs(3, 4),
-		RunE:  wrapHandler(processChangeUserPasswordCommand),
+		RunE:  wrapHandler(handleChangeUserPasswordCommand),
 	}
 
 	cmd.Flags().StringVar(&opw, "opw", "", "owner password")
@@ -68,7 +68,7 @@ func decryptCmd() *cobra.Command {
 		Short: "Remove password protection",
 		Long:  usageLongDecrypt,
 		Args:  cobra.RangeArgs(1, 2),
-		RunE:  wrapHandler(processDecryptCommand),
+		RunE:  wrapHandler(handleDecryptCommand),
 	}
 	addPasswordFlags(cmd)
 
@@ -88,7 +88,7 @@ func encryptCmd() *cobra.Command {
 		Long:  usageLongEncrypt,
 		Args:  cobra.RangeArgs(1, 2),
 		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
-			return processEncryptCommand(conf, args, opts)
+			return handleEncryptCommand(conf, args, opts)
 		}),
 	}
 	addPasswordFlags(cmd)
@@ -112,7 +112,7 @@ func permissionsCmd() *cobra.Command {
 		Use:   "set inFile [ outFile ]",
 		Short: "Set permissions",
 		Args:  cobra.RangeArgs(1, 2),
-		RunE:  wrapHandler(processSetPermissionsCommand),
+		RunE:  wrapHandler(handleSetPermissionsCommand),
 	}
 	setCmd.Flags().StringVar(&perm, "perm", "none", "user access permissions")
 
@@ -121,7 +121,7 @@ func permissionsCmd() *cobra.Command {
 			Use:   "list inFile...",
 			Short: "List permissions",
 			Args:  cobra.MinimumNArgs(1),
-			RunE:  wrapHandler(processListPermissionsCommand),
+			RunE:  wrapHandler(handleListPermissionsCommand),
 		},
 		setCmd,
 	)
@@ -129,7 +129,7 @@ func permissionsCmd() *cobra.Command {
 	return cmd
 }
 
-func processListPermissionsCommand(conf *model.Configuration, args []string) error {
+func handleListPermissionsCommand(conf *model.Configuration, args []string) error {
 	inFiles := []string{}
 	for _, arg := range args {
 		if strings.Contains(arg, "*") {
@@ -149,7 +149,7 @@ func processListPermissionsCommand(conf *model.Configuration, args []string) err
 		inFiles = append(inFiles, arg)
 	}
 
-	return process(cli.ListPermissionsCommand(inFiles, conf))
+	return runCommand(cli.ListPermissionsCommand(inFiles, conf))
 }
 
 func permCompletion(permPrefix string) string {
@@ -205,7 +205,7 @@ func validatePerm(perm string) error {
 	return errors.New("perm unless number must be one of: all, none, print")
 }
 
-func processSetPermissionsCommand(conf *model.Configuration, args []string) error {
+func handleSetPermissionsCommand(conf *model.Configuration, args []string) error {
 	if perm != "" {
 		perm = permCompletion(perm)
 	}
@@ -221,15 +221,15 @@ func processSetPermissionsCommand(conf *model.Configuration, args []string) erro
 
 	configPerm(perm, conf)
 
-	return process(cli.SetPermissionsCommand(inFile, outFile, conf))
+	return runCommand(cli.SetPermissionsCommand(inFile, outFile, conf))
 }
 
-func processDecryptCommand(conf *model.Configuration, args []string) error {
+func handleDecryptCommand(conf *model.Configuration, args []string) error {
 	inFile, outFile, err := inputOutputPDFArgs(conf, args)
 	if err != nil {
 		return err
 	}
-	return process(cli.DecryptCommand(inFile, outFile, conf))
+	return runCommand(cli.DecryptCommand(inFile, outFile, conf))
 }
 
 func validateEncryptModeFlag(opts *encryptOptions) error {
@@ -270,7 +270,7 @@ func validateEncryptFlags(opts *encryptOptions) error {
 	return nil
 }
 
-func processEncryptCommand(conf *model.Configuration, args []string, opts *encryptOptions) error {
+func handleEncryptCommand(conf *model.Configuration, args []string, opts *encryptOptions) error {
 	if opts.perm != "" {
 		opts.perm = permCompletion(opts.perm)
 	}
@@ -304,10 +304,10 @@ func processEncryptCommand(conf *model.Configuration, args []string, opts *encry
 		return err
 	}
 
-	return process(cli.EncryptCommand(inFile, outFile, conf))
+	return runCommand(cli.EncryptCommand(inFile, outFile, conf))
 }
 
-func processChangeUserPasswordCommand(conf *model.Configuration, args []string) error {
+func handleChangeUserPasswordCommand(conf *model.Configuration, args []string) error {
 	inFile, outFile, err := passwordChangePDFArgs(conf, args)
 	if err != nil {
 		return err
@@ -316,10 +316,10 @@ func processChangeUserPasswordCommand(conf *model.Configuration, args []string) 
 	pwOld := args[1]
 	pwNew := args[2]
 
-	return process(cli.ChangeUserPWCommand(inFile, outFile, &pwOld, &pwNew, conf))
+	return runCommand(cli.ChangeUserPWCommand(inFile, outFile, &pwOld, &pwNew, conf))
 }
 
-func processChangeOwnerPasswordCommand(conf *model.Configuration, args []string) error {
+func handleChangeOwnerPasswordCommand(conf *model.Configuration, args []string) error {
 	inFile, outFile, err := passwordChangePDFArgs(conf, args)
 	if err != nil {
 		return err
@@ -331,7 +331,7 @@ func processChangeOwnerPasswordCommand(conf *model.Configuration, args []string)
 		return errors.New("owner password must not be empty")
 	}
 
-	return process(cli.ChangeOwnerPWCommand(inFile, outFile, &pwOld, &pwNew, conf))
+	return runCommand(cli.ChangeOwnerPWCommand(inFile, outFile, &pwOld, &pwNew, conf))
 }
 
 func passwordChangePDFArgs(conf *model.Configuration, args []string) (string, string, error) {

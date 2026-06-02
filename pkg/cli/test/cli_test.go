@@ -136,7 +136,7 @@ func allPDFs(t *testing.T, dir string) []string {
 
 func validateFile(t *testing.T, fileName string, conf *model.Configuration) error {
 	t.Helper()
-	_, err := cli.Process(cli.ValidateCommand([]string{fileName}, conf))
+	_, err := cli.Dispatch(cli.ValidateCommand([]string{fileName}, conf))
 	return err
 }
 
@@ -157,7 +157,7 @@ func TestInfoCommand(t *testing.T) {
 	inFile := filepath.Join(inDir, "5116.DCT_Filter.pdf")
 
 	cmd := cli.InfoCommand([]string{inFile}, nil, true, true, conf)
-	if _, err := cli.Process(cmd); err != nil {
+	if _, err := cli.Dispatch(cmd); err != nil {
 		t.Fatalf("%s: %v\n", msg, err)
 	}
 }
@@ -172,8 +172,29 @@ func TestUnknownCommand(t *testing.T) {
 		InFile: &inFile,
 		Conf:   conf}
 
-	if _, err := cli.Process(cmd); err == nil {
+	if _, err := cli.Dispatch(cmd); err == nil {
 		t.Fatalf("%s: %v\n", msg, err)
+	}
+}
+
+// TestDispatchDefaultsNilConfig verifies manual commands get the same default config handling as command constructors.
+func TestDispatchDefaultsNilConfig(t *testing.T) {
+	msg := "TestDispatchDefaultsNilConfig"
+	inFile := filepath.Join(outDir, "go.pdf")
+
+	cmd := &cli.Command{
+		Mode:   99,
+		InFile: &inFile,
+	}
+
+	if _, err := cli.Dispatch(cmd); err == nil {
+		t.Fatalf("%s: expected unknown command error\n", msg)
+	}
+	if cmd.Conf == nil {
+		t.Fatalf("%s: expected default configuration\n", msg)
+	}
+	if cmd.Conf.Cmd != cmd.Mode {
+		t.Fatalf("%s: Cmd = %d, want %d\n", msg, cmd.Conf.Cmd, cmd.Mode)
 	}
 }
 
@@ -193,7 +214,7 @@ func XTestSomeCommand(t *testing.T) {
 
 	cmd := cli.ValidateCommand([]string{inFile}, conf)
 
-	if _, err := cli.Process(cmd); err != nil {
+	if _, err := cli.Dispatch(cmd); err != nil {
 		t.Fatalf("%s %s: %v\n", msg, inFile, err)
 	}
 }

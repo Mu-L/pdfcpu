@@ -17,38 +17,90 @@ limitations under the License.
 package cli
 
 import (
+	"io"
+	"os"
+
 	"github.com/pdfcpu/pdfcpu/pkg/api"
+	"github.com/pdfcpu/pdfcpu/pkg/log"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 )
 
-// Split inFile into single page PDFs and write result files to outDir.
-func Split(cmd *Command) ([]string, error) {
-	if *cmd.InFile == "-" {
-		rs, err := readSeekerFromStdin()
+// NUp renders selected PDF pages or image files to outFile in n-up fashion.
+func NUp(cmd *Command) ([]string, error) {
+	if *cmd.OutFile != "-" && len(cmd.InFiles) > 0 && cmd.InFiles[0] != "-" {
+		return nil, api.NUpFile(cmd.InFiles, *cmd.OutFile, cmd.PageSelection, cmd.NUp, cmd.Conf)
+	}
+
+	var rs io.ReadSeeker
+	var err error
+	if !cmd.NUp.ImgInputFile {
+		if len(cmd.InFiles) > 0 && cmd.InFiles[0] == "-" {
+			rs, err = readSeekerFromStdin()
+		} else {
+			rs, err = os.Open(cmd.InFiles[0])
+		}
 		if err != nil {
 			return nil, err
 		}
-		return nil, api.Split(rs, *cmd.OutDir, "stdin.pdf", cmd.IntVal, cmd.Conf)
+		if f, ok := rs.(*os.File); ok {
+			defer f.Close()
+		}
 	}
-	return nil, api.SplitFile(*cmd.InFile, *cmd.OutDir, cmd.IntVal, cmd.Conf)
-}
 
-// SplitByPageNr splits inFile along pages and writes result files to outDir.
-func SplitByPageNr(cmd *Command) ([]string, error) {
-	if *cmd.InFile == "-" {
-		rs, err := readSeekerFromStdin()
+	w := io.Writer(os.Stdout)
+	if *cmd.OutFile == "-" {
+		log.SetCLILogger(nil)
+	} else {
+		f, err := os.Create(*cmd.OutFile)
 		if err != nil {
 			return nil, err
 		}
-		return nil, api.SplitByPageNr(rs, *cmd.OutDir, "stdin.pdf", cmd.IntVals, cmd.Conf)
+		defer f.Close()
+		w = f
 	}
-	return nil, api.SplitByPageNrFile(*cmd.InFile, *cmd.OutDir, cmd.IntVals, cmd.Conf)
+
+	return nil, api.NUp(rs, w, cmd.InFiles, cmd.PageSelection, cmd.NUp, cmd.Conf)
 }
 
-// Trim inFile and write result to outFile.
-func Trim(cmd *Command) ([]string, error) {
+// Booklet arranges selected PDF pages to outFile in an order and arrangement that form a small book.
+func Booklet(cmd *Command) ([]string, error) {
+	if *cmd.OutFile != "-" && len(cmd.InFiles) > 0 && cmd.InFiles[0] != "-" {
+		return nil, api.BookletFile(cmd.InFiles, *cmd.OutFile, cmd.PageSelection, cmd.NUp, cmd.Conf)
+	}
+
+	var rs io.ReadSeeker
+	var err error
+	if len(cmd.InFiles) > 0 && cmd.InFiles[0] == "-" {
+		rs, err = readSeekerFromStdin()
+	} else {
+		rs, err = os.Open(cmd.InFiles[0])
+	}
+	if err != nil {
+		return nil, err
+	}
+	if f, ok := rs.(*os.File); ok {
+		defer f.Close()
+	}
+
+	w := io.Writer(os.Stdout)
+	if *cmd.OutFile == "-" {
+		log.SetCLILogger(nil)
+	} else {
+		f, err := os.Create(*cmd.OutFile)
+		if err != nil {
+			return nil, err
+		}
+		defer f.Close()
+		w = f
+	}
+
+	return nil, api.Booklet(rs, w, cmd.InFiles, cmd.PageSelection, cmd.NUp, cmd.Conf)
+}
+
+// Resize selected pages and write result to outFile.
+func Resize(cmd *Command) ([]string, error) {
 	if *cmd.InFile != "-" && *cmd.OutFile != "-" {
-		return nil, api.TrimFile(*cmd.InFile, *cmd.OutFile, cmd.PageSelection, cmd.Conf)
+		return nil, api.ResizeFile(*cmd.InFile, *cmd.OutFile, cmd.PageSelection, cmd.Resize, cmd.Conf)
 	}
 
 	rs, w, cleanup, err := streamInOut(*cmd.InFile, *cmd.OutFile)
@@ -59,7 +111,75 @@ func Trim(cmd *Command) ([]string, error) {
 		defer cleanup()
 	}
 
-	return nil, api.Trim(rs, w, cmd.PageSelection, cmd.Conf)
+	return nil, api.Resize(rs, w, cmd.PageSelection, cmd.Resize, cmd.Conf)
+}
+
+// Poster creates a poster for selected pages and writes result PDFs into outDir.
+func Poster(cmd *Command) ([]string, error) {
+	if *cmd.InFile == "-" {
+		rs, err := readSeekerFromStdin()
+		if err != nil {
+			return nil, err
+		}
+		outFile := *cmd.OutFile
+		if outFile == "" {
+			outFile = "stdin"
+		}
+		return nil, api.Poster(rs, *cmd.OutDir, outFile, cmd.PageSelection, cmd.Cut, cmd.Conf)
+	}
+
+	return nil, api.PosterFile(*cmd.InFile, *cmd.OutDir, *cmd.OutFile, cmd.PageSelection, cmd.Cut, cmd.Conf)
+}
+
+// NDown selected pages and write result PDFs into outDir.
+func NDown(cmd *Command) ([]string, error) {
+	if *cmd.InFile == "-" {
+		rs, err := readSeekerFromStdin()
+		if err != nil {
+			return nil, err
+		}
+		outFile := *cmd.OutFile
+		if outFile == "" {
+			outFile = "stdin"
+		}
+		return nil, api.NDown(rs, *cmd.OutDir, outFile, cmd.PageSelection, cmd.IntVal, cmd.Cut, cmd.Conf)
+	}
+
+	return nil, api.NDownFile(*cmd.InFile, *cmd.OutDir, *cmd.OutFile, cmd.PageSelection, cmd.IntVal, cmd.Cut, cmd.Conf)
+}
+
+// Cut selected pages and write result PDFs into outDir.
+func Cut(cmd *Command) ([]string, error) {
+	if *cmd.InFile == "-" {
+		rs, err := readSeekerFromStdin()
+		if err != nil {
+			return nil, err
+		}
+		outFile := *cmd.OutFile
+		if outFile == "" {
+			outFile = "stdin"
+		}
+		return nil, api.Cut(rs, *cmd.OutDir, outFile, cmd.PageSelection, cmd.Cut, cmd.Conf)
+	}
+
+	return nil, api.CutFile(*cmd.InFile, *cmd.OutDir, *cmd.OutFile, cmd.PageSelection, cmd.Cut, cmd.Conf)
+}
+
+// Zoom in/out of selected pages either by zoom factor or corresponding margin.
+func Zoom(cmd *Command) ([]string, error) {
+	if *cmd.InFile != "-" && *cmd.OutFile != "-" {
+		return nil, api.ZoomFile(*cmd.InFile, *cmd.OutFile, cmd.PageSelection, cmd.Zoom, cmd.Conf)
+	}
+
+	rs, w, cleanup, err := streamInOut(*cmd.InFile, *cmd.OutFile)
+	if err != nil {
+		return nil, err
+	}
+	if cleanup != nil {
+		defer cleanup()
+	}
+
+	return nil, api.Zoom(rs, w, cmd.PageSelection, cmd.Zoom, cmd.Conf)
 }
 
 // Rotate selected pages of inFile and write result to outFile.
@@ -115,23 +235,6 @@ func RemovePages(cmd *Command) ([]string, error) {
 	}
 
 	return nil, api.RemovePages(rs, w, cmd.PageSelection, cmd.Conf)
-}
-
-// Collect creates a custom page sequence for selected pages of inFile and writes result to outFile.
-func Collect(cmd *Command) ([]string, error) {
-	if *cmd.InFile != "-" && *cmd.OutFile != "-" {
-		return nil, api.CollectFile(*cmd.InFile, *cmd.OutFile, cmd.PageSelection, cmd.Conf)
-	}
-
-	rs, w, cleanup, err := streamInOut(*cmd.InFile, *cmd.OutFile)
-	if err != nil {
-		return nil, err
-	}
-	if cleanup != nil {
-		defer cleanup()
-	}
-
-	return nil, api.Collect(rs, w, cmd.PageSelection, cmd.Conf)
 }
 
 // Crop adds crop boxes for selected pages of inFile and writes result to outFile.

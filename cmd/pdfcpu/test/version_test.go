@@ -14,24 +14,28 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package test
 
 import (
-	"errors"
+	"strings"
 	"testing"
 )
 
-func TestCommandErrorStripsPDFCPUPrefix(t *testing.T) {
-	baseErr := errors.New("pdfcpu: validation failed")
-
-	err := commandError(baseErr)
+func TestVersionRejectsArgs(t *testing.T) {
+	out, err := runPDFCPU(t, "version", "extra")
 	if err == nil {
-		t.Fatal("expected error")
+		t.Fatalf("expected version to reject extra args, output:\n%s", out)
 	}
-	if got, want := err.Error(), "validation failed"; got != want {
-		t.Fatalf("expected %q, got %q", want, got)
+}
+
+func TestVersionOutput(t *testing.T) {
+	out, err := runPDFCPU(t, "version")
+	if err != nil {
+		t.Fatalf("version failed: %v\n%s", err, out)
 	}
-	if !errors.Is(err, baseErr) {
-		t.Fatal("expected normalized command error to unwrap to original error")
+	for _, want := range []string{"version:", "config:", "commit:", "date:", "go:"} {
+		if !strings.Contains(string(out), want) {
+			t.Fatalf("expected version output to contain %q, got:\n%s", want, out)
+		}
 	}
 }

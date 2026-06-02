@@ -14,21 +14,21 @@ See the License for the specific language governing permissions and
 limitations under the License.
 */
 
-package main
+package test
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
-func TestParseWatermarkRejectsEmptyUserString(t *testing.T) {
-	_, err := parseWatermark([]string{" ", ""}, true, "text", types.POINTS)
+func TestMergeBookmarkModeRequiresBookmarks(t *testing.T) {
+	outFile := filepath.Join(t.TempDir(), "out.pdf")
+	out, err := runPDFCPU(t, "merge", "--bookmarks=false", "--bookmark-mode", "preserve", outFile, "in.pdf")
 	if err == nil {
-		t.Fatal("expected error")
+		t.Fatalf("expected merge to fail, output:\n%s", out)
 	}
-	if want := "stamp text must not be empty"; !strings.Contains(err.Error(), want) {
-		t.Fatalf("expected error containing %q, got %q", want, err.Error())
+	if want := "merge: --bookmark-mode requires --bookmarks"; !strings.Contains(string(out), want) {
+		t.Fatalf("expected output to contain %q, got:\n%s", want, out)
 	}
 }

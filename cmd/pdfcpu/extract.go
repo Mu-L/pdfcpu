@@ -40,7 +40,7 @@ func extractCmd() *cobra.Command {
 		Long:  usageLongExtract,
 		Args:  cobra.ExactArgs(2),
 		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
-			return processExtractCommand(conf, args, opts)
+			return handleExtractCommand(conf, args, opts)
 		}),
 	}
 
@@ -88,7 +88,7 @@ func extractCommandForMode(mode, inFile, outDir string, pages []string, conf *mo
 	return nil, fmt.Errorf("unknown extract mode: %s", mode)
 }
 
-func processExtractCommand(conf *model.Configuration, args []string, opts *extractOptions) error {
+func handleExtractCommand(conf *model.Configuration, args []string, opts *extractOptions) error {
 	if err := extractMode(opts); err != nil {
 		return err
 	}
@@ -104,5 +104,5 @@ func processExtractCommand(conf *model.Configuration, args []string, opts *extra
 	if err != nil {
 		return err
 	}
-	return process(cmd)
+	return runCommand(cmd)
 }

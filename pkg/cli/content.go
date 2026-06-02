@@ -18,6 +18,127 @@ package cli
 
 import "github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 
+// AddWatermarksCommand creates a new command to add watermarks to a file.
+func AddWatermarksCommand(inFile, outFile string, pageSelection []string, wm *model.Watermark, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.ADDWATERMARKS
+	return &Command{
+		Mode:          model.ADDWATERMARKS,
+		InFile:        &inFile,
+		OutFile:       &outFile,
+		PageSelection: pageSelection,
+		Watermark:     wm,
+		Conf:          conf}
+}
+
+// RemoveWatermarksCommand creates a new command to remove watermarks from a file.
+func RemoveWatermarksCommand(inFile, outFile string, pageSelection []string, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.REMOVEWATERMARKS
+	return &Command{
+		Mode:          model.REMOVEWATERMARKS,
+		InFile:        &inFile,
+		OutFile:       &outFile,
+		PageSelection: pageSelection,
+		Conf:          conf}
+}
+
+func listAnnotationsCommand(inFile string, pageSelection []string, json bool, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.LISTANNOTATIONS
+	return &Command{
+		Mode:          model.LISTANNOTATIONS,
+		InFile:        &inFile,
+		PageSelection: pageSelection,
+		BoolVal1:      json,
+		Conf:          conf}
+}
+
+// ListAnnotationsCommand creates a new command to list annotations for selected pages.
+func ListAnnotationsCommand(inFile string, pageSelection []string, conf *model.Configuration) *Command {
+	return listAnnotationsCommand(inFile, pageSelection, false, conf)
+}
+
+// ListAnnotationsJSONCommand creates a new command to list annotations as JSON.
+func ListAnnotationsJSONCommand(inFile string, pageSelection []string, conf *model.Configuration) *Command {
+	return listAnnotationsCommand(inFile, pageSelection, true, conf)
+}
+
+// RemoveAnnotationsCommand creates a new command to remove annotations for selected pages.
+func RemoveAnnotationsCommand(inFile, outFile string, pageSelection []string, idsAndTypes []string, objNrs []int, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.REMOVEANNOTATIONS
+	return &Command{
+		Mode:          model.REMOVEANNOTATIONS,
+		InFile:        &inFile,
+		OutFile:       &outFile,
+		PageSelection: pageSelection,
+		StringVals:    idsAndTypes,
+		IntVals:       objNrs,
+		Conf:          conf}
+}
+
+// ListBookmarksCommand creates a new command to list bookmarks of inFile.
+func ListBookmarksCommand(inFile string, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.LISTBOOKMARKS
+	return &Command{
+		Mode:   model.LISTBOOKMARKS,
+		InFile: &inFile,
+		Conf:   conf}
+}
+
+// ExportBookmarksCommand creates a new command to export bookmarks of inFile.
+func ExportBookmarksCommand(inFile, outFileJSON string, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.EXPORTBOOKMARKS
+	return &Command{
+		Mode:        model.EXPORTBOOKMARKS,
+		InFile:      &inFile,
+		OutFileJSON: &outFileJSON,
+		Conf:        conf}
+}
+
+// ImportBookmarksCommand creates a new command to import bookmarks to inFile.
+func ImportBookmarksCommand(inFile, inFileJSON, outFile string, replace bool, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.IMPORTBOOKMARKS
+	return &Command{
+		Mode:       model.IMPORTBOOKMARKS,
+		BoolVal1:   replace,
+		InFile:     &inFile,
+		InFileJSON: &inFileJSON,
+		OutFile:    &outFile,
+		Conf:       conf}
+}
+
+// RemoveBookmarksCommand creates a new command to remove all bookmarks from inFile.
+func RemoveBookmarksCommand(inFile, outFile string, conf *model.Configuration) *Command {
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.REMOVEBOOKMARKS
+	return &Command{
+		Mode:    model.REMOVEBOOKMARKS,
+		InFile:  &inFile,
+		OutFile: &outFile,
+		Conf:    conf}
+}
+
 // ListPageLayoutCommand creates a new command to list the document page layout.
 func ListPageLayoutCommand(inFile string, conf *model.Configuration) *Command {
 	if conf == nil {

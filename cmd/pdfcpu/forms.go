@@ -46,7 +46,7 @@ func formCmd() *cobra.Command {
 		Use:   "fill inFile inFileJSON [ outFile ]",
 		Short: "Fill form with data via JSON",
 		Args:  cobra.RangeArgs(2, 3),
-		RunE:  wrapHandler(processFillFormCommand),
+		RunE:  wrapHandler(handleFillFormCommand),
 	}
 
 	multifillOpts := &formMultifillOptions{mode: "single"}
@@ -55,7 +55,7 @@ func formCmd() *cobra.Command {
 		Short: "Fill multiple form instances",
 		Args:  cobra.RangeArgs(3, 4),
 		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
-			return processMultiFillFormCommand(conf, args, multifillOpts)
+			return handleMultiFillFormCommand(conf, args, multifillOpts)
 		}),
 	}
 	multifill.Flags().StringVarP(&multifillOpts.mode, "mode", "m", multifillOpts.mode, "output mode: single|merge")
@@ -66,7 +66,7 @@ func formCmd() *cobra.Command {
 		Short: "List form fields",
 		Args:  cobra.MinimumNArgs(1),
 		RunE: wrapHandler(func(conf *model.Configuration, args []string) error {
-			return processListFormFieldsCommand(conf, args, listOpts)
+			return handleListFormFieldsCommand(conf, args, listOpts)
 		}),
 	}
 	list.Flags().BoolVarP(&listOpts.json, "json", "j", listOpts.json, "output JSON")
@@ -77,31 +77,31 @@ func formCmd() *cobra.Command {
 			Use:   "remove inFile [ outFile ] < fieldID | fieldName >...",
 			Short: "Remove form fields",
 			Args:  cobra.MinimumNArgs(2),
-			RunE:  wrapHandler(processRemoveFormFieldsCommand),
+			RunE:  wrapHandler(handleRemoveFormFieldsCommand),
 		},
 		&cobra.Command{
 			Use:   "lock inFile [ outFile ] [ fieldID | fieldName ]...",
 			Short: "Lock form fields",
 			Args:  cobra.MinimumNArgs(1),
-			RunE:  wrapHandler(processLockFormCommand),
+			RunE:  wrapHandler(handleLockFormCommand),
 		},
 		&cobra.Command{
 			Use:   "unlock inFile [ outFile ] [ fieldID | fieldName ]...",
 			Short: "Unlock form fields",
 			Args:  cobra.MinimumNArgs(1),
-			RunE:  wrapHandler(processUnlockFormCommand),
+			RunE:  wrapHandler(handleUnlockFormCommand),
 		},
 		&cobra.Command{
 			Use:   "reset inFile [ outFile ] [ fieldID | fieldName ]...",
 			Short: "Reset form fields",
 			Args:  cobra.MinimumNArgs(1),
-			RunE:  wrapHandler(processResetFormCommand),
+			RunE:  wrapHandler(handleResetFormCommand),
 		},
 		&cobra.Command{
 			Use:   "export inFile [ outFileJSON ]",
 			Short: "Export form data",
 			Args:  cobra.RangeArgs(1, 2),
-			RunE:  wrapHandler(processExportFormCommand),
+			RunE:  wrapHandler(handleExportFormCommand),
 		},
 		fill,
 		multifill,
@@ -132,15 +132,15 @@ func listFormFiles(conf *model.Configuration, args []string) ([]string, error) {
 	return inFiles, nil
 }
 
-func processListFormFieldsCommand(conf *model.Configuration, args []string, opts *formListOptions) error {
+func handleListFormFieldsCommand(conf *model.Configuration, args []string, opts *formListOptions) error {
 	inFiles, err := listFormFiles(conf, args)
 	if err != nil {
 		return err
 	}
 	if opts.json {
-		return process(cli.ListFormFieldsJSONCommand(inFiles, conf))
+		return runCommand(cli.ListFormFieldsJSONCommand(inFiles, conf))
 	}
-	return process(cli.ListFormFieldsCommand(inFiles, conf))
+	return runCommand(cli.ListFormFieldsCommand(inFiles, conf))
 }
 
 func formFieldArgs(conf *model.Configuration, args []string, rejectPDFAsOnlyField bool) (string, string, []string, error) {
@@ -181,39 +181,39 @@ func formFieldArgs(conf *model.Configuration, args []string, rejectPDFAsOnlyFiel
 	return inFile, outFile, fieldIDs, nil
 }
 
-func processRemoveFormFieldsCommand(conf *model.Configuration, args []string) error {
+func handleRemoveFormFieldsCommand(conf *model.Configuration, args []string) error {
 	inFile, outFile, fieldIDs, err := formFieldArgs(conf, args, true)
 	if err != nil {
 		return err
 	}
-	return process(cli.RemoveFormFieldsCommand(inFile, outFile, fieldIDs, conf))
+	return runCommand(cli.RemoveFormFieldsCommand(inFile, outFile, fieldIDs, conf))
 }
 
-func processLockFormCommand(conf *model.Configuration, args []string) error {
+func handleLockFormCommand(conf *model.Configuration, args []string) error {
 	inFile, outFile, fieldIDs, err := formFieldArgs(conf, args, false)
 	if err != nil {
 		return err
 	}
-	return process(cli.LockFormCommand(inFile, outFile, fieldIDs, conf))
+	return runCommand(cli.LockFormCommand(inFile, outFile, fieldIDs, conf))
 }
 
-func processUnlockFormCommand(conf *model.Configuration, args []string) error {
+func handleUnlockFormCommand(conf *model.Configuration, args []string) error {
 	inFile, outFile, fieldIDs, err := formFieldArgs(conf, args, false)
 	if err != nil {
 		return err
 	}
-	return process(cli.UnlockFormCommand(inFile, outFile, fieldIDs, conf))
+	return runCommand(cli.UnlockFormCommand(inFile, outFile, fieldIDs, conf))
 }
 
-func processResetFormCommand(conf *model.Configuration, args []string) error {
+func handleResetFormCommand(conf *model.Configuration, args []string) error {
 	inFile, outFile, fieldIDs, err := formFieldArgs(conf, args, false)
 	if err != nil {
 		return err
 	}
-	return process(cli.ResetFormCommand(inFile, outFile, fieldIDs, conf))
+	return runCommand(cli.ResetFormCommand(inFile, outFile, fieldIDs, conf))
 }
 
-func processExportFormCommand(conf *model.Configuration, args []string) error {
+func handleExportFormCommand(conf *model.Configuration, args []string) error {
 	inFile := args[0]
 	if err := inputPDFArg(conf, inFile); err != nil {
 		return err
@@ -233,10 +233,10 @@ func processExportFormCommand(conf *model.Configuration, args []string) error {
 		return err
 	}
 
-	return process(cli.ExportFormCommand(inFile, outFileJSON, conf))
+	return runCommand(cli.ExportFormCommand(inFile, outFileJSON, conf))
 }
 
-func processFillFormCommand(conf *model.Configuration, args []string) error {
+func handleFillFormCommand(conf *model.Configuration, args []string) error {
 	inFile := args[0]
 	if err := inputPDFArg(conf, inFile); err != nil {
 		return err
@@ -262,7 +262,7 @@ func processFillFormCommand(conf *model.Configuration, args []string) error {
 		}
 	}
 
-	return process(cli.FillFormCommand(inFile, inFileJSON, outFile, conf))
+	return runCommand(cli.FillFormCommand(inFile, inFileJSON, outFile, conf))
 }
 
 func multifillMode(opts *formMultifillOptions) error {
@@ -316,7 +316,7 @@ func multifillArgs(conf *model.Configuration, args []string, opts *formMultifill
 	return inFile, inFileData, outDir, outFile, nil
 }
 
-func processMultiFillFormCommand(conf *model.Configuration, args []string, opts *formMultifillOptions) error {
+func handleMultiFillFormCommand(conf *model.Configuration, args []string, opts *formMultifillOptions) error {
 	if err := multifillMode(opts); err != nil {
 		return err
 	}
@@ -324,5 +324,5 @@ func processMultiFillFormCommand(conf *model.Configuration, args []string, opts 
 	if err != nil {
 		return err
 	}
-	return process(cli.MultiFillFormCommand(inFile, inFileData, outDir, outFile, opts.mode == "merge", conf))
+	return runCommand(cli.MultiFillFormCommand(inFile, inFileData, outDir, outFile, opts.mode == "merge", conf))
 }
