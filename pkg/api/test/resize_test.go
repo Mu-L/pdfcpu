@@ -17,11 +17,14 @@ limitations under the License.
 package test
 
 import (
+	"math"
 	"path/filepath"
 	"testing"
 
 	"github.com/pdfcpu/pdfcpu/pkg/api"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/color"
+	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/model"
 	"github.com/pdfcpu/pdfcpu/pkg/pdfcpu/types"
 )
 
@@ -141,4 +144,115 @@ func TestResizeToDimensions(t *testing.T) {
 	if err := api.ResizeFile(inFile, outFile, nil, res, nil); err != nil {
 		t.Fatalf("%s resize: %v\n", msg, err)
 	}
+}
+
+func annotationNumberArray(t *testing.T, ctx *model.Context, obj types.Object) []float64 {
+	t.Helper()
+	arr, err := ctx.DereferenceArray(obj)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ff := make([]float64, len(arr))
+	for i, o := range arr {
+		f, err := ctx.DereferenceNumber(o)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ff[i] = f
+	}
+	return ff
+}
+
+func assertFloatSlicesEqual(t *testing.T, got, want []float64) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("got %d values, want %d", len(got), len(want))
+	}
+	for i := range got {
+		if math.Abs(got[i]-want[i]) > 0.01 {
+			t.Fatalf("value[%d]: got %.2f want %.2f", i, got[i], want[i])
+		}
+	}
+}
+
+func resizeAnnotationExpectedValues(ff []float64) []float64 {
+	sc := 792. / 842.
+	dx := (612. - 595.*sc) / 2
+
+	a := make([]float64, len(ff))
+	for i := 0; i < len(ff); i += 2 {
+		a[i] = ff[i]*sc + dx
+		a[i+1] = ff[i+1] * sc
+	}
+	return a
+}
+
+func resizeTestAnnotationDict(t *testing.T, fileName string) (*model.Context, types.Dict) {
+	t.Helper()
+	ctx, err := api.ReadContextFile(fileName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, _, _, err := ctx.PageDict(1, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	arr, err := ctx.DereferenceArray(d["Annots"])
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, o := range arr {
+		d, err := ctx.DereferenceDict(o)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if s := d.StringEntry("NM"); s != nil && *s == "IDResizeLink" {
+			return ctx, d
+		}
+	}
+	t.Fatal("missing resize test annotation")
+	return nil, nil
+}
+
+// TestResizeAnnotationGeometry verifies resize applies the content transform to annotations.
+func TestResizeAnnotationGeometry(t *testing.T) {
+	msg := "TestResizeAnnotationGeometry"
+
+	inFile := filepath.Join(inDir, "test.pdf")
+	annotFile := filepath.Join(outDir, "resizeAnnotationIn.pdf")
+	outFile := filepath.Join(outDir, "resizeAnnotationOut.pdf")
+
+	r := types.NewRectangle(95, 595, 160, 615)
+	ql := types.NewQuadLiteralForRect(r)
+	ann := model.NewLinkAnnotation(
+		*r,                    // rect
+		0,                     // apObjNr
+		"",                    // contents
+		"IDResizeLink",        // id
+		"",                    // modDate
+		0,                     // f
+		&color.Red,            // borderCol
+		nil,                   // dest
+		"https://pdfcpu.io",   // uri
+		types.QuadPoints{*ql}, // quad
+		false,                 // border
+		0,                     // borderWidth
+		model.BSSolid,         // borderStyle
+	)
+
+	if err := api.AddAnnotationsFile(inFile, annotFile, []string{"1"}, ann, nil, false); err != nil {
+		t.Fatalf("%s add annotation: %v\n", msg, err)
+	}
+
+	res, err := pdfcpu.ParseResizeConfig("form:Letter", types.POINTS)
+	if err != nil {
+		t.Fatalf("%s invalid resize configuration: %v\n", msg, err)
+	}
+	if err := api.ResizeFile(annotFile, outFile, []string{"1"}, res, nil); err != nil {
+		t.Fatalf("%s resize: %v\n", msg, err)
+	}
+
+	ctx, d := resizeTestAnnotationDict(t, outFile)
+	assertFloatSlicesEqual(t, annotationNumberArray(t, ctx, d["Rect"]), resizeAnnotationExpectedValues([]float64{95, 595, 160, 615}))
+	assertFloatSlicesEqual(t, annotationNumberArray(t, ctx, d["QuadPoints"]), resizeAnnotationExpectedValues([]float64{95, 615, 160, 615, 95, 595, 160, 595}))
 }

@@ -17,6 +17,7 @@ limitations under the License.
 package cli
 
 import (
+	"errors"
 	"io"
 	"os"
 
@@ -252,4 +253,96 @@ func Crop(cmd *Command) ([]string, error) {
 	}
 
 	return nil, api.Crop(rs, w, cmd.PageSelection, cmd.Box, cmd.Conf)
+}
+
+func listBoxes(rs io.ReadSeeker, selectedPages []string, pb *model.PageBoundaries, conf *model.Configuration) ([]string, error) {
+	if rs == nil {
+		return nil, errors.New("pdfcpu: listBoxes: missing rs")
+	}
+
+	if conf == nil {
+		conf = model.NewDefaultConfiguration()
+	}
+	conf.Cmd = model.LISTBOXES
+
+	ctx, err := api.ReadAndValidate(rs, conf)
+	if err != nil {
+		return nil, err
+	}
+
+	pages, err := api.PagesForPageSelection(ctx.PageCount, selectedPages, true, true)
+	if err != nil {
+		return nil, err
+	}
+
+	return ctx.ListPageBoundaries(pages, pb)
+}
+
+// ListBoxesFile returns a list of page boundaries for selected pages of inFile.
+func ListBoxesFile(inFile string, selectedPages []string, pb *model.PageBoundaries, conf *model.Configuration) ([]string, error) {
+	f, err := os.Open(inFile)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	if pb == nil {
+		pb = &model.PageBoundaries{}
+		pb.SelectAll()
+	}
+	log.CLI.Printf("listing %s for %s\n", pb, inFile)
+
+	return listBoxes(f, selectedPages, pb, conf)
+}
+
+// ListBoxes returns inFile's page boundaries.
+func ListBoxes(cmd *Command) ([]string, error) {
+	if *cmd.InFile == "-" {
+		rs, err := readSeekerFromStdin()
+		if err != nil {
+			return nil, err
+		}
+		pb := cmd.PageBoundaries
+		if pb == nil {
+			pb = &model.PageBoundaries{}
+			pb.SelectAll()
+		}
+		return listBoxes(rs, cmd.PageSelection, pb, cmd.Conf)
+	}
+
+	return ListBoxesFile(*cmd.InFile, cmd.PageSelection, cmd.PageBoundaries, cmd.Conf)
+}
+
+// AddBoxes adds page boundaries to inFile's page tree and writes the result to outFile.
+func AddBoxes(cmd *Command) ([]string, error) {
+	if *cmd.InFile != "-" && *cmd.OutFile != "-" {
+		return nil, api.AddBoxesFile(*cmd.InFile, *cmd.OutFile, cmd.PageSelection, cmd.PageBoundaries, cmd.Conf)
+	}
+
+	rs, w, cleanup, err := streamInOut(*cmd.InFile, *cmd.OutFile)
+	if err != nil {
+		return nil, err
+	}
+	if cleanup != nil {
+		defer cleanup()
+	}
+
+	return nil, api.AddBoxes(rs, w, cmd.PageSelection, cmd.PageBoundaries, cmd.Conf)
+}
+
+// RemoveBoxes deletes page boundaries from inFile's page tree and writes the result to outFile.
+func RemoveBoxes(cmd *Command) ([]string, error) {
+	if *cmd.InFile != "-" && *cmd.OutFile != "-" {
+		return nil, api.RemoveBoxesFile(*cmd.InFile, *cmd.OutFile, cmd.PageSelection, cmd.PageBoundaries, cmd.Conf)
+	}
+
+	rs, w, cleanup, err := streamInOut(*cmd.InFile, *cmd.OutFile)
+	if err != nil {
+		return nil, err
+	}
+	if cleanup != nil {
+		defer cleanup()
+	}
+
+	return nil, api.RemoveBoxes(rs, w, cmd.PageSelection, cmd.PageBoundaries, cmd.Conf)
 }

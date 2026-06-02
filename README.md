@@ -1,4 +1,4 @@
-# pdfcpu: a PDF processor written in Go with CLI and API support
+# pdfcpu: PDF tooling for Go and the command line
 
 [![Test](https://github.com/pdfcpu/pdfcpu/workflows/Test/badge.svg)](https://github.com/pdfcpu/pdfcpu/actions)
 [![Coverage Status](https://coveralls.io/repos/github/pdfcpu/pdfcpu/badge.svg?branch=master)](https://coveralls.io/github/pdfcpu/pdfcpu?branch=master)
@@ -12,9 +12,9 @@
   <a href="https://pdfa.org"><img src="resources/pdfa.png" width="75"></a>
 </p>
 
-pdfcpu is a PDF processing library written in Go.
+pdfcpu provides a Go API and command-line tools for working with PDF files.
 
-It is compatible with all PDF versions. Support for PDF 2.0 (ISO-32000-2) is evolving and continuously improving.
+It supports PDFs across versions. PDF 2.0 (ISO-32000-2) validation support is basic and continuously improving.
 
 ---
 
@@ -37,14 +37,14 @@ It is compatible with all PDF versions. Support for PDF 2.0 (ISO-32000-2) is evo
 
 ### CLI
 
-Validate against PDF 2.0 (ISO-32000-2):
+Validate a PDF:
 ```
 pdfcpu validate input.pdf
 ```
 
 Merge two PDFs:
 ```
-pdfcpu merge out.pdf in1.pdf in2.pdf
+pdfcpu merge merged.pdf in1.pdf in2.pdf
 ```
 
 ### Go API
@@ -60,7 +60,7 @@ See API documentation for usage examples.
 * Encrypt and decrypt PDFs
 * Resize and rotate pages
 * Add and remove stamps and watermarks
-* Manage digital signatures (ongoing work)
+* Validate signature integrity, report signature evidence, and remove signatures
 * Manage attachments and more...
 
 ## In Action
@@ -131,6 +131,7 @@ It focuses on correctness, robustness and independence from external dependencie
 ## Documentation
 
 * Project documentation: https://pdfcpu.io
+* Changelog: https://pdfcpu.io/changelog
 
 ### CLI
 
@@ -154,7 +155,7 @@ Contributions are welcome.
 * Report bugs or propose changes via [issues](https://github.com/pdfcpu/pdfcpu/issues/new/choose)
 * Discuss ideas on the [discussion board](https://github.com/pdfcpu/pdfcpu/discussions)
 * For PRs, please open an issue or discussion first
-v
+
 ### Guidelines
 
 * Base your work on the latest commit
@@ -205,7 +206,7 @@ Thanks 💚 to all contributors:
 [<img src="https://avatars.githubusercontent.com/u/49206635?v=4" width="100px"/><br/><sub><b>Joel Silva Schutz</b></sub>](https://github.com/joelschutz) | [<img src="https://avatars.githubusercontent.com/u/28219076?v=4" width="100px"/><br/><sub><b>semvis123</b></sub>](https://github.com/semvis123) | [<img src="https://avatars.githubusercontent.com/u/8717479?v=4"  width="100px"/><br/><sub><b>guangwu</b></sub>](https://github.com/testwill) | [<img src="https://avatars.githubusercontent.com/u/4014912?v=4"  width="100px"/><br/><sub><b>Yoshiki Nakagawa</b></sub>](https://github.com/yyoshiki41) | [<img src="https://avatars.githubusercontent.com/u/432860?v=4"  width="100px"/><br/><sub><b>Steve van Loben Sels</b></sub>](https://github.com/stevevls) | [<img src="https://avatars.githubusercontent.com/u/6083533?v=4" width="100px"/><br/><sub><b>Yaofu</b></sub>](https://github.com/mygityf) | [<img src="https://avatars.githubusercontent.com/u/15724278?v=4" width="100px"/><br/><sub><b>vsenko</b></sub>](https://github.com/vsenko) |
 [<img src="https://avatars.githubusercontent.com/u/16507?v=4" width="100px"/><br/><sub><b>Alexis Hildebrandt</b></sub>](https://github.com/afh) | [<img src="https://avatars.githubusercontent.com/u/1395040?v=4" width="100px"/><br/><sub><b>Sivukhin Nikita</b></sub>](https://github.com/sivukhin)  | [<img src="https://avatars.githubusercontent.com/u/247730?v=4"  width="100px"/><br/><sub><b>Joachim Bauch</b></sub>](https://github.com/fancycode) | [<img src="https://avatars.githubusercontent.com/u/127291996?v=4"  width="100px"/><br/><sub><b>kalimit</b></sub>](https://github.com/kalimit) | [<img src="https://avatars.githubusercontent.com/u/5080535?v=4"  width="100px"/><br/><sub><b>Andreas Erhard</b></sub>](https://github.com/xelan) | [<img src="https://avatars.githubusercontent.com/u/32378535?v=4"  width="100px"/><br/><sub><b>Matsumoto Toshi</b></sub>](https://github.com/toshi1127) | [<img src="https://avatars.githubusercontent.com/u/440634?v=4"  width="100px"/><br/><sub><b>Carl Wilson</b></sub>](https://github.com/carlwilson) |
 [<img src="https://avatars.githubusercontent.com/u/9918222?v=4" width="100px"/><br/><sub><b>LNAhri</b></sub>](https://github.com/LNAhri) | [<img src="https://avatars.githubusercontent.com/u/142796877?v=4" width="100px"/><br/><sub><b>vishal</b></sub>](https://github.com/vishal-at) | [<img src="https://avatars.githubusercontent.com/u/18169566?v=4" width="100px"/><br/><sub><b>Andreas Deininger</b></sub>](https://github.com/deining) | [<img src="https://avatars.githubusercontent.com/u/5825735?v=4" width="100px"/><br/><sub><b>Robert Raines</b></sub>](https://github.com/solintllc-robert) | [<img src="https://avatars.githubusercontent.com/u/316176?v=4" width="100px"/><br/><sub><b>Frank Anderson</b></sub>](https://github.com/frob) |  [<img src="https://avatars.githubusercontent.com/u/20972350?v=4" width="100px"/><br/><sub><b>Sven Lilienthal</b></sub>](https://github.com/SveLil) |  [<img src="https://avatars.githubusercontent.com/u/1900106?v=4" width="100px"/><br/><sub><b>Florian Kinder</b></sub>](https://github.com/fank) |
-[<img src="https://avatars.githubusercontent.com/u/113192632?v=4" width="100px"/><br/><sub><b>mdmcconnell</b></sub>](https://github.com/mdmcconnell) | [<img src="https://avatars.githubusercontent.com/u/195061?v=4" width="100px"/><br/><sub><b>Bradley Erickson</b></sub>](https://github.com/13rac1) | [<img src="https://avatars.githubusercontent.com/u/10998835?v=4" width="100px"/><br/><sub><b>doronbehar</b></sub>](https://github.com/doronbehar) |[<img src="https://avatars.githubusercontent.com/u/48005710?v=4" width="100px"/><br/><sub><b>joeyave</b></sub>](https://github.com/joeyave) | [<img src="https://avatars.githubusercontent.com/u/341612?v=4" width="100px"/><br/><sub><b>Zhenbang Wei</b></sub>](https://github.com/znbang) |||
+[<img src="https://avatars.githubusercontent.com/u/113192632?v=4" width="100px"/><br/><sub><b>mdmcconnell</b></sub>](https://github.com/mdmcconnell) | [<img src="https://avatars.githubusercontent.com/u/195061?v=4" width="100px"/><br/><sub><b>Bradley Erickson</b></sub>](https://github.com/13rac1) | [<img src="https://avatars.githubusercontent.com/u/10998835?v=4" width="100px"/><br/><sub><b>doronbehar</b></sub>](https://github.com/doronbehar) |[<img src="https://avatars.githubusercontent.com/u/48005710?v=4" width="100px"/><br/><sub><b>joeyave</b></sub>](https://github.com/joeyave) | [<img src="https://avatars.githubusercontent.com/u/341612?v=4" width="100px"/><br/><sub><b>Zhenbang Wei</b></sub>](https://github.com/znbang) | [<img src="https://avatars.githubusercontent.com/u/33366456?v=4" width="100px"/><br/><sub><b>HarishTeens</b></sub>](https://github.com/HarishTeens) ||
 
 <!-- ALL-CONTRIBUTORS-LIST:END - Do not remove or modify this section -->
 

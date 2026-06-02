@@ -30,13 +30,16 @@ const (
       --mode image imageFileName
          supported extensions: .jpg, .jpeg, .png, .tif, .tiff, .webp
          eg. pdfcpu stamp add 'logo.png' '' in.pdf out.pdf --mode image
+
    3) PDF based
       --mode pdf PDFFileName:page#
          Stamp selected pages of infile with one specific page of a stamp PDF file.
          Eg: pdfcpu stamp add 'stamp.pdf:3' '' in.pdf out.pdf --mode pdf ... stamp each page of in.pdf with page 3 of stamp.pdf
+      
       --mode pdf PDFFileName
          Multistamp your file, meaning apply all pages of a stamp PDF file one by one to ascending pages of inFile.
          Eg: pdfcpu stamp add 'stamp.pdf' '' in.pdf out.pdf --mode pdf ... multistamp all pages of in.pdf with ascending pages of stamp.pdf
+      
       --mode pdf PDFFileName:startPage#Src:startPage#Dest
          Customize your multistamp by starting with startPage#Src of a stamp PDF file.
          Apply repeatedly pages of the stamp file to inFile starting at startPage#Dest.

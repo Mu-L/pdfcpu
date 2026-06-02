@@ -45,9 +45,10 @@ var (
 )
 
 var rootCmd = &cobra.Command{
-	Use:           "pdfcpu",
-	Short:         "A PDF processor written in Go",
-	Long:          `pdfcpu is a tool for PDF manipulation written in Go.`,
+	Use:   "pdfcpu",
+	Short: "PDF tooling for Go and the command line",
+	Long: `pdfcpu provides command-line tools for working with PDF files.
+It is built on a Go API for direct PDF control.`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
 }
@@ -69,55 +70,72 @@ func init() {
 
 func commands() []*cobra.Command {
 	return []*cobra.Command{
-		annotationsCmd(),
-		attachmentsCmd(),
-		bookmarksCmd(),
-		bookletCmd(),
-		boxesCmd(),
-		certificatesCmd(),
-		changeopwCmd(),
-		changeupwCmd(),
+		// Document commands.
+		validateCmd(),
+		optimizeCmd(),
+		infoCmd(),
+		dumpCmd(),
+		createCmd(),
+		mergeCmd(),
+		splitCmd(),
+		trimCmd(),
 		collectCmd(),
+
+		// Page commands.
+		pagesCmd(),
+		rotateCmd(),
+		nupCmd(),
+		gridCmd(),
+		bookletCmd(),
+		resizeCmd(),
+		posterCmd(),
+		ndownCmd(),
+		cutCmd(),
+		cropCmd(),
+		zoomCmd(),
+		boxesCmd(),
+
+		// Content commands.
+		watermarkCmd(),
+		stampCmd(),
+		annotationsCmd(),
+		bookmarksCmd(),
+		pagemodeCmd(),
+		pagelayoutCmd(),
+		viewerprefCmd(),
+
+		// Resource commands.
+		importCmd(),
+		fontsCmd(),
+		imagesCmd(),
+		attachmentsCmd(),
+		portfolioCmd(),
+		keywordsCmd(),
+		propertiesCmd(),
+
+		// Extract commands.
+		extractCmd(),
+
+		// Form commands.
+		formCmd(),
+
+		// Security commands.
+		encryptCmd(),
+		decryptCmd(),
+		changeupwCmd(),
+		changeopwCmd(),
+		permissionsCmd(),
+
+		// Trust and signature commands.
+		certificatesCmd(),
+		signaturesCmd(),
+
+		// Support commands.
 		completionCmd(),
 		configCmd(),
-		createCmd(),
-		cropCmd(),
-		cutCmd(),
-		decryptCmd(),
-		dumpCmd(),
-		encryptCmd(),
-		extractCmd(),
-		fontsCmd(),
-		formCmd(),
-		gridCmd(),
-		imagesCmd(),
-		importCmd(),
-		infoCmd(),
-		keywordsCmd(),
-		mergeCmd(),
-		ndownCmd(),
-		nupCmd(),
-		optimizeCmd(),
-		pagelayoutCmd(),
-		pagemodeCmd(),
-		pagesCmd(),
 		paperCmd(),
-		permissionsCmd(),
-		portfolioCmd(),
-		posterCmd(),
-		propertiesCmd(),
-		resizeCmd(),
-		rotateCmd(),
 		selectedpagesCmd(),
-		signaturesCmd(),
-		splitCmd(),
-		stampCmd(),
-		trimCmd(),
-		validateCmd(),
 		versionCmd(),
-		viewerprefCmd(),
-		watermarkCmd(),
-		zoomCmd(),
 	}
 }
 

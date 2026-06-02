@@ -102,14 +102,6 @@ var dispatchTable = map[model.CommandMode]dispatchFunc{
 	model.EXTRACTCONTENT:  ExtractContent,
 	model.EXTRACTMETADATA: ExtractMetadata,
 
-	// Security commands.
-	model.ENCRYPT:         dispatchEncryption,
-	model.DECRYPT:         dispatchEncryption,
-	model.CHANGEUPW:       dispatchEncryption,
-	model.CHANGEOPW:       dispatchEncryption,
-	model.LISTPERMISSIONS: dispatchPermissions,
-	model.SETPERMISSIONS:  dispatchPermissions,
-
 	// Form commands.
 	model.LISTFORMFIELDS:      dispatchForm,
 	model.REMOVEFORMFIELDS:    dispatchForm,
@@ -119,6 +111,14 @@ var dispatchTable = map[model.CommandMode]dispatchFunc{
 	model.EXPORTFORMFIELDS:    dispatchForm,
 	model.FILLFORMFIELDS:      dispatchForm,
 	model.MULTIFILLFORMFIELDS: dispatchForm,
+
+	// Security commands.
+	model.ENCRYPT:         dispatchEncryption,
+	model.DECRYPT:         dispatchEncryption,
+	model.CHANGEUPW:       dispatchEncryption,
+	model.CHANGEOPW:       dispatchEncryption,
+	model.LISTPERMISSIONS: dispatchPermissions,
+	model.SETPERMISSIONS:  dispatchPermissions,
 
 	// Trust and signature commands.
 	model.LISTCERTIFICATES:    dispatchCertificates,

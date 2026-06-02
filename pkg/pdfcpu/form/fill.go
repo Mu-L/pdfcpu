@@ -1137,6 +1137,8 @@ func fillWidgetAnnots(
 }
 
 func setupFillFonts(xRefTable *model.XRefTable) error {
+	font.EnsureUserFontsLoaded()
+
 	d, err := primitives.FormFontResDict(xRefTable)
 	if err != nil {
 		return err

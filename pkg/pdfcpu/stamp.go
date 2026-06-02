@@ -1870,26 +1870,25 @@ func locateOCGs(ctx *model.Context) (types.Array, error) {
 
 func detectStampOCG(ctx *model.Context, arr types.Array) error {
 	for _, o := range arr {
+		if o == nil {
+			continue
+		}
 
 		d, err := ctx.DereferenceDict(o)
 		if err != nil {
 			return err
 		}
-
-		if o == nil {
+		if d == nil {
 			continue
 		}
 
-		if *d.Type() != "OCG" {
+		typ := d.Type()
+		if typ == nil || *typ != "OCG" {
 			continue
 		}
 
 		n := d.StringEntry("Name")
-		if n == nil {
-			continue
-		}
-
-		if *n != "Background" && *n != "Watermark" {
+		if n == nil || *n != "Background" && *n != "Watermark" {
 			continue
 		}
 
@@ -2045,7 +2044,12 @@ func detectPageTreeWatermarks(ctx *model.Context, root *types.IndirectRef) error
 			return err
 		}
 
-		switch *pageNodeDict.Type() {
+		typ := pageNodeDict.Type()
+		if typ == nil {
+			continue
+		}
+
+		switch *typ {
 
 		case "Pages":
 			// Recurse over sub pagetree.
@@ -2100,7 +2104,7 @@ func DetectWatermarks(ctx *model.Context) error {
 		}
 
 		if d == nil {
-			println("continue")
+			//println("continue")
 			continue
 		}
 

@@ -596,4 +596,39 @@ Pipeline example:
       | pdfcpu crop '10' - - -u mm \
       | aws s3 cp - s3://acme-print/catalog-cropped.pdf
 ` + usageBoxDescription
+
+	usageLongBoxes = `Manage page boundaries.
+
+     boxTypes ... comma separated list of box types: m(edia), c(rop), t(rim), b(leed), a(rt)
+        pages ... Please refer to "pdfcpu selectedpages"
+  description ... box definitions abs. or rel. to parent box
+       inFile ... input PDF file, use - to read from stdin
+      outFile ... output PDF file, use - to write to stdout
+
+<description> is a sequence of box definitions and assignments:
+
+   m(edia): {box}
+    c(rop): {box}
+     a(rt): {box} | m(edia) | c(rop) | b(leed) | t(rim)
+   b(leed): {box} | m(edia) | c(rop) | a(rt) | t(rim)
+    t(rim): {box} | m(edia) | c(rop) | a(rt) | b(leed)
+
+Examples:
+   pdfcpu boxes list in.pdf
+   pdfcpu boxes list 'bleed,trim' in.pdf
+   pdfcpu boxes add 'crop:[10 10 200 200], trim:5, bleed:trim' in.pdf
+   pdfcpu boxes remove 't,b' in.pdf
+
+Pipeline examples:
+   aws s3 cp s3://acme-print/ad.pdf - \
+      | pdfcpu boxes list -
+
+   aws s3 cp s3://acme-print/ad.pdf - \
+      | pdfcpu boxes add 'trim:5, bleed:10' - - \
+      | aws s3 cp - s3://acme-print/ad-boxes.pdf
+
+   aws s3 cp s3://acme-print/ad-boxes.pdf - \
+      | pdfcpu boxes remove 'trim,bleed' - - \
+      | aws s3 cp - s3://acme-print/ad-clean-boxes.pdf
+` + usageBoxDescription
 )

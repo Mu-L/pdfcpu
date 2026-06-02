@@ -138,6 +138,43 @@ func zoomCmd() *cobra.Command {
 	return cmd
 }
 
+func boxesCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "boxes",
+		Short: "List, add, remove page boundaries for selected pages",
+		Long:  usageLongBoxes,
+	}
+	addPersistentPasswordFlags(cmd)
+	addPersistentSelectedPagesFlag(cmd)
+
+	listCmd := &cobra.Command{
+		Use:   "list [ boxTypes ] inFile",
+		Short: "List boxes",
+		Args:  cobra.RangeArgs(1, 2),
+		RunE:  wrapHandler(handleListBoxesCommand),
+	}
+	addUnitFlag(listCmd)
+
+	addCmd := &cobra.Command{
+		Use:   "add description inFile [ outFile ]",
+		Short: "Add boxes",
+		Args:  cobra.RangeArgs(2, 3),
+		RunE:  wrapHandler(handleAddBoxesCommand),
+	}
+	addUnitFlag(addCmd)
+
+	removeCmd := &cobra.Command{
+		Use:   "remove boxTypes inFile [ outFile ]",
+		Short: "Remove boxes",
+		Args:  cobra.RangeArgs(2, 3),
+		RunE:  wrapHandler(handleRemoveBoxesCommand),
+	}
+
+	cmd.AddCommand(listCmd, addCmd, removeCmd)
+
+	return cmd
+}
+
 func parseForGrid(args []string, nup *model.NUp, argInd *int) error {
 	cols, err := strconv.Atoi(args[*argInd])
 	if err != nil {
@@ -683,4 +720,86 @@ func handleCropCommand(conf *model.Configuration, args []string) error {
 		return err
 	}
 	return runCommand(cli.CropCommand(inFile, outFile, pages, box, conf))
+}
+
+func handleListBoxesCommand(conf *model.Configuration, args []string) error {
+	if err := configureDisplayUnit(conf); err != nil {
+		return err
+	}
+	selectedPages, err := parseSelectedPages()
+	if err != nil {
+		return err
+	}
+	if len(args) == 1 {
+		inFile := args[0]
+		if err := inputPDFArg(conf, inFile); err != nil {
+			return err
+		}
+		return runCommand(cli.ListBoxesCommand(inFile, selectedPages, nil, conf))
+	}
+
+	pb, err := api.PageBoundariesFromBoxList(args[0])
+	if err != nil {
+		return fmt.Errorf("problem parsing box list: %v", err)
+	}
+
+	inFile := args[1]
+	if err := inputPDFArg(conf, inFile); err != nil {
+		return err
+	}
+
+	return runCommand(cli.ListBoxesCommand(inFile, selectedPages, pb, conf))
+}
+
+func handleAddBoxesCommand(conf *model.Configuration, args []string) error {
+	if err := configureDisplayUnit(conf); err != nil {
+		return err
+	}
+	pb, err := api.PageBoundaries(args[0], conf.Unit)
+	if err != nil {
+		return fmt.Errorf("problem parsing page boundaries: %v", err)
+	}
+
+	inFile, outFile, err := optionalOutputPDFArgs(conf, args[1:])
+	if err != nil {
+		return err
+	}
+
+	selectedPages, err := parseSelectedPages()
+	if err != nil {
+		return err
+	}
+
+	return runCommand(cli.AddBoxesCommand(inFile, outFile, selectedPages, pb, conf))
+}
+
+func removeBoxBoundaries(s string) (*model.PageBoundaries, error) {
+	pb, err := api.PageBoundariesFromBoxList(s)
+	if err != nil {
+		return nil, fmt.Errorf("problem parsing box list: %v", err)
+	}
+	if pb == nil {
+		return nil, errors.New("please supply a list of box types to be removed")
+	}
+	if pb.Media != nil {
+		return nil, errors.New("cannot remove media box")
+	}
+	return pb, nil
+}
+
+func handleRemoveBoxesCommand(conf *model.Configuration, args []string) error {
+	pb, err := removeBoxBoundaries(args[0])
+	if err != nil {
+		return err
+	}
+	inFile, outFile, err := optionalOutputPDFArgs(conf, args[1:])
+	if err != nil {
+		return err
+	}
+	selectedPages, err := parseSelectedPages()
+	if err != nil {
+		return err
+	}
+
+	return runCommand(cli.RemoveBoxesCommand(inFile, outFile, selectedPages, pb, conf))
 }
