@@ -914,7 +914,7 @@ func createDividerPagesDict(ctx *model.Context, parentIndRef types.IndirectRef) 
 	return indRef, nil
 }
 
-func appendSourcePageTreeToDestPageTree(ctxSrc, ctxDest *model.Context, dividerPage bool) error {
+func appendSourcePageTreeToDestPageTreeOrig(ctxSrc, ctxDest *model.Context, dividerPage bool) error {
 	if log.DebugEnabled() {
 		log.Debug.Println("appendSourcePageTreeToDestPageTree begin")
 	}
@@ -985,6 +985,127 @@ func appendSourcePageTreeToDestPageTree(ctxSrc, ctxDest *model.Context, dividerP
 	}
 
 	rootDict["Pages"] = *indRef
+
+	if log.DebugEnabled() {
+		log.Debug.Println("appendSourcePageTreeToDestPageTree end")
+	}
+
+	return nil
+}
+
+func pageTreeRoot(ctx *model.Context) (*types.IndirectRef, types.Dict, error) {
+	indRef, err := ctx.Pages()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	d, err := ctx.XRefTable.DereferenceDict(*indRef)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	pageCount := d.IntEntry("Count")
+	if pageCount == nil || *pageCount != ctx.PageCount {
+		return nil, nil, errors.Errorf("pdfcpu: corrupt page node at obj #%d\n", indRef.ObjectNumber)
+	}
+
+	return indRef, d, nil
+}
+
+func hasInheritedPageAttrs(d types.Dict) bool {
+	for _, key := range []string{"Resources", "MediaBox", "CropBox", "Rotate"} {
+		if _, ok := d[key]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func ensureNeutralPageTreeRoot(ctx *model.Context, indRef *types.IndirectRef, d types.Dict) (*types.IndirectRef, types.Dict, error) {
+	if !hasInheritedPageAttrs(d) {
+		return indRef, d, nil
+	}
+
+	newRoot := types.Dict(
+		map[string]types.Object{
+			"Type":  types.Name("Pages"),
+			"Kids":  types.Array{*indRef},
+			"Count": types.Integer(ctx.PageCount),
+		},
+	)
+
+	newRootIndRef, err := ctx.IndRefForNewObject(newRoot)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	rootDict, err := ctx.Catalog()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	d["Parent"] = *newRootIndRef
+	rootDict["Pages"] = *newRootIndRef
+
+	return newRootIndRef, newRoot, nil
+}
+
+func pageTreeKids(d types.Dict, indRef types.IndirectRef) (types.Array, error) {
+	obj, ok := d["Kids"]
+	if !ok {
+		return nil, errors.Errorf("pdfcpu: page node at obj #%d missing /Kids", indRef.ObjectNumber)
+	}
+
+	kids, ok := obj.(types.Array)
+	if !ok {
+		return nil, errors.Errorf("pdfcpu: page node at obj #%d /Kids is not an Array", indRef.ObjectNumber)
+	}
+
+	return kids, nil
+}
+
+func appendSourcePageTreeToDestPageTree(ctxSrc, ctxDest *model.Context, dividerPage bool) error {
+	if log.DebugEnabled() {
+		log.Debug.Println("appendSourcePageTreeToDestPageTree begin")
+	}
+
+	destRootIndRef, destRoot, err := pageTreeRoot(ctxDest)
+	if err != nil {
+		return err
+	}
+
+	destRootIndRef, destRoot, err = ensureNeutralPageTreeRoot(ctxDest, destRootIndRef, destRoot)
+	if err != nil {
+		return err
+	}
+
+	destKids, err := pageTreeKids(destRoot, *destRootIndRef)
+	if err != nil {
+		return err
+	}
+
+	addedPageCount := 0
+	if dividerPage {
+		dividerIndRef, err := createDividerPagesDict(ctxDest, *destRootIndRef)
+		if err != nil {
+			return err
+		}
+		destKids = append(destKids, *dividerIndRef)
+		addedPageCount++
+	}
+
+	srcRootIndRef, srcRoot, err := pageTreeRoot(ctxSrc)
+	if err != nil {
+		return err
+	}
+
+	srcRoot["Parent"] = *destRootIndRef
+	destKids = append(destKids, *srcRootIndRef)
+	addedPageCount += ctxSrc.PageCount
+
+	destRoot["Kids"] = destKids
+	destRoot["Count"] = types.Integer(ctxDest.PageCount + addedPageCount)
+	ctxDest.PageCount += addedPageCount
 
 	if log.DebugEnabled() {
 		log.Debug.Println("appendSourcePageTreeToDestPageTree end")
